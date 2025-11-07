@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuration Test</title>
+    <script src="./js/config.js"></script>
+</head>
+<body>
+    <h1>Configuration Test</h1>
+    
+    <div>
+        <button onclick="testConfiguration()">Test Configuration</button>
+        <button onclick="testEnvironmentVariables()">Test Environment Variables</button>
+        <button onclick="testLocalStorage()">Test Local Storage</button>
+    </div>
+    
+    <div id="testResults" style="margin-top: 20px; padding: 10px; border: 1px solid #ccc;">
+        <h3>Test Results:</h3>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function testConfiguration() {
+            const results = document.getElementById('results');
+            results.innerHTML = '';
+            
+            try {
+                // Test configuration manager initialization
+                if (window.configManager) {
+                    results.innerHTML += '<p>✅ Configuration Manager initialized</p>';
+                    
+                    // Test getting configuration
+                    const config = window.configManager.getConfiguration();
+                    results.innerHTML += '<p>✅ Configuration retrieved: ' + Object.keys(config).length + ' keys</p>';
+                    
+                    // Test default values
+                    if (config.region === 'westus2') {
+                        results.innerHTML += '<p>✅ Default region value correct</p>';
+                    } else {
+                        results.innerHTML += '<p>❌ Default region value incorrect: ' + config.region + '</p>';
+                    }
+                    
+                    if (config.ttsVoice === 'en-US-AvaMultilingualNeural') {
+                        results.innerHTML += '<p>✅ Default TTS voice correct</p>';
+                    } else {
+                        results.innerHTML += '<p>❌ Default TTS voice incorrect: ' + config.ttsVoice + '</p>';
+                    }
+                    
+                } else {
+                    results.innerHTML += '<p>❌ Configuration Manager not found</p>';
+                }
+            } catch (error) {
+                results.innerHTML += '<p>❌ Error testing configuration: ' + error.message + '</p>';
+            }
+        }
+        
+        function testEnvironmentVariables() {
+            const results = document.getElementById('results');
+            results.innerHTML = '';
+            
+            try {
+                if (window.configManager) {
+                    const envVars = window.configManager.getEnvironmentVariables();
+                    results.innerHTML += '<p>✅ Environment variables function works</p>';
+                    results.innerHTML += '<p>Environment variables keys: ' + Object.keys(envVars).length + '</p>';
+                } else {
+                    results.innerHTML += '<p>❌ Configuration Manager not available</p>';
+                }
+            } catch (error) {
+                results.innerHTML += '<p>❌ Error testing environment variables: ' + error.message + '</p>';
+            }
+        }
+        
+        function testLocalStorage() {
+            const results = document.getElementById('results');
+            results.innerHTML = '';
+            
+            try {
+                // Test saving to localStorage
+                const testConfig = { test: 'value', region: 'testregion' };
+                localStorage.setItem('azureAIFoundryConfig', JSON.stringify(testConfig));
+                results.innerHTML += '<p>✅ Local storage write successful</p>';
+                
+                // Test loading from localStorage
+                const loaded = JSON.parse(localStorage.getItem('azureAIFoundryConfig'));
+                if (loaded && loaded.test === 'value') {
+                    results.innerHTML += '<p>✅ Local storage read successful</p>';
+                } else {
+                    results.innerHTML += '<p>❌ Local storage read failed</p>';
+                }
+                
+                // Clean up
+                localStorage.removeItem('azureAIFoundryConfig');
+                results.innerHTML += '<p>✅ Local storage cleanup completed</p>';
+                
+            } catch (error) {
+                results.innerHTML += '<p>❌ Error testing local storage: ' + error.message + '</p>';
+            }
+        }
+        
+        // Auto-run basic test on page load
+        window.addEventListener('load', function() {
+            setTimeout(testConfiguration, 500);
+        });
+    </script>
+</body>
+</html>

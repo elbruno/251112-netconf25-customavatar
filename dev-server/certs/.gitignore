@@ -1,0 +1,5 @@
+# Ignore local HTTPS certs/keys for dev
+*
+
+# But keep this .gitignore file
+!.gitignore

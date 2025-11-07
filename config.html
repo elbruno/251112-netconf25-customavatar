@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avatar Configuration</title>
+  <link href="./css/styles.css" rel="stylesheet">
+  <link href="./css/theme-microsoft.css" rel="stylesheet">
+  <!-- UI libraries: Bootstrap, Icons, noUiSlider -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/nouislider@15.7.0/dist/nouislider.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/nouislider@15.7.0/dist/nouislider.min.js"></script>
+  <script src="./js/config.js"></script>
+</head>
+<body class="bg-light pt-navbar">
+
+<!-- Header / Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+  <div class="container-fluid">
+    <a class="navbar-brand d-flex align-items-center" href="#">
+      <i class="bi bi-robot me-2"></i>
+      Azure AI Speech Avatar
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item"><a class="nav-link" href="chat.html"><i class="bi bi-chat-dots me-1"></i>Chat</a></li>
+        <li class="nav-item"><a class="nav-link active" aria-current="page" href="#"><i class="bi bi-gear me-1"></i>Configuration</a></li>
+      </ul>
+      <div class="sponsor-logos-nav ms-auto d-flex align-items-center gap-3">
+         <img src="./image/oz_Logo.png" alt="OZ" class="sponsor-logo" />
+        <img src="./image/globalai_logo.svg" alt="Global AI" class="sponsor-logo" />
+        <img src="./image/mvp_logo.png" alt="Microsoft MVP" class="sponsor-logo" />
+      </div>
+    </div>
+  </div>
+  </nav>
+
+<main class="container mt-3">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <h2 class="h3 mb-0">Avatar Configuration</h2>
+    <div class="d-flex gap-2">
+      <a href="chat.html" class="btn btn-primary" id="backToChat"><i class="bi bi-arrow-left me-1"></i>Back to Chat</a>
+      <button class="btn btn-outline-secondary" onclick="importDotEnvFile()" data-bs-toggle="tooltip" data-bs-title="Select a local .env file to load keys"><i class="bi bi-file-earmark-arrow-up me-1"></i>Import .env</button>
+    </div>
+  </div>
+
+  <!-- Quick section nav -->
+  <ul class="nav nav-pills small my-3 flex-wrap gap-2">
+    <li class="nav-item"><a class="nav-link" href="#speech"><i class="bi bi-soundwave me-1"></i>Speech</a></li>
+  <li class="nav-item"><a class="nav-link" href="#openai"><i class="bi bi-cpu me-1"></i>OpenAI</a></li>
+  <li class="nav-item"><a class="nav-link" href="#prompt"><i class="bi bi-lightbulb me-1"></i>Prompt</a></li>
+    <li class="nav-item"><a class="nav-link" href="#search"><i class="bi bi-search me-1"></i>AI Search</a></li>
+    <li class="nav-item"><a class="nav-link" href="#stt-tts"><i class="bi bi-mic me-1"></i>STT/TTS</a></li>
+    <li class="nav-item"><a class="nav-link" href="#avatar"><i class="bi bi-robot me-1"></i>Avatar</a></li>
+  </ul>
+
+  <div id="configuration" class="row g-3">
+    <!-- Azure Speech Resource -->
+    <section id="speech" class="col-12 col-lg-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-header d-flex align-items-center gap-2">
+          <i class="bi bi-soundwave"></i>
+          <span class="fw-semibold">Azure Speech Resource</span>
+          <span class="badge text-bg-secondary ms-auto" data-bs-toggle="tooltip" data-bs-title="Required to enable STT/TTS and Avatar">required</span>
+        </div>
+        <div class="card-body">
+          <div id="azureSpeechResource" class="row g-3 align-items-end">
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="region">Region</label>
+              <select id="region" class="form-select">
+                <option value="westus2">West US 2</option>
+                <option value="westeurope">West Europe</option>
+                <option value="southeastasia">Southeast Asia</option>
+                <option value="southcentralus">South Central US</option>
+                <option value="northeurope">North Europe</option>
+                <option value="swedencentral">Sweden Central</option>
+                <option value="eastus2">East US 2</option>
+              </select>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="APIKey">API Key</label>
+              <input id="APIKey" type="password" class="form-control" placeholder="Speech key" />
+              <div class="form-text">Kept locally in your browser storage.</div>
+            </div>
+            <div class="col-12">
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="enablePrivateEndpoint" onchange="window.updatePrivateEndpoint()">
+                <label for="enablePrivateEndpoint" class="form-check-label">Enable Private Endpoint</label>
+              </div>
+            </div>
+            <div class="col-12" id="showPrivateEndpointCheckBox" hidden="hidden">
+              <label class="form-label" for="privateEndpoint">Private Endpoint</label>
+              <input id="privateEndpoint" type="text" class="form-control" placeholder="https://{name}.cognitiveservices.azure.com/" />
+              <div class="form-text">Use your custom domain if your Speech resource uses a private endpoint.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  <!-- Azure OpenAI Resource -->
+    <section id="openai" class="col-12 col-lg-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-header d-flex align-items-center gap-2">
+          <i class="bi bi-cpu"></i>
+          <span class="fw-semibold">Azure OpenAI Resource</span>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label" for="azureOpenAIEndpoint">Endpoint</label>
+              <input id="azureOpenAIEndpoint" type="text" class="form-control" placeholder="https://{resource}.openai.azure.com/" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="azureOpenAIApiKey">API Key</label>
+              <input id="azureOpenAIApiKey" type="password" class="form-control" placeholder="Azure OpenAI key" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="azureOpenAIDeploymentName">Deployment Name</label>
+              <input id="azureOpenAIDeploymentName" type="text" class="form-control" placeholder="e.g. gpt-4o-mini" />
+            </div>
+            
+            <div class="col-12">
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="enableOyd" onchange="window.updateEnableOyd()">
+                <label for="enableOyd" class="form-check-label">Enable On Your Data</label>
+              </div>
+              <div class="form-text">When enabled, configure Azure AI Search below.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Assistant Prompt (System Prompt + Profiles) -->
+    <section id="prompt" class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header d-flex align-items-center gap-2">
+          <i class="bi bi-lightbulb"></i>
+          <span class="fw-semibold">Assistant Prompt</span>
+          <span class="badge text-bg-info ms-auto">Optional</span>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label" for="prompt">System Prompt</label>
+              <textarea id="prompt" class="form-control" rows="6">You are an AI assistant that helps people find information.</textarea>
+              <div class="d-flex gap-2 mt-2 flex-wrap">
+                <button class="btn btn-outline-primary btn-sm" type="button" onclick="window.applyPromptProfile()"><i class="bi bi-magic me-1"></i>Apply Profile</button>
+                <button class="btn btn-outline-secondary btn-sm" type="button" id="copyPromptBtn"><i class="bi bi-clipboard me-1"></i>Copy Prompt</button>
+                <button class="btn btn-outline-info btn-sm" type="button" id="previewPromptBtn"><i class="bi bi-eye me-1"></i>Preview</button>
+                <span id="promptProfileStatus" class="small text-secondary align-self-center"></span>
+              </div>
+              <div class="form-text">Define the assistant’s behavior. Profiles and variables can generate this text automáticamente.</div>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="promptProfile">Prompt Profile</label>
+              <select id="promptProfile" class="form-select">
+                <option value="">(none)</option>
+              </select>
+              <div class="d-flex align-items-center gap-2 mt-2">
+                <span class="form-text">Loaded from <code>/prompts/index.json</code>. Use variables with <code>{{nombre}}</code>, <code>{{tone}}</code>, etc.</span>
+                <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="modal" data-bs-target="#manageProfilesModal"><i class="bi bi-gear"></i> Manage Profiles</button>
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="promptVars">Prompt Variables (JSON)</label>
+              <textarea id="promptVars" class="form-control" rows="3" placeholder='{"tone":"helpful","audience":"developers"}'></textarea>
+              <div class="form-text">Overrides placeholders in the selected profile. Also read from <code>PROMPT_VAR_*</code> in .env.</div>
+            </div>
+          </div>
+          <div class="row g-2 mt-2">
+            <div class="col-12">
+              <label class="form-label">Preview (read-only)</label>
+              <textarea id="promptPreview" class="form-control" rows="6" readonly placeholder="Click Preview to render the profile with variables, without applying."></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Azure AI Search (conditional) -->
+    <section id="search" class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header d-flex align-items-center gap-2">
+          <i class="bi bi-search"></i>
+          <span class="fw-semibold">Azure AI Search</span>
+          <span class="badge text-bg-info ms-auto">Optional</span>
+        </div>
+        <div class="card-body" id="cogSearchConfig" hidden="hidden">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label" for="azureCogSearchEndpoint">Endpoint</label>
+              <input id="azureCogSearchEndpoint" type="text" class="form-control" placeholder="https://{search}.search.windows.net" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="azureCogSearchApiKey">API Key</label>
+              <input id="azureCogSearchApiKey" type="password" class="form-control" placeholder="Search admin key" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="azureCogSearchIndexName">Index Name</label>
+              <input id="azureCogSearchIndexName" type="text" class="form-control" placeholder="e.g. documents" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STT / TTS Configuration -->
+    <section id="stt-tts" class="col-12 col-lg-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-header d-flex align-items-center gap-2">
+          <i class="bi bi-mic"></i>
+          <span class="fw-semibold">STT / TTS Configuration</span>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label" for="sttLocales">STT Locale(s)</label>
+              <input id="sttLocales" type="text" class="form-control" value="en-US,de-DE,es-ES,fr-FR,it-IT,ja-JP,ko-KR,zh-CN" />
+              <div class="form-text">Comma-separated locales prioritized left-to-right.</div>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="ttsVoice">TTS Voice</label>
+              <select id="ttsVoice" class="form-select"></select>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="customVoiceEndpointId">Custom Voice Deployment ID (Endpoint ID)</label>
+              <input id="customVoiceEndpointId" type="text" class="form-control" placeholder="Leave blank to use built-in voices" value="" />
+              <div class="form-text">Provide your Custom Neural Voice endpoint ID if applicable.</div>
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="audioGainSlider">Audio Gain</label>
+              <div id="audioGainSliderContainer" class="mb-2"></div>
+              <div class="d-flex align-items-center gap-2">
+                <input id="audioGainSlider" type="range" min="0.1" max="5.0" step="0.1" class="form-range maxw-280" />
+                <span id="audioGainValue" class="badge text-bg-secondary">1.8x</span>
+              </div>
+              <div class="form-text">Boost avatar audio loudness (0.1–5.0x)</div>
+            </div>
+            <div class="col-12">
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="continuousConversation">
+                <label for="continuousConversation" class="form-check-label">Continuous Conversation</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Avatar Configuration -->
+    <section id="avatar" class="col-12 col-lg-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-header d-flex align-items-center gap-2">
+          <i class="bi bi-robot"></i>
+          <span class="fw-semibold">Avatar Configuration</span>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="talkingAvatarCharacter">Avatar Character</label>
+              <select id="talkingAvatarCharacter" class="form-select"></select>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="talkingAvatarStyle">Avatar Style</label>
+              <select id="talkingAvatarStyle" class="form-select"></select>
+            </div>
+            <div class="col-12">
+              <div class="row g-3">
+                <div class="col-12 col-lg-6">
+                  <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="customizedAvatar" onchange="window.updateCustomAvatarBox()">
+                    <label for="customizedAvatar" class="form-check-label">Custom Avatar</label>
+                  </div>
+                </div>
+                <div class="col-12 col-lg-6">
+                  <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="useBuiltInVoice" disabled>
+                    <label for="useBuiltInVoice" class="form-check-label">Use Built-In Voice</label>
+                  </div>
+                  <div class="form-text">Enabled when Custom Avatar is selected and no endpoint ID provided.</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="autoReconnectAvatar">
+                <label for="autoReconnectAvatar" class="form-check-label">Auto Reconnect</label>
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="showSubtitles">
+                <label for="showSubtitles" class="form-check-label">Show Subtitles</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="alert alert-info mt-3 small" role="alert">
+    Tip: Run this page over http(s) (e.g., http://localhost:5173) so it can auto-load configuration from <code>/.env.json</code> and enable microphone/WebRTC.
+  </div>
+
+</main>
+
+<!-- Footer -->
+<footer class="bg-dark text-light mt-5 py-4">
+  <div class="container">
+    <div class="row align-items-center g-3">
+      <div class="col-12 col-md-4 small d-flex align-items-center">
+        <i class="bi bi-robot me-2"></i>
+        <span><i class="bi bi-c-circle me-1"></i><span id="footerYear"></span> Azure AI Foundry TTS Avatar Demo</span>
+      </div>
+      <div class="col-12 col-md-4 text-md-center">
+        <span class="small">
+          <i class="bi bi-person-badge me-1"></i>
+          Developer by
+          <a class="link-light text-decoration-none ms-1" href="https://www.linkedin.com/in/ppiova/" target="_blank" rel="noopener">
+            Pablito Piova
+          </a>
+        </span>
+      </div>
+      <div class="col-12 col-md-4 text-md-end small">
+        <span class="me-2"><i class="bi bi-soundwave me-1"></i>Azure Speech</span>
+        <span class="me-2">+</span>
+        <span><i class="bi bi-cpu me-1"></i>Azure OpenAI</span>
+  <a class="link-light text-decoration-none ms-3" href="https://github.com/ppiova" target="_blank" rel="noopener"><i class="bi bi-github me-1"></i>GitHub</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- Manage Profiles Modal (dev only) -->
+<div class="modal fade" id="manageProfilesModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-collection me-2"></i>Manage Prompt Profiles (dev)</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-12 col-md-4">
+            <label class="form-label">Profiles</label>
+            <select id="profilesList" class="form-select" size="10"></select>
+            <div class="d-flex gap-2 mt-2">
+              <button id="newProfileBtn" class="btn btn-outline-success btn-sm" type="button"><i class="bi bi-plus-circle"></i> New</button>
+              <button id="deleteProfileBtn" class="btn btn-outline-danger btn-sm" type="button"><i class="bi bi-trash"></i> Delete</button>
+            </div>
+          </div>
+          <div class="col-12 col-md-8">
+            <div class="row g-2">
+              <div class="col-12 col-md-6">
+                <label class="form-label">ID</label>
+                <input id="pfId" class="form-control" placeholder="my-profile" />
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">Name</label>
+                <input id="pfName" class="form-control" placeholder="My Profile" />
+              </div>
+              <div class="col-12">
+                <label class="form-label">Description</label>
+                <input id="pfDesc" class="form-control" />
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">File</label>
+                <input id="pfFile" class="form-control" placeholder="my-profile.md" />
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">Defaults (JSON)</label>
+                <input id="pfDefaults" class="form-control" placeholder='{"tone":"helpful"}' />
+              </div>
+              <div class="col-12">
+                <label class="form-label">Template Content (Markdown)</label>
+                <textarea id="pfContent" class="form-control" rows="10" placeholder="Use {{variables}}..."></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <span id="profilesModalStatus" class="small text-secondary me-auto"></span>
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+        <button id="saveProfileBtn" type="button" class="btn btn-primary"><i class="bi bi-save"></i> Save</button>
+      </div>
+    </div>
+  </div>
+  </div>
+
+<script>
+  // Footer year
+  (function(){
+    var y = new Date().getFullYear();
+    var el = document.getElementById('footerYear');
+    if (el) el.textContent = y;
+  })();
+
+  // Enable Bootstrap tooltips
+  (function(){
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+      new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+  })();
+
+  // Copy prompt button
+  (function(){
+    var btn = document.getElementById('copyPromptBtn');
+    if (!btn) return;
+    btn.addEventListener('click', async function(){
+      try {
+        var el = document.getElementById('prompt');
+        var text = el ? el.value : '';
+        await navigator.clipboard.writeText(text);
+        if (window.Swal) {
+          window.Swal.fire({toast:true,position:'top-end',timer:1500,showConfirmButton:false,icon:'success',title:'Prompt copied'});
+        }
+      } catch (e) {
+        if (window.Swal) {
+          window.Swal.fire({toast:true,position:'top-end',timer:2000,showConfirmButton:false,icon:'error',title:'Failed to copy'});
+        }
+      }
+    });
+  })();
+
+  // Manage Profiles modal logic (dev only)
+  ;(function(){
+    const listEl = document.getElementById('profilesList');
+    const idEl = document.getElementById('pfId');
+    const nameEl = document.getElementById('pfName');
+    const descEl = document.getElementById('pfDesc');
+    const fileEl = document.getElementById('pfFile');
+    const defsEl = document.getElementById('pfDefaults');
+    const contentEl = document.getElementById('pfContent');
+    const statusEl = document.getElementById('profilesModalStatus');
+    const saveBtn = document.getElementById('saveProfileBtn');
+    const newBtn = document.getElementById('newProfileBtn');
+    const delBtn = document.getElementById('deleteProfileBtn');
+
+    async function refreshList(selectId){
+      try {
+        const res = await fetch('/api/prompts');
+        const data = await res.json();
+        const profiles = Array.isArray(data.profiles) ? data.profiles : [];
+        listEl.innerHTML = '';
+        for (const p of profiles) {
+          const opt = document.createElement('option');
+          opt.value = p.id; opt.textContent = p.name || p.id;
+          listEl.appendChild(opt);
+        }
+        if (selectId) listEl.value = selectId;
+        statusEl.textContent = '';
+      } catch (e) {
+        statusEl.textContent = 'Failed to load profiles.';
+      }
+    }
+
+    async function loadProfile(id){
+      try {
+        const res = await fetch('/api/prompts/' + encodeURIComponent(id));
+        if (!res.ok) throw new Error('not found');
+        const { profile, content } = await res.json();
+        idEl.value = profile.id || '';
+        nameEl.value = profile.name || '';
+        descEl.value = profile.description || '';
+        fileEl.value = profile.file || '';
+        defsEl.value = JSON.stringify(profile.defaults || {});
+        contentEl.value = content || '';
+        statusEl.textContent = '';
+      } catch (e) {
+        statusEl.textContent = 'Failed to load selected profile.';
+      }
+    }
+
+    async function save(){
+      try {
+        const profile = {
+          id: idEl.value.trim(),
+          name: nameEl.value.trim(),
+          description: descEl.value.trim(),
+          file: fileEl.value.trim()
+        };
+        const defs = (defsEl.value || '').trim();
+        if (defs) profile.defaults = JSON.parse(defs);
+        const body = { profile, content: contentEl.value || '' };
+        const res = await fetch('/api/prompts/upsert', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        if (!res.ok) throw new Error('save failed');
+        await refreshList(profile.id);
+        if (window.Swal) window.Swal.fire({toast:true,position:'top-end',timer:1500,showConfirmButton:false,icon:'success',title:'Profile saved'});
+      } catch (e) {
+        statusEl.textContent = 'Failed to save profile. Check JSON.';
+      }
+    }
+
+    async function remove(){
+      const id = listEl.value;
+      if (!id) return;
+      try {
+        const res = await fetch('/api/prompts/' + encodeURIComponent(id), { method: 'DELETE' });
+        if (!res.ok) throw new Error('delete failed');
+        await refreshList();
+        idEl.value = nameEl.value = descEl.value = fileEl.value = defsEl.value = contentEl.value = '';
+        if (window.Swal) window.Swal.fire({toast:true,position:'top-end',timer:1500,showConfirmButton:false,icon:'success',title:'Profile deleted'});
+      } catch (e) {
+        statusEl.textContent = 'Failed to delete profile.';
+      }
+    }
+
+    // Wire up events
+    newBtn.addEventListener('click', () => {
+      idEl.value = nameEl.value = descEl.value = fileEl.value = defsEl.value = contentEl.value = '';
+      idEl.focus();
+    });
+    delBtn.addEventListener('click', remove);
+    saveBtn.addEventListener('click', save);
+    listEl.addEventListener('change', () => loadProfile(listEl.value));
+
+    // Refresh when modal opens
+    const modal = document.getElementById('manageProfilesModal');
+    modal.addEventListener('shown.bs.modal', () => refreshList());
+  })();
+
+  // Preview interpolated prompt without applying
+  (function(){
+    const btn = document.getElementById('previewPromptBtn');
+    if (!btn) return;
+    btn.addEventListener('click', async function(){
+      try {
+        const sel = document.getElementById('promptProfile');
+        const varsEl = document.getElementById('promptVars');
+        const outEl = document.getElementById('promptPreview');
+        const id = sel ? sel.value : '';
+        if (!id) {
+          if (outEl) outEl.value = '';
+          if (window.Swal) window.Swal.fire({toast:true,position:'top-end',timer:1500,showConfirmButton:false,icon:'info',title:'Select a profile first'});
+          return;
+        }
+        // Get profile and template
+        const metaRes = await fetch('/api/prompts/' + encodeURIComponent(id));
+        if (!metaRes.ok) throw new Error('Profile not found');
+        const { profile, content } = await metaRes.json();
+        const defaults = profile?.defaults || {};
+        let vars = {};
+        try { vars = varsEl && varsEl.value ? JSON.parse(varsEl.value) : {}; } catch { vars = {}; }
+        // Merge: defaults < vars
+        const merged = Object.assign({}, defaults, vars);
+        // Interpolate simple {{var}} placeholders
+        let text = String(content || '');
+        for (const [k, v] of Object.entries(merged)) {
+          const re = new RegExp('{{\\s*' + k.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&') + '\\s*}}','g');
+          text = text.replace(re, String(v));
+        }
+        if (outEl) outEl.value = text;
+      } catch (e) {
+        if (window.Swal) window.Swal.fire({toast:true,position:'top-end',timer:2000,showConfirmButton:false,icon:'error',title:'Failed to preview'});
+      }
+    });
+  })();
+</script>
+
+</body>
+</html>

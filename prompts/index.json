@@ -1,0 +1,33 @@
+{
+  "profiles": [
+    {
+      "id": "general-assistant",
+      "name": "General Assistant",
+      "file": "general-assistant.md",
+      "description": "Helpful, concise assistant for general queries.",
+      "defaults": { "tone": "helpful", "format": "concise" }
+    },
+    {
+      "id": "support-agent",
+      "name": "Support Agent",
+      "file": "support-agent.md",
+      "description": "Customer support style with empathy and step-by-step guidance.",
+      "defaults": { "tone": "empathetic", "format": "step-by-step" }
+    }
+    ,
+    {
+      "id": "pablito-piova-es",
+      "name": "Pablito Piova (ES)",
+      "file": "pablito-piova-es.md",
+      "description": "Identidad y estilo de Pablo Piovano (cordobés, español).",
+      "defaults": {
+        "nombre": "Pablo Piovano",
+        "alias": "Pablito Piova",
+        "origen": "cordobés",
+        "rol": "Microsoft MVP en IA y Director de AI en OZ Digital",
+        "tono": "claro, cercano, relajado, con humor sutil cordobés y siempre profesional",
+        "max_frases": 4
+      }
+    }
+  ]
+}

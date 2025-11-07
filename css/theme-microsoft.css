@@ -1,0 +1,55 @@
+/* Microsoft TechCommunity-inspired lightweight theme overrides */
+:root{
+  --ms-primary:#0F6CBD; /* Fluent/Tech blue */
+  --ms-primary-dark:#0B5AA5;
+  --ms-bg:#f5f7fa;
+  --ms-text:#242424;
+}
+
+html,body{background:var(--ms-bg); color:var(--ms-text); font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol", sans-serif;}
+
+.navbar.navbar-dark{
+  background: linear-gradient(90deg, var(--ms-primary) 0%, var(--ms-primary-dark) 100%);
+}
+.navbar .navbar-brand{font-weight:600}
+
+h1,h2,h3{color:#1b1b1b}
+
+/* Subtle card-like sections without rewriting markup */
+main.container #configuration > h2{
+  background:#fff; border:1px solid #e7e7e7; border-radius:.5rem; padding:.5rem .75rem; box-shadow:0 1px 1px rgba(0,0,0,.04); margin-top:1rem;
+}
+main.container #configuration > div, 
+main.container #cogSearchConfig{
+  background:#fff; border:1px solid #eee; border-radius:.5rem; padding:.75rem; box-shadow:0 1px 2px rgba(0,0,0,.03); margin-bottom:.75rem;
+}
+
+/* Buttons harmonized */
+.btn-primary{background-color:var(--ms-primary); border-color:var(--ms-primary)}
+.btn-primary:hover{background-color:var(--ms-primary-dark); border-color:var(--ms-primary-dark)}
+
+/* Footer (Microsoft/Fluent-inspired) */
+footer{box-shadow:0 -1px 3px rgba(0,0,0,.08)}
+footer.bg-dark{
+  background: linear-gradient(90deg, var(--ms-primary) 0%, var(--ms-primary-dark) 100%) !important;
+  color:#fff !important;
+}
+footer.bg-dark a{color:rgba(255,255,255,.9) !important}
+footer.bg-dark a:hover{color:#fff !important; text-decoration:underline}
+footer .small{color:rgba(255,255,255,.95)}
+footer .bi{opacity:.95}
+
+/* Panels */
+#videoContainer, .video-panel{background:#fff; border:1px solid #eee; border-radius:.5rem; padding:.5rem; box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.chat-card{background:#fff; border:1px solid #eee; border-radius:.5rem; box-shadow:0 1px 2px rgba(0,0,0,.03)}
+
+/* Video element should scale to container */
+#remoteVideo video{width:100% !important; height:auto !important}
+
+/* Chat history pane */
+#chatHistory{background:#fafafa; border:1px solid #eee; border-radius:.25rem; padding:.5rem}
+
+/* Form elements */
+label{color:#333}
+select, input[type=text], input[type=password], textarea{border:1px solid #d6d6d6; border-radius:.375rem; padding:.375rem .5rem}
+select:focus, input:focus, textarea:focus{outline:none; border-color:var(--ms-primary); box-shadow:0 0 0 .2rem rgba(15,108,189,.15)}
