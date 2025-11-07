@@ -54,7 +54,17 @@
 .pt-navbar { padding-top: 4.5rem; }
 
 /* Video container utilities */
-.video-container { position: relative; width: 100%; }
+.video-container { 
+    position: relative; 
+    width: 100%; 
+    background-image: url('../image/lima-transparent-cropped.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-color: #f8f9fa;
+    min-height: 480px;
+    border-radius: 8px;
+}
 
 /* Subtitles overlay styling */
 .subtitles {
@@ -327,7 +337,7 @@ textarea {
 }
 
 video {
-    background: #222;
+    background: transparent;
     margin: 0 0 20px 0;
     --width: 100%;
     width: var(--width);
