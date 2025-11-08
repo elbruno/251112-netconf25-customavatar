@@ -15,19 +15,13 @@
       "defaults": { "tone": "empathetic", "format": "step-by-step" }
     }
     ,
+    
     {
-      "id": "pablito-piova-es",
-      "name": "Pablito Piova (ES)",
-      "file": "pablito-piova-es.md",
-      "description": "Identidad y estilo de Pablo Piovano (cordobés, español).",
-      "defaults": {
-        "nombre": "Pablo Piovano",
-        "alias": "Pablito Piova",
-        "origen": "cordobés",
-        "rol": "Microsoft MVP en IA y Director de AI en OZ Digital",
-        "tono": "claro, cercano, relajado, con humor sutil cordobés y siempre profesional",
-        "max_frases": 4
-      }
+      "id": "agentcon-lima",
+      "name": "AgentCon Lima (ES/EN)",
+      "file": "agentcon-lima.md",
+      "description": "Event profile with agenda, speakers, sessions, and key takeaways for AgentCon Lima (Nov 8, 2025).",
+      "defaults": { "tone": "informative", "format": "structured" }
     }
   ]
 }
