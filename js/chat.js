@@ -55,11 +55,11 @@ function hideMicOverlay() {
 }
 
 // Simple wrapper function for button click
-function startAvatarSession() {
+async function startAvatarSession() {
     console.log('Start Avatar Session clicked');
     try {
         if (window.startSession) {
-            window.startSession();
+            await window.startSession();
         } else {
             alert('Error: startSession function not available.');
         }
@@ -132,7 +132,7 @@ function getBooleanConfig(key, fallback = false) {
 }
 
 // Connect to avatar service
-function connectAvatar() {
+async function connectAvatar() {
     if (isStarting) {
         console.log('Start ignored: another start is in progress.')
         return
@@ -239,9 +239,9 @@ function connectAvatar() {
         }
     }
 
-    // Only initialize messages once
+    // Only initialize messages once (ensure profiles are applied first)
     if (!messageInitiated) {
-        initMessages()
+        await initMessages()
         messageInitiated = true
     }
 
@@ -559,18 +559,40 @@ function setupWebRTC(iceServerUrl, iceServerUsername, iceServerCredential) {
 }
 
 // Initialize messages
-function initMessages() {
+async function initMessages() {
     messages = []
+    // Always include the system prompt as the first message so the model
+        // Robustness: if a prompt profile is configured but not yet applied,
+        // try to apply it before reading the prompt value so the system
+        // prompt reflects the selected profile.
+        try {
+            if (window.configManager) {
+                const cfg = window.configManager.getConfiguration();
+                // If a profile is requested, try to apply it (this is async)
+                if (cfg && cfg.promptProfile) {
+                    // Only attempt when the UI hasn't already applied it
+                    try {
+                        await window.configManager.applyPromptProfileIfConfigured();
+                        console.log('[initMessages] Prompt profile applied (if present).');
+                    } catch (e) {
+                        console.warn('[initMessages] Failed to auto-apply prompt profile:', e?.message || e);
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('initMessages: error while ensuring prompt profile applied', e?.message || e);
+        }
 
-    if (dataSources.length === 0) {
-    let systemPrompt = getConfigValue('prompt', '')
+        // Always include the system prompt as the first message so the model
+        // consistently receives the configured system context.
+        let systemPrompt = getConfigValue('prompt', '')
+        console.log('[initMessages] Injecting system prompt (first 200 chars):', String(systemPrompt || '').substring(0,200))
         let systemMessage = {
             role: 'system',
             content: systemPrompt
         }
 
         messages.push(systemMessage)
-    }
 }
 
 // Set data sources for chat API
@@ -955,6 +977,16 @@ window.onload = () => {
     }, 2000) // Check session activity every 2 seconds
 }
 
+// Wire suggested question buttons to the chat handler (if present in DOM)
+window.addEventListener('load', function() {
+    try {
+        const b1 = document.getElementById('suggestBtn1');
+        const b2 = document.getElementById('suggestBtn2');
+        if (b1) b1.addEventListener('click', () => handleUserQuery('hola quien eres'));
+        if (b2) b2.addEventListener('click', () => handleUserQuery('ola sabes si va a haber una sesion de Copilot Studio en AgentCon Lima?'));
+    } catch (e) { console.warn('Failed to wire suggested buttons', e); }
+});
+
 // Global keyboard shortcuts
 ;(function(){
     function isTypingTarget(el){
@@ -984,7 +1016,7 @@ window.onload = () => {
     })
 })()
 
-window.startSession = () => {
+window.startSession = async () => {
     lastInteractionTime = new Date()
     
     if (getBooleanConfig('useLocalVideoForIdle')) {
@@ -1010,7 +1042,7 @@ window.startSession = () => {
     }
 
     userClosedSession = false
-    connectAvatar()
+    await connectAvatar()
 }
 
 window.stopSession = () => {
@@ -1037,10 +1069,10 @@ window.stopSession = () => {
     disconnectAvatar()
 }
 
-window.clearChatHistory = () => {
+window.clearChatHistory = async () => {
     lastInteractionTime = new Date()
     document.getElementById('chatHistory').innerHTML = ''
-    initMessages()
+    await initMessages()
 }
 
 window.microphone = () => {
