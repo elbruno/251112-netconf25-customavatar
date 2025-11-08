@@ -512,3 +512,19 @@ input:checked + .slider:before {
     position: relative;
     margin-top: 5px;
 }
+
+/* Conversation pane sizing: keep the chat card compact and make the history scroll inside it */
+.chat-card {
+    display: flex !important;
+    flex-direction: column !important;
+    max-height: 640px !important;
+    overflow: hidden !important;
+}
+
+#chatHistory {
+    width: 100% !important;
+    flex: 1 1 auto !important;
+    min-height: 140px !important;
+    max-height: calc(100vh - 320px) !important;
+    overflow: auto !important;
+}
