@@ -56,14 +56,14 @@
   <div id="videoContainer" class="video-panel video-container">
       <div id="remoteVideo"></div>
   <div id="subtitles" class="subtitles" hidden></div>
-    </div>
-    <!-- Mic overlay: below the video -->
-    <div id="micOverlay" class="mic-overlay" hidden>
-      <div class="mic-overlay-card" id="micOverlayCard">
-        <button id="micOverlayBtn" class="mic-btn" type="button" title="Alt+M">
-          <i class="bi bi-mic-fill"></i>
-        </button>
-        <div id="micOverlayLabel" class="mic-overlay-label">Press the mic to start talking</div>
+      <!-- Mic overlay: positioned over the video to avoid layout shifts -->
+      <div id="micOverlay" class="mic-overlay" hidden>
+        <div class="mic-overlay-card" id="micOverlayCard">
+          <button id="micOverlayBtn" class="mic-btn" type="button" title="Alt+M">
+            <i class="bi bi-mic-fill"></i>
+          </button>
+          <div id="micOverlayLabel" class="mic-overlay-label">Press the mic to start talking</div>
+        </div>
       </div>
     </div>
   </div>
@@ -83,6 +83,10 @@
         <div id="showTypeMessageCheckbox" class="form-check">
           <input type="checkbox" id="showTypeMessage" class="form-check-input" onchange="window.updateTypeMessageBox()" disabled>
           <label for="showTypeMessage" class="form-check-label">Type Message</label>
+        </div>
+        <div class="form-check mt-1">
+          <input type="checkbox" id="continuousConversationCheckbox" class="form-check-input" onchange="window.toggleContinuousConversation(this.checked)">
+          <label for="continuousConversationCheckbox" class="form-check-label">Continuous conversation</label>
         </div>
         <div id="typeMessageContainer" class="input-group mt-1" hidden>
           <input id="userMessageInput" type="text" class="form-control" placeholder="Type a message and press Enter" />

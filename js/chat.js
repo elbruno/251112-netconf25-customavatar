@@ -984,8 +984,28 @@ window.addEventListener('load', function() {
         const b2 = document.getElementById('suggestBtn2');
         if (b1) b1.addEventListener('click', () => handleUserQuery('hola quien eres'));
         if (b2) b2.addEventListener('click', () => handleUserQuery('ola sabes si va a haber una sesion de Copilot Studio en AgentCon Lima?'));
+        // Initialize continuous conversation checkbox based on config
+        const cc = document.getElementById('continuousConversationCheckbox');
+        try {
+            if (cc && window.configManager) {
+                const cfg = window.configManager.getConfiguration();
+                cc.checked = !!cfg.continuousConversation;
+            }
+        } catch (e) { console.warn('Failed to init continuousConversation checkbox', e); }
     } catch (e) { console.warn('Failed to wire suggested buttons', e); }
 });
+
+// Toggle continuous conversation mode and persist to configuration
+window.toggleContinuousConversation = function(enabled) {
+    try {
+        if (window.configManager) {
+            window.configManager.config.continuousConversation = !!enabled;
+            try { window.configManager.persistPartial(); } catch {}
+        }
+    } catch (e) {
+        console.warn('Failed to toggle continuous conversation', e);
+    }
+}
 
 // Global keyboard shortcuts
 ;(function(){
