@@ -11,7 +11,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.AppHost" Version="9.5.0" />
+    <!-- UPDATED: Latest stable version -->
+    <PackageReference Include="Aspire.Hosting.AppHost" Version="9.5.2" />
+    
+    <!-- NEW: Azure Cognitive Services (includes OpenAI + Speech) -->
+    <PackageReference Include="Aspire.Hosting.Azure.CognitiveServices" Version="9.5.2" />
+    
+    <!-- NEW: For Azure Search support -->
+    <PackageReference Include="Aspire.Hosting.Azure.Search" Version="9.5.2" />
   </ItemGroup>
 
   <ItemGroup>
