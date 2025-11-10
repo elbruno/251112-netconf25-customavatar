@@ -162,16 +162,23 @@ async function setupWebRTC(iceServerUrl, username, password, config) {
     }
 
     // Configure avatar - handle empty style
-    const avatarStyle = config.avatar.style || 'casual-sitting';
-    console.log('Creating avatar config with character:', config.avatar.character, 'style:', avatarStyle);
+    const avatarStyle = config.avatar.style;
+    const isCustom = config.avatar.isCustomAvatar === true;
     
-    const avatarConfig = new SpeechSDK.AvatarConfig(
-        config.avatar.character,
-        avatarStyle
-    );
+    console.log('Creating avatar config with character:', config.avatar.character, 'style:', avatarStyle || '(none)', 'isCustom:', isCustom);
+    
+    // For custom avatars or when style is empty/null, don't pass style parameter
+    let avatarConfig;
+    if (!avatarStyle || avatarStyle === '') {
+        console.log('Creating avatar without style parameter');
+        avatarConfig = new SpeechSDK.AvatarConfig(config.avatar.character);
+    } else {
+        console.log('Creating avatar with style parameter:', avatarStyle);
+        avatarConfig = new SpeechSDK.AvatarConfig(config.avatar.character, avatarStyle);
+    }
     
     // Set customized flag for custom avatars
-    avatarConfig.customized = config.avatar.isCustomAvatar === true;
+    avatarConfig.customized = isCustom;
     console.log('Avatar customized flag:', avatarConfig.customized);
 
     const videoFormat = new SpeechSDK.AvatarVideoFormat();

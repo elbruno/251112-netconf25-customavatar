@@ -163,11 +163,13 @@
                     <div class="mb-3">
                         <label class="form-label">Style</label>
                         <select class="form-select" @bind="config.Avatar.Style">
+                            <option value="">No Style (for custom avatars)</option>
                             <option value="casual-sitting">Casual Sitting</option>
                             <option value="business">Business</option>
                             <option value="casual">Casual</option>
                             <option value="formal">Formal</option>
                         </select>
+                        <div class="form-text">Select "No Style" for custom avatars that don't require a style</div>
                     </div>
                     <div class="form-check mb-2">
                         <input type="checkbox" class="form-check-input" id="customAvatar" 

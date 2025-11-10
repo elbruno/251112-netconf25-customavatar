@@ -117,7 +117,7 @@ public class ConfigurationService : IConfigurationService
             Avatar = new AvatarDisplayConfig
             {
                 Character = avatarCharacter,
-                Style = _configuration["Avatar:Style"] ?? _configuration["AVATAR_STYLE"] ?? "casual-sitting",
+                Style = _configuration["Avatar:Style"] ?? _configuration["AVATAR_STYLE"] ?? string.Empty,
                 IsCustomAvatar = DetermineIfCustomAvatar(_configuration),
                 UseBuiltInVoice = bool.Parse(_configuration["Avatar:UseBuiltInVoice"] ?? "false"),
                 EnableSubtitles = bool.Parse(_configuration["Avatar:EnableSubtitles"] ?? _configuration["ENABLE_SUBTITLES"] ?? "true"),
@@ -126,8 +126,8 @@ public class ConfigurationService : IConfigurationService
             }
         };
 
-        _logger.LogInformation("Configuration loaded - Avatar Character: {Character}, IsCustom: {IsCustom}",
-            config.Avatar.Character, config.Avatar.IsCustomAvatar);
+        _logger.LogInformation("Configuration loaded - Avatar Character: {Character}, Style: '{Style}', IsCustom: {IsCustom}",
+            config.Avatar.Character, config.Avatar.Style ?? "(none)", config.Avatar.IsCustomAvatar);
 
         // Check if Cognitive Search is configured
         var searchEndpoint = _configuration["AzureCognitiveSearch:Endpoint"] ?? _configuration["AZURE_COGNITIVE_SEARCH_ENDPOINT"];
