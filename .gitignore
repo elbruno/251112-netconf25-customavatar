@@ -20,6 +20,7 @@ yarn-error.log*
 # Build outputs
 dist/
 build/
+publish/
 
 # IDE and editor files
 .vscode/
@@ -71,8 +72,52 @@ jspm_packages/
 
 # Azure Functions
 local.settings.json
-bin
-obj
+
+# .NET Development Settings (contains sensitive data)
+appsettings.Development.json
+
+# .NET / C# Build artifacts
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# .NET publish output
+[Pp]ublish/
+
+# NuGet Packages
+*.nupkg
+*.snupkg
+**/packages/*
+!**/packages/build/
+
+# Visual Studio cache/options directory
+.vs/
+
+# ReSharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Mono Auto Generated Files
+mono_crash.*
+
+# Windows image file caches
+Thumbs.db
+ehthumbs.db
+
+# Folder config file
+Desktop.ini
 
 # Temporary files
 *.tmp

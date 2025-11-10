@@ -1,0 +1,183 @@
+/* Custom styles for Azure AI Avatar Blazor App */
+
+/* Video container styles */
+.video-container {
+    position: relative;
+    background: #000;
+    min-height: 400px;
+    border-radius: 0.375rem;
+    overflow: hidden;
+}
+
+.video-container video {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Subtitles */
+.subtitles {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    max-width: 80%;
+    text-align: center;
+    font-size: 1.1rem;
+}
+
+/* Chat history */
+.chat-history {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+}
+
+.chat-history::-webkit-scrollbar {
+    width: 8px;
+}
+
+.chat-history::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.chat-history::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.chat-history::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Typing indicator */
+.typing-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.typing-indicator span {
+    width: 8px;
+    height: 8px;
+    background: #6c757d;
+    border-radius: 50%;
+    animation: typing 1.4s infinite;
+}
+
+.typing-indicator span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-indicator span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typing {
+    0%, 60%, 100% {
+        transform: translateY(0);
+        opacity: 0.7;
+    }
+    30% {
+        transform: translateY(-10px);
+        opacity: 1;
+    }
+}
+
+/* Card styling improvements */
+.card {
+    transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Button improvements */
+.btn {
+    transition: all 0.2s ease;
+}
+
+.btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Form improvements */
+.form-range::-webkit-slider-thumb {
+    cursor: pointer;
+}
+
+.form-range::-moz-range-thumb {
+    cursor: pointer;
+}
+
+/* Alert improvements */
+.alert {
+    border-left: 4px solid;
+}
+
+.alert-info {
+    border-left-color: #0dcaf0;
+}
+
+.alert-success {
+    border-left-color: #198754;
+}
+
+.alert-danger {
+    border-left-color: #dc3545;
+}
+
+/* Navbar improvements */
+.navbar-brand {
+    font-weight: 600;
+    font-size: 1.25rem;
+}
+
+/* Responsive video */
+@media (max-width: 991px) {
+    .video-container {
+        min-height: 300px;
+    }
+}
+
+@media (max-width: 575px) {
+    .video-container {
+        min-height: 200px;
+    }
+    
+    .subtitles {
+        font-size: 0.9rem;
+        padding: 8px 15px;
+    }
+}
+
+/* Loading spinner */
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.2em;
+}
+
+/* Icon spacing */
+.bi {
+    display: inline-block;
+}
+
+/* Home page feature icons */
+.display-1 {
+    font-size: 4rem;
+}
+
+@media (max-width: 767px) {
+    .display-1 {
+        font-size: 3rem;
+    }
+}
