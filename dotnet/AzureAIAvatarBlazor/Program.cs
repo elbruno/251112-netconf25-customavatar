@@ -5,6 +5,15 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
+// ==============================
+// Aspire-Managed Clients
+// ==============================
+
+// Azure OpenAI Client (automatically configured from AppHost)
+builder.AddAzureOpenAIClient("openai");
+
+// Note: Speech Service doesn't have Aspire component yet
+// Configuration is injected via environment variables from AppHost
 
 // Add user secrets support for development
 if (builder.Environment.IsDevelopment())

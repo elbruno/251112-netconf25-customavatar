@@ -50,11 +50,35 @@ public class AzureSpeechService : IAzureSpeechService
 
     public string GetRegion()
     {
-        return _configuration["AzureSpeech:Region"] ?? "westus2";
+        // Priority: Environment variable (from AppHost) > Fallback
+        return _configuration["AZURE_SPEECH_REGION"] 
+            ?? _configuration["AzureSpeech__Region"]
+            ?? _configuration["AzureSpeech:Region"]
+            ?? "westus2";
     }
 
     public string GetSubscriptionKey()
     {
-        return _configuration["AzureSpeech:ApiKey"] ?? string.Empty;
+        // Extract key from ConnectionString or direct config
+        var connectionString = _configuration["ConnectionStrings:speech"];
+        
+        if (!string.IsNullOrEmpty(connectionString))
+        {
+            // Parse Aspire connection string: "Endpoint=...;Key=...;"
+            var keyMatch = System.Text.RegularExpressions.Regex.Match(
+                connectionString, 
+                @"Key=([^;]+)"
+            );
+            if (keyMatch.Success)
+            {
+                return keyMatch.Groups[1].Value;
+            }
+        }
+
+        // Fallback to environment variables
+        return _configuration["AZURE_SPEECH_API_KEY"] 
+            ?? _configuration["AzureSpeech__ApiKey"]
+            ?? _configuration["AzureSpeech:ApiKey"]
+            ?? string.Empty;
     }
 }
