@@ -60,7 +60,7 @@ cd customavatarlabs/dotnet/AzureAIAvatarBlazor
 
 ### 2. Configure Azure Credentials
 
-You have two options for configuration:
+You have three options for configuration:
 
 #### Option A: User Secrets (Recommended for Development)
 
@@ -77,13 +77,50 @@ dotnet user-secrets set "AzureOpenAI:Endpoint" "https://your-resource.openai.azu
 dotnet user-secrets set "AzureOpenAI:ApiKey" "your-openai-api-key"
 dotnet user-secrets set "AzureOpenAI:DeploymentName" "gpt-4o-mini"
 
+# Optional: Customize system prompt
+dotnet user-secrets set "AzureOpenAI:SystemPrompt" "You are a helpful AI assistant."
+
+# Optional: Configure avatar
+dotnet user-secrets set "Avatar:Character" "lisa"
+dotnet user-secrets set "Avatar:Style" "casual-sitting"
+
 # Optional: Set Azure Cognitive Search credentials
 dotnet user-secrets set "AzureCognitiveSearch:Endpoint" "https://your-search.search.windows.net"
 dotnet user-secrets set "AzureCognitiveSearch:ApiKey" "your-search-api-key"
 dotnet user-secrets set "AzureCognitiveSearch:IndexName" "your-index-name"
 ```
 
-#### Option B: appsettings.json (Not Recommended - Less Secure)
+#### Option B: Environment Variables (Compatible with Original .env Format)
+
+The application also supports the original environment variable names from the JavaScript version:
+
+**Windows (PowerShell)**:
+```powershell
+$env:AZURE_SPEECH_REGION = "westus2"
+$env:AZURE_SPEECH_API_KEY = "your-speech-api-key"
+$env:AZURE_OPENAI_ENDPOINT = "https://your-resource.openai.azure.com"
+$env:AZURE_OPENAI_API_KEY = "your-openai-api-key"
+$env:AZURE_OPENAI_DEPLOYMENT_NAME = "gpt-4o-mini"
+$env:SYSTEM_PROMPT = "You are a helpful AI assistant."
+$env:AVATAR_CHARACTER = "lisa"
+$env:AVATAR_STYLE = "casual-sitting"
+$env:TTS_VOICE = "en-US-AvaMultilingualNeural"
+```
+
+**macOS/Linux (Bash)**:
+```bash
+export AZURE_SPEECH_REGION="westus2"
+export AZURE_SPEECH_API_KEY="your-speech-api-key"
+export AZURE_OPENAI_ENDPOINT="https://your-resource.openai.azure.com"
+export AZURE_OPENAI_API_KEY="your-openai-api-key"
+export AZURE_OPENAI_DEPLOYMENT_NAME="gpt-4o-mini"
+export SYSTEM_PROMPT="You are a helpful AI assistant."
+export AVATAR_CHARACTER="lisa"
+export AVATAR_STYLE="casual-sitting"
+export TTS_VOICE="en-US-AvaMultilingualNeural"
+```
+
+#### Option C: appsettings.json (Not Recommended - Less Secure)
 
 Edit `appsettings.json` and add your credentials:
 
@@ -96,7 +133,12 @@ Edit `appsettings.json` and add your credentials:
   "AzureOpenAI": {
     "Endpoint": "https://your-resource.openai.azure.com",
     "ApiKey": "your-openai-api-key",
-    "DeploymentName": "gpt-4o-mini"
+    "DeploymentName": "gpt-4o-mini",
+    "SystemPrompt": "You are a helpful AI assistant."
+  },
+  "Avatar": {
+    "Character": "lisa",
+    "Style": "casual-sitting"
   }
 }
 ```
