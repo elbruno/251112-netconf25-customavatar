@@ -1,0 +1,85 @@
+@page "/"
+
+<PageTitle>Azure AI Avatar - Home</PageTitle>
+
+<div class="container mt-5">
+    <div class="text-center mb-5">
+        <h1 class="display-4">
+            <i class="bi bi-robot me-3"></i>
+            Azure AI Avatar Demo
+        </h1>
+        <p class="lead">Powered by .NET 9 and Blazor</p>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-chat-dots display-1 text-primary mb-3"></i>
+                    <h3 class="card-title">Interactive Chat</h3>
+                    <p class="card-text">
+                        Chat with AI-powered avatars using Azure Speech and Azure OpenAI. 
+                        Experience natural conversations with text-to-speech and speech-to-text capabilities.
+                    </p>
+                    <a href="/chat" class="btn btn-primary">
+                        <i class="bi bi-play-circle me-2"></i>Start Chat
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-gear display-1 text-success mb-3"></i>
+                    <h3 class="card-title">Configuration</h3>
+                    <p class="card-text">
+                        Configure your Azure services including Speech, OpenAI, and Cognitive Search. 
+                        Customize avatar appearance, voice settings, and more.
+                    </p>
+                    <a href="/config" class="btn btn-success">
+                        <i class="bi bi-gear-fill me-2"></i>Configure
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header">
+            <h4 class="mb-0"><i class="bi bi-lightbulb me-2"></i>Features</h4>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Azure Speech STT/TTS Integration</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Azure OpenAI Chat Completions</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>WebRTC Avatar Video Streaming</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Real-time Speech Recognition</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Custom Avatar Support</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Multiple Language Support</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Audio Gain Control</li>
+                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Theme Customization</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="alert alert-info">
+        <h5 class="alert-heading"><i class="bi bi-info-circle me-2"></i>Getting Started</h5>
+        <p class="mb-0">
+            Before using the chat feature, please configure your Azure credentials in the 
+            <a href="/config" class="alert-link">Configuration</a> page. You'll need:
+        </p>
+        <ul class="mb-0 mt-2">
+            <li>Azure Speech Service API Key and Region</li>
+            <li>Azure OpenAI Endpoint, API Key, and Deployment Name</li>
+        </ul>
+    </div>
+</div>

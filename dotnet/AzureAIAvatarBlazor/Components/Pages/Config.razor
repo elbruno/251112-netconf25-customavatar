@@ -1,0 +1,242 @@
+@page "/config"
+@using AzureAIAvatarBlazor.Models
+@using AzureAIAvatarBlazor.Services
+@inject IConfigurationService ConfigService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Configuration - Azure AI Avatar</PageTitle>
+
+<div class="container mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2><i class="bi bi-gear me-2"></i>Configuration</h2>
+        <div>
+            <button class="btn btn-primary" @onclick="SaveConfiguration">
+                <i class="bi bi-save me-1"></i>Save Configuration
+            </button>
+            <a href="/chat" class="btn btn-outline-primary ms-2">
+                <i class="bi bi-arrow-left me-1"></i>Back to Chat
+            </a>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(statusMessage))
+    {
+        <div class="alert @(isError ? "alert-danger" : "alert-success") alert-dismissible fade show" role="alert">
+            @statusMessage
+            <button type="button" class="btn-close" @onclick="() => statusMessage = string.Empty"></button>
+        </div>
+    }
+
+    <div class="row g-3">
+        <!-- Azure Speech Service -->
+        <div class="col-12 col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <i class="bi bi-soundwave me-2"></i>Azure Speech Service
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Region</label>
+                        <select class="form-select" @bind="config.AzureSpeech.Region">
+                            <option value="westus2">West US 2</option>
+                            <option value="westeurope">West Europe</option>
+                            <option value="eastus2">East US 2</option>
+                            <option value="southeastasia">Southeast Asia</option>
+                            <option value="swedencentral">Sweden Central</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">API Key</label>
+                        <input type="password" class="form-control" @bind="config.AzureSpeech.ApiKey" 
+                               placeholder="Enter your Speech API key">
+                        <div class="form-text">Your API key is stored securely.</div>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input type="checkbox" class="form-check-input" id="enablePrivateEndpoint" 
+                               @bind="config.AzureSpeech.EnablePrivateEndpoint">
+                        <label class="form-check-label" for="enablePrivateEndpoint">
+                            Enable Private Endpoint
+                        </label>
+                    </div>
+                    @if (config.AzureSpeech.EnablePrivateEndpoint)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Private Endpoint URL</label>
+                            <input type="text" class="form-control" @bind="config.AzureSpeech.PrivateEndpoint" 
+                                   placeholder="https://your-endpoint.cognitiveservices.azure.com/">
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Azure OpenAI -->
+        <div class="col-12 col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <i class="bi bi-cpu me-2"></i>Azure OpenAI
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Endpoint</label>
+                        <input type="text" class="form-control" @bind="config.AzureOpenAI.Endpoint" 
+                               placeholder="https://your-resource.openai.azure.com">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">API Key</label>
+                        <input type="password" class="form-control" @bind="config.AzureOpenAI.ApiKey" 
+                               placeholder="Enter your OpenAI API key">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Deployment Name</label>
+                        <input type="text" class="form-control" @bind="config.AzureOpenAI.DeploymentName" 
+                               placeholder="gpt-4o-mini">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">System Prompt</label>
+                        <textarea class="form-control" rows="3" @bind="config.AzureOpenAI.SystemPrompt"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STT/TTS Configuration -->
+        <div class="col-12 col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <i class="bi bi-mic me-2"></i>STT/TTS Configuration
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">STT Locales</label>
+                        <input type="text" class="form-control" @bind="config.SttTts.SttLocales" 
+                               placeholder="en-US,es-ES,fr-FR">
+                        <div class="form-text">Comma-separated list of locale codes</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">TTS Voice</label>
+                        <select class="form-select" @bind="config.SttTts.TtsVoice">
+                            <option value="en-US-AvaMultilingualNeural">en-US-AvaMultilingualNeural</option>
+                            <option value="en-US-AndrewMultilingualNeural">en-US-AndrewMultilingualNeural</option>
+                            <option value="en-US-EmmaMultilingualNeural">en-US-EmmaMultilingualNeural</option>
+                            <option value="en-US-BrianMultilingualNeural">en-US-BrianMultilingualNeural</option>
+                            <option value="es-ES-ElviraNeural">es-ES-ElviraNeural</option>
+                            <option value="fr-FR-DeniseNeural">fr-FR-DeniseNeural</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Custom Voice Endpoint ID (Optional)</label>
+                        <input type="text" class="form-control" @bind="config.SttTts.CustomVoiceEndpointId" 
+                               placeholder="Leave empty for standard voices">
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="continuousConversation" 
+                               @bind="config.SttTts.ContinuousConversation">
+                        <label class="form-check-label" for="continuousConversation">
+                            Continuous Conversation
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Avatar Configuration -->
+        <div class="col-12 col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <i class="bi bi-robot me-2"></i>Avatar Configuration
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Character</label>
+                        <select class="form-select" @bind="config.Avatar.Character">
+                            <option value="lisa">Lisa</option>
+                            <option value="harry">Harry</option>
+                            <option value="jeff">Jeff</option>
+                            <option value="lori">Lori</option>
+                            <option value="max">Max</option>
+                            <option value="meg">Meg</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Style</label>
+                        <select class="form-select" @bind="config.Avatar.Style">
+                            <option value="casual-sitting">Casual Sitting</option>
+                            <option value="business">Business</option>
+                            <option value="casual">Casual</option>
+                            <option value="formal">Formal</option>
+                        </select>
+                    </div>
+                    <div class="form-check mb-2">
+                        <input type="checkbox" class="form-check-input" id="customAvatar" 
+                               @bind="config.Avatar.IsCustomAvatar">
+                        <label class="form-check-label" for="customAvatar">
+                            Custom Avatar
+                        </label>
+                    </div>
+                    <div class="form-check mb-2">
+                        <input type="checkbox" class="form-check-input" id="useBuiltInVoice" 
+                               @bind="config.Avatar.UseBuiltInVoice">
+                        <label class="form-check-label" for="useBuiltInVoice">
+                            Use Built-In Voice
+                        </label>
+                    </div>
+                    <div class="form-check mb-2">
+                        <input type="checkbox" class="form-check-input" id="enableSubtitles" 
+                               @bind="config.Avatar.EnableSubtitles">
+                        <label class="form-check-label" for="enableSubtitles">
+                            Enable Subtitles
+                        </label>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input type="checkbox" class="form-check-input" id="enableAutoReconnect" 
+                               @bind="config.Avatar.EnableAutoReconnect">
+                        <label class="form-check-label" for="enableAutoReconnect">
+                            Enable Auto Reconnect
+                        </label>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Audio Gain: @config.Avatar.AudioGain.ToString("F1")</label>
+                        <input type="range" class="form-range" min="0.1" max="5.0" step="0.1" 
+                               @bind="config.Avatar.AudioGain">
+                        <div class="form-text">Adjust volume amplification (0.1x - 5.0x)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private AvatarConfiguration config = new();
+    private string statusMessage = string.Empty;
+    private bool isError = false;
+
+    protected override void OnInitialized()
+    {
+        config = ConfigService.GetConfiguration();
+    }
+
+    private async Task SaveConfiguration()
+    {
+        try
+        {
+            await ConfigService.SaveConfigurationAsync(config);
+            statusMessage = "Configuration saved successfully!";
+            isError = false;
+            StateHasChanged();
+
+            // Clear message after 3 seconds
+            await Task.Delay(3000);
+            statusMessage = string.Empty;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            statusMessage = $"Error saving configuration: {ex.Message}";
+            isError = true;
+            StateHasChanged();
+        }
+    }
+}

@@ -1,0 +1,267 @@
+@page "/chat"
+@using AzureAIAvatarBlazor.Models
+@using AzureAIAvatarBlazor.Services
+@inject IAzureOpenAIService OpenAIService
+@inject IConfigurationService ConfigService
+@inject IJSRuntime JSRuntime
+@rendermode InteractiveServer
+
+<PageTitle>Chat - Azure AI Avatar</PageTitle>
+
+<div class="container-fluid mt-3">
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <button class="btn btn-primary" @onclick="StartAvatarSession" disabled="@isSessionActive">
+            <i class="bi bi-play-circle me-1"></i>Open Avatar Session
+        </button>
+        <button class="btn btn-secondary" @onclick="StartMicrophone" disabled="@(!isSessionActive)">
+            <i class="bi bi-mic me-1"></i>Start Microphone
+        </button>
+        <button class="btn btn-outline-secondary" @onclick="StopSpeaking" disabled="@(!isSpeaking)">
+            <i class="bi bi-stop-fill me-1"></i>Stop Speaking
+        </button>
+        <button class="btn btn-outline-danger" @onclick="ClearChatHistory">
+            <i class="bi bi-trash me-1"></i>Clear Chat History
+        </button>
+        <button class="btn btn-outline-primary" @onclick="StopSession" disabled="@(!isSessionActive)">
+            <i class="bi bi-x-circle me-1"></i>Close Avatar Session
+        </button>
+    </div>
+
+    <div class="row g-3">
+        <!-- Left: Avatar Video -->
+        <div class="col-12 col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-body p-0">
+                    <div id="videoContainer" class="video-container" style="min-height: 400px; background: #000;">
+                        <div id="remoteVideo"></div>
+                        @if (config?.Avatar?.EnableSubtitles == true)
+                        {
+                            <div id="subtitles" class="subtitles"></div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Conversation -->
+        <div class="col-12 col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-chat-dots me-2"></i>Conversation</h5>
+                </div>
+                <div class="card-body d-flex flex-column" style="height: 400px;">
+                    <div class="chat-history flex-grow-1 overflow-auto mb-3" style="max-height: 300px;">
+                        @foreach (var message in chatMessages)
+                        {
+                            <div class="mb-2">
+                                <strong>@message.Role:</strong>
+                                <div>@message.Content</div>
+                            </div>
+                        }
+                        @if (isTyping)
+                        {
+                            <div class="mb-2">
+                                <strong>Assistant:</strong>
+                                <div class="typing-indicator">
+                                    <span></span><span></span><span></span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="mt-auto">
+                        <div class="form-check mb-2">
+                            <input type="checkbox" class="form-check-input" id="showTypeMessage" 
+                                   @bind="showTypeMessage" disabled="@(!isSessionActive)">
+                            <label class="form-check-label" for="showTypeMessage">Type Message</label>
+                        </div>
+
+                        @if (showTypeMessage)
+                        {
+                            <div class="input-group">
+                                <input type="text" class="form-control" placeholder="Type a message..." 
+                                       @bind="userMessage" @onkeypress="HandleKeyPress" disabled="@(!isSessionActive)">
+                                <button class="btn btn-primary" @onclick="SendMessage" disabled="@(!isSessionActive || string.IsNullOrWhiteSpace(userMessage))">
+                                    <i class="bi bi-send"></i>
+                                </button>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private AvatarConfiguration? config;
+    private List<ChatMessage> chatMessages = new();
+    private string userMessage = string.Empty;
+    private bool showTypeMessage = false;
+    private bool isSessionActive = false;
+    private bool isSpeaking = false;
+    private bool isTyping = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        config = ConfigService.GetConfiguration();
+        
+        // Add system message
+        if (!string.IsNullOrEmpty(config.AzureOpenAI.SystemPrompt))
+        {
+            chatMessages.Add(new ChatMessage 
+            { 
+                Role = "system", 
+                Content = config.AzureOpenAI.SystemPrompt 
+            });
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("initializeAvatarSDK");
+        }
+    }
+
+    private async Task StartAvatarSession()
+    {
+        try
+        {
+            isSessionActive = true;
+            await JSRuntime.InvokeVoidAsync("startAvatarSession", config);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error starting avatar session: {ex.Message}");
+            isSessionActive = false;
+        }
+    }
+
+    private async Task StopSession()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("stopAvatarSession");
+            isSessionActive = false;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error stopping avatar session: {ex.Message}");
+        }
+    }
+
+    private async Task StartMicrophone()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("startMicrophone");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error starting microphone: {ex.Message}");
+        }
+    }
+
+    private async Task StopSpeaking()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("stopSpeaking");
+            isSpeaking = false;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error stopping speaking: {ex.Message}");
+        }
+    }
+
+    private void ClearChatHistory()
+    {
+        // Keep system message, clear the rest
+        var systemMessage = chatMessages.FirstOrDefault(m => m.Role == "system");
+        chatMessages.Clear();
+        if (systemMessage != null)
+        {
+            chatMessages.Add(systemMessage);
+        }
+        StateHasChanged();
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(userMessage))
+        {
+            await SendMessage();
+        }
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(userMessage)) return;
+
+        var message = userMessage.Trim();
+        userMessage = string.Empty;
+
+        // Add user message to history
+        chatMessages.Add(new ChatMessage { Role = "user", Content = message });
+        isTyping = true;
+        StateHasChanged();
+
+        try
+        {
+            // Get messages for API (including system message)
+            var messagesForAPI = chatMessages.Select(m => new ChatMessage 
+            { 
+                Role = m.Role, 
+                Content = m.Content 
+            }).ToList();
+
+            var assistantResponse = new System.Text.StringBuilder();
+            
+            await foreach (var chunk in OpenAIService.GetChatCompletionStreamAsync(messagesForAPI))
+            {
+                assistantResponse.Append(chunk);
+                
+                // Update UI periodically during streaming
+                if (assistantResponse.Length % 50 == 0)
+                {
+                    StateHasChanged();
+                }
+            }
+
+            var fullResponse = assistantResponse.ToString();
+            chatMessages.Add(new ChatMessage { Role = "assistant", Content = fullResponse });
+            
+            // Speak the response using avatar
+            isSpeaking = true;
+            await JSRuntime.InvokeVoidAsync("speakText", fullResponse);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in chat: {ex.Message}");
+            chatMessages.Add(new ChatMessage 
+            { 
+                Role = "assistant", 
+                Content = $"Error: {ex.Message}" 
+            });
+        }
+        finally
+        {
+            isTyping = false;
+            isSpeaking = false;
+            StateHasChanged();
+        }
+    }
+
+    [JSInvokable]
+    public static async Task OnSpeechRecognized(string text)
+    {
+        // This will be called from JavaScript when speech is recognized
+        Console.WriteLine($"Speech recognized: {text}");
+    }
+}
