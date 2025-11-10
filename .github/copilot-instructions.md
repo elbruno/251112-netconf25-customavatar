@@ -14,10 +14,13 @@ Browser-based talking avatar demo with two implementations: **JavaScript/HTML** 
 │   ├── prompts/              # Prompt profiles (*.md templates + index.json)
 │   └── .env                  # Azure credentials (gitignored)
 ├── *.html                    # Root HTML pages (chat.html, config.html, basic.html)
-├── dotnet/AzureAIAvatarBlazor/  # .NET 9 Blazor implementation
-│   ├── Components/Pages/     # Blazor pages (Chat.razor, Config.razor)
-│   ├── Services/             # Azure service wrappers (OpenAI, Speech, Configuration)
-│   └── wwwroot/js/          # JavaScript interop (avatar-interop.js)
+├── dotnet/                           # .NET 9 Blazor implementation
+│   ├── AzureAIAvatarBlazor.AppHost/  # Aspire AppHost orchestration
+│   ├── AzureAIAvatarBlazor.ServiceDefaults/  # Shared telemetry & resilience
+│   └── AzureAIAvatarBlazor/          # Main Blazor app
+│       ├── Components/Pages/         # Blazor pages (Chat.razor, Config.razor)
+│       ├── Services/                 # Azure service wrappers (OpenAI, Speech, Configuration)
+│       └── wwwroot/js/              # JavaScript interop (avatar-interop.js)
 └── .vscode/tasks.json        # VS Code tasks for dev server
 ```
 
@@ -32,10 +35,13 @@ Browser-based talking avatar demo with two implementations: **JavaScript/HTML** 
 
 ### .NET Blazor Implementation
 
+- **Orchestration**: .NET Aspire 9.5 (`AzureAIAvatarBlazor.AppHost`) manages the Blazor app lifecycle
 - **Services**: Interface-based DI pattern (`IConfigurationService`, `IAzureSpeechService`, `IAzureOpenAIService`)
 - **Configuration**: User Secrets (dev) → Environment Variables → appsettings.json (fallback)
 - **Interop**: C# Blazor components ↔ `avatar-interop.js` ↔ Azure Speech SDK (browser)
 - **Streaming**: OpenAI responses streamed via `IAsyncEnumerable<ChatStreamingUpdate>`
+- **Telemetry**: OpenTelemetry via `ServiceDefaults` (metrics, traces, logs) → Aspire Dashboard
+- **Resilience**: HTTP resilience policies via `Microsoft.Extensions.Http.Resilience`
 
 ## Critical Workflows
 
