@@ -7,9 +7,15 @@ window.peerConnection = null;
 window.webAudioCtx = null;
 window.webAudioGainNode = null;
 window.sessionActive = false;
+window.avatarAppConfig = null;
+window.dotNetAvatarRef = null;
+window.microphoneActive = false;
 
 // Initialize the Azure Speech SDK
-window.initializeAvatarSDK = function() {
+window.initializeAvatarSDK = function(dotNetRef) {
+    if (dotNetRef) {
+        window.dotNetAvatarRef = dotNetRef;
+    }
     console.log('Azure Speech SDK initialized');
 };
 
@@ -24,6 +30,7 @@ window.startAvatarSessionFromJson = async function(configJson) {
 async function startAvatarSession(config) {
     try {
         console.log('Starting avatar session...', config);
+        window.avatarAppConfig = config;
         
         // Get Speech SDK token
         const region = config.azureSpeech.region;
@@ -361,6 +368,8 @@ function setupAudioGain(audioElement, stream, gain) {
 // Stop avatar session
 window.stopAvatarSession = async function() {
     try {
+        await window.stopMicrophone(true);
+
         if (window.avatarSynthesizer) {
             window.avatarSynthesizer.close();
             window.avatarSynthesizer = null;
@@ -394,6 +403,7 @@ window.stopAvatarSession = async function() {
         }
 
         window.sessionActive = false;
+        window.avatarAppConfig = null;
         console.log('Avatar session stopped');
     } catch (error) {
         console.error('Error stopping avatar session:', error);
@@ -445,8 +455,165 @@ window.startMicrophone = async function() {
         return;
     }
 
-    // This would require additional Speech SDK configuration
-    // Implementation would be similar to the JavaScript version
-    console.log('Microphone functionality would be implemented here');
-    alert('Microphone feature: Please use text input for now. Full microphone support requires additional Speech SDK configuration.');
+    if (window.microphoneActive) {
+        console.warn('[Microphone] Microphone already running');
+        return;
+    }
+
+    if (!window.avatarAppConfig) {
+        alert('Avatar configuration not available. Please restart the avatar session.');
+        return;
+    }
+
+    if (typeof SpeechSDK === 'undefined') {
+        alert('Speech SDK not available. Please refresh the page.');
+        return;
+    }
+
+    try {
+        const speechKey = window.avatarAppConfig.azureSpeech.apiKey;
+        const speechRegion = window.avatarAppConfig.azureSpeech.region;
+
+        if (!speechKey || !speechRegion) {
+            alert('Missing Azure Speech credentials. Please configure them in the Configuration page.');
+            return;
+        }
+
+        console.log('[Microphone] Starting microphone with region:', speechRegion);
+
+        // Dispose any existing recognizer
+        if (window.speechRecognizer) {
+            try {
+                window.speechRecognizer.stopContinuousRecognitionAsync();
+                window.speechRecognizer.close();
+            } catch (disposeError) {
+                console.warn('[Microphone] Warning disposing previous recognizer:', disposeError);
+            }
+            window.speechRecognizer = null;
+        }
+
+        const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(speechKey, speechRegion);
+
+        // Set recognition language (use first locale specified)
+        const locales = (window.avatarAppConfig.sttTts?.sttLocales || 'en-US')
+            .split(',')
+            .map(l => l.trim())
+            .filter(l => l.length > 0);
+        const recognitionLanguage = locales.length > 0 ? locales[0] : 'en-US';
+        speechConfig.speechRecognitionLanguage = recognitionLanguage;
+        console.log('[Microphone] Recognition language:', recognitionLanguage);
+
+        // Use custom voice endpoint if provided
+        if (window.avatarAppConfig.sttTts?.customVoiceEndpointId) {
+            speechConfig.endpointId = window.avatarAppConfig.sttTts.customVoiceEndpointId;
+            console.log('[Microphone] Using custom voice endpoint:', speechConfig.endpointId);
+        }
+
+        const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
+        window.speechRecognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
+
+        window.speechRecognizer.recognizing = function(sender, event) {
+            console.log('[Microphone] Recognizing:', event?.result?.text || '(no text yet)');
+        };
+
+        window.speechRecognizer.recognized = function(sender, event) {
+            if (!event || !event.result) return;
+
+            if (event.result.reason === SpeechSDK.ResultReason.RecognizedSpeech) {
+                const text = event.result.text;
+                if (text) {
+                    console.log('[Microphone] ✅ Recognized text:', text);
+                    if (window.dotNetAvatarRef) {
+                        window.dotNetAvatarRef.invokeMethodAsync('OnSpeechRecognized', text)
+                            .catch(err => console.error('[Microphone] Error invoking .NET callback:', err));
+                    }
+                }
+            } else if (event.result.reason === SpeechSDK.ResultReason.NoMatch) {
+                console.warn('[Microphone] ❔ No speech recognized');
+            }
+        };
+
+        window.speechRecognizer.canceled = function(sender, event) {
+            console.error('[Microphone] ❌ Recognition canceled:', event?.errorDetails || 'Unknown error');
+            if (window.dotNetAvatarRef) {
+                window.dotNetAvatarRef.invokeMethodAsync('OnMicrophoneStateChanged', false)
+                    .catch(err => console.error('[Microphone] Error notifying .NET of cancellation:', err));
+            }
+            window.microphoneActive = false;
+        };
+
+        window.speechRecognizer.sessionStarted = function() {
+            console.log('[Microphone] 🎤 Session started');
+        };
+
+        window.speechRecognizer.sessionStopped = function() {
+            console.log('[Microphone] 🛑 Session stopped');
+            window.microphoneActive = false;
+            if (window.dotNetAvatarRef) {
+                window.dotNetAvatarRef.invokeMethodAsync('OnMicrophoneStateChanged', false)
+                    .catch(err => console.error('[Microphone] Error notifying .NET after stop:', err));
+            }
+        };
+
+        await new Promise((resolve, reject) => {
+            window.speechRecognizer.startContinuousRecognitionAsync(
+                () => {
+                    console.log('[Microphone] ✅ Continuous recognition started');
+                    window.microphoneActive = true;
+                    if (window.dotNetAvatarRef) {
+                        window.dotNetAvatarRef.invokeMethodAsync('OnMicrophoneStateChanged', true)
+                            .catch(err => console.error('[Microphone] Error notifying .NET of start:', err));
+                    }
+                    resolve();
+                },
+                (error) => {
+                    console.error('[Microphone] ❌ Failed to start recognition:', error);
+                    reject(error);
+                }
+            );
+        });
+    } catch (error) {
+        console.error('[Microphone] Error starting microphone:', error);
+        alert('Failed to start microphone: ' + error);
+        throw error;
+    }
+};
+
+window.stopMicrophone = async function(isInternalCall = false) {
+    if (!window.speechRecognizer) {
+        if (!isInternalCall) {
+            console.warn('[Microphone] No active microphone session to stop');
+        }
+        return;
+    }
+
+    try {
+        await new Promise((resolve, reject) => {
+            window.speechRecognizer.stopContinuousRecognitionAsync(
+                () => {
+                    console.log('[Microphone] ⏹️ Continuous recognition stopped');
+                    window.microphoneActive = false;
+                    if (!isInternalCall && window.dotNetAvatarRef) {
+                        window.dotNetAvatarRef.invokeMethodAsync('OnMicrophoneStateChanged', false)
+                            .catch(err => console.error('[Microphone] Error notifying .NET after stop:', err));
+                    }
+                    resolve();
+                },
+                (error) => {
+                    console.error('[Microphone] ❌ Failed to stop recognition:', error);
+                    reject(error);
+                }
+            );
+        });
+    } catch (error) {
+        console.error('[Microphone] Error stopping microphone:', error);
+        throw error;
+    } finally {
+        try {
+            window.speechRecognizer.close();
+        } catch (disposeError) {
+            console.warn('[Microphone] Warning disposing recognizer:', disposeError);
+        }
+        window.speechRecognizer = null;
+    }
 };

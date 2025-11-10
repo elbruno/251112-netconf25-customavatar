@@ -2,9 +2,11 @@
 @using AzureAIAvatarBlazor.Models
 @using AzureAIAvatarBlazor.Services
 @using System.Text.Json
+@using Microsoft.JSInterop
 @inject IAzureOpenAIService OpenAIService
 @inject IConfigurationService ConfigService
 @inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
 @rendermode InteractiveServer
 
 <PageTitle>Chat - Azure AI Avatar</PageTitle>
@@ -14,8 +16,8 @@
         <button class="btn btn-primary" @onclick="StartAvatarSession" disabled="@isSessionActive">
             <i class="bi bi-play-circle me-1"></i>Open Avatar Session
         </button>
-        <button class="btn btn-secondary" @onclick="StartMicrophone" disabled="@(!isSessionActive)">
-            <i class="bi bi-mic me-1"></i>Start Microphone
+        <button class="btn btn-secondary" @onclick="ToggleMicrophone" disabled="@(!isSessionActive)">
+            <i class="bi @(isMicrophoneActive ? "bi-mic-mute" : "bi-mic") me-1"></i>@(isMicrophoneActive ? "Stop Microphone" : "Start Microphone")
         </button>
         <button class="btn btn-outline-secondary" @onclick="StopSpeaking" disabled="@(!isSpeaking)">
             <i class="bi bi-stop-fill me-1"></i>Stop Speaking
@@ -102,6 +104,8 @@
     private bool isSessionActive = false;
     private bool isSpeaking = false;
     private bool isTyping = false;
+    private bool isMicrophoneActive = false;
+    private DotNetObjectReference<Chat>? dotNetReference;
 
     protected override async Task OnInitializedAsync()
     {
@@ -122,7 +126,8 @@
     {
         if (firstRender)
         {
-            await JSRuntime.InvokeVoidAsync("initializeAvatarSDK");
+            dotNetReference = DotNetObjectReference.Create(this);
+            await JSRuntime.InvokeVoidAsync("initializeAvatarSDK", dotNetReference);
         }
     }
 
@@ -169,6 +174,7 @@
         {
             await JSRuntime.InvokeVoidAsync("stopAvatarSession");
             isSessionActive = false;
+            isMicrophoneActive = false;
             StateHasChanged();
         }
         catch (Exception ex)
@@ -177,11 +183,18 @@
         }
     }
 
-    private async Task StartMicrophone()
+    private async Task ToggleMicrophone()
     {
         try
         {
-            await JSRuntime.InvokeVoidAsync("startMicrophone");
+            if (!isMicrophoneActive)
+            {
+                await JSRuntime.InvokeVoidAsync("startMicrophone");
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("stopMicrophone", false);
+            }
         }
         catch (Exception ex)
         {
@@ -296,10 +309,42 @@
         }
     }
 
-    [JSInvokable]
-    public static async Task OnSpeechRecognized(string text)
+    [JSInvokable("OnSpeechRecognized")]
+    public async Task OnSpeechRecognizedAsync(string text)
     {
-        // This will be called from JavaScript when speech is recognized
+        if (string.IsNullOrWhiteSpace(text))
+            return;
+
         Console.WriteLine($"Speech recognized: {text}");
+
+        await InvokeAsync(() =>
+        {
+            showTypeMessage = true;
+            userMessage = text;
+            StateHasChanged();
+        });
+
+        await InvokeAsync(async () => await SendMessage());
+    }
+
+    [JSInvokable("OnMicrophoneStateChanged")]
+    public async Task OnMicrophoneStateChangedAsync(bool active)
+    {
+        await InvokeAsync(() =>
+        {
+            isMicrophoneActive = active;
+            StateHasChanged();
+        });
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (dotNetReference != null)
+        {
+            dotNetReference.Dispose();
+            dotNetReference = null;
+        }
+
+        await Task.CompletedTask;
     }
 }
