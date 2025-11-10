@@ -31,6 +31,25 @@ public class ConfigurationService : IConfigurationService
         _logger = logger;
     }
 
+    private bool DetermineEnablePrivateEndpoint(IConfiguration config)
+    {
+        // Check if explicitly set
+        var explicitSetting = config["AzureSpeech:EnablePrivateEndpoint"];
+        if (!string.IsNullOrEmpty(explicitSetting))
+        {
+            return bool.Parse(explicitSetting);
+        }
+
+        // Auto-detect: if private endpoint URL is configured, enable it
+        var privateEndpoint = config["AzureSpeech:PrivateEndpoint"] ?? config["AZURE_SPEECH_PRIVATE_ENDPOINT"];
+        var shouldEnable = !string.IsNullOrEmpty(privateEndpoint);
+
+        _logger.LogInformation("Private endpoint '{Endpoint}' - EnablePrivateEndpoint: {Enabled}",
+            privateEndpoint ?? "null", shouldEnable);
+
+        return shouldEnable;
+    }
+
     private bool DetermineIfCustomAvatar(IConfiguration config)
     {
         // Check if explicitly set
@@ -76,8 +95,8 @@ public class ConfigurationService : IConfigurationService
             {
                 Region = _configuration["AzureSpeech:Region"] ?? _configuration["AZURE_SPEECH_REGION"] ?? "westus2",
                 ApiKey = _configuration["AzureSpeech:ApiKey"] ?? _configuration["AZURE_SPEECH_API_KEY"] ?? string.Empty,
-                EnablePrivateEndpoint = bool.Parse(_configuration["AzureSpeech:EnablePrivateEndpoint"] ?? "false"),
-                PrivateEndpoint = _configuration["AzureSpeech:PrivateEndpoint"] ?? _configuration["AZURE_SPEECH_PRIVATE_ENDPOINT"]
+                PrivateEndpoint = _configuration["AzureSpeech:PrivateEndpoint"] ?? _configuration["AZURE_SPEECH_PRIVATE_ENDPOINT"],
+                EnablePrivateEndpoint = DetermineEnablePrivateEndpoint(_configuration)
             },
             AzureOpenAI = new AzureOpenAIConfig
             {
