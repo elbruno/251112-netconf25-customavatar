@@ -130,7 +130,9 @@
     {
         try
         {
+            Console.WriteLine("Starting avatar session...");
             isSessionActive = true;
+            StateHasChanged();
             
             // Serialize config with camelCase for JavaScript
             var options = new JsonSerializerOptions
@@ -140,13 +142,24 @@
             };
             var configJson = JsonSerializer.Serialize(config, options);
             
+            Console.WriteLine($"Config JSON: {configJson}");
             await JSRuntime.InvokeVoidAsync("startAvatarSessionFromJson", configJson);
-            StateHasChanged();
+            Console.WriteLine("Avatar session started successfully");
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error starting avatar session: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
             isSessionActive = false;
+            StateHasChanged();
+            
+            // Show error to user
+            chatMessages.Add(new ChatMessage 
+            { 
+                Role = "system", 
+                Content = $"Error starting avatar: {ex.Message}" 
+            });
+            StateHasChanged();
         }
     }
 
@@ -217,6 +230,8 @@
         var message = userMessage.Trim();
         userMessage = string.Empty;
 
+        Console.WriteLine($"Sending message: {message}");
+
         // Add user message to history
         chatMessages.Add(new ChatMessage { Role = "user", Content = message });
         isTyping = true;
@@ -224,6 +239,8 @@
 
         try
         {
+            Console.WriteLine("Getting chat completion from OpenAI...");
+            
             // Get messages for API (including system message)
             var messagesForAPI = chatMessages.Select(m => new ChatMessage 
             { 
@@ -236,28 +253,39 @@
             await foreach (var chunk in OpenAIService.GetChatCompletionStreamAsync(messagesForAPI))
             {
                 assistantResponse.Append(chunk);
-                
-                // Update UI periodically during streaming
-                if (assistantResponse.Length % 50 == 0)
-                {
-                    StateHasChanged();
-                }
             }
 
             var fullResponse = assistantResponse.ToString();
+            Console.WriteLine($"Received response: {fullResponse.Substring(0, Math.Min(100, fullResponse.Length))}...");
+            
             chatMessages.Add(new ChatMessage { Role = "assistant", Content = fullResponse });
+            StateHasChanged();
             
             // Speak the response using avatar
-            isSpeaking = true;
-            await JSRuntime.InvokeVoidAsync("speakText", fullResponse);
+            if (isSessionActive)
+            {
+                Console.WriteLine("Speaking text via avatar...");
+                isSpeaking = true;
+                StateHasChanged();
+                
+                await JSRuntime.InvokeVoidAsync("speakText", fullResponse);
+                
+                isSpeaking = false;
+                Console.WriteLine("Finished speaking");
+            }
+            else
+            {
+                Console.WriteLine("Avatar session not active, skipping speech");
+            }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error in chat: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
             chatMessages.Add(new ChatMessage 
             { 
                 Role = "assistant", 
-                Content = $"Error: {ex.Message}" 
+                Content = $"Error: {ex.Message}. Please check the browser console for more details." 
             });
         }
         finally

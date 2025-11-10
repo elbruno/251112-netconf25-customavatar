@@ -23,14 +23,20 @@ window.startAvatarSessionFromJson = async function(configJson) {
 // Start avatar session
 async function startAvatarSession(config) {
     try {
+        console.log('Starting avatar session...', config);
+        
         // Get Speech SDK token
         const region = config.azureSpeech.region;
         const subscriptionKey = config.azureSpeech.apiKey;
         
         if (!subscriptionKey || !region) {
-            alert('Please configure Azure Speech credentials in the Configuration page.');
+            const error = 'Please configure Azure Speech credentials in the Configuration page.';
+            console.error(error);
+            alert(error);
             return;
         }
+
+        console.log(`Requesting avatar token from region: ${region}`);
 
         // Request avatar relay token
         const tokenUrl = `https://${region}.tts.speech.microsoft.com/cognitiveservices/avatar/relay/token/v1`;
@@ -43,7 +49,8 @@ async function startAvatarSession(config) {
         });
 
         if (!response.ok) {
-            throw new Error(`Failed to get avatar token: ${response.status}`);
+            const errorText = await response.text();
+            throw new Error(`Failed to get avatar token: ${response.status} - ${errorText}`);
         }
 
         const tokenData = await response.json();
@@ -56,12 +63,20 @@ async function startAvatarSession(config) {
         console.log('Avatar session started successfully');
     } catch (error) {
         console.error('Error starting avatar session:', error);
-        alert('Failed to start avatar session: ' + error.message);
+        alert('Failed to start avatar session: ' + error.message + '\n\nPlease check:\n1. Your Azure Speech credentials are correct\n2. Your subscription supports avatar features\n3. Browser console for more details');
+        throw error;
     }
 }
 
 // Setup WebRTC connection
 async function setupWebRTC(iceServerUrl, username, password, config) {
+    console.log('Setting up WebRTC connection...');
+    console.log('Avatar config:', { 
+        character: config.avatar.character, 
+        style: config.avatar.style,
+        isCustom: config.avatar.isCustomAvatar 
+    });
+
     // Create peer connection
     window.peerConnection = new RTCPeerConnection({
         iceServers: [{
@@ -71,11 +86,14 @@ async function setupWebRTC(iceServerUrl, username, password, config) {
         }]
     });
 
+    console.log('Peer connection created');
+
     // Handle incoming video/audio tracks
     window.peerConnection.ontrack = function(event) {
         console.log('Received track:', event.track.kind);
         
         if (event.track.kind === 'video') {
+            console.log('Setting up video element...');
             let videoElement = document.createElement('video');
             videoElement.id = 'videoPlayer';
             videoElement.srcObject = event.streams[0];
@@ -89,8 +107,12 @@ async function setupWebRTC(iceServerUrl, username, password, config) {
                 // Clear existing video
                 remoteVideo.innerHTML = '';
                 remoteVideo.appendChild(videoElement);
+                console.log('Video element added to DOM');
+            } else {
+                console.error('remoteVideo element not found in DOM');
             }
         } else if (event.track.kind === 'audio') {
+            console.log('Setting up audio element...');
             let audioElement = document.createElement('audio');
             audioElement.id = 'audioPlayer';
             audioElement.srcObject = event.streams[0];
@@ -103,9 +125,25 @@ async function setupWebRTC(iceServerUrl, username, password, config) {
             const remoteVideo = document.getElementById('remoteVideo');
             if (remoteVideo) {
                 remoteVideo.appendChild(audioElement);
+                console.log('Audio element added to DOM');
             }
         }
     };
+
+    // Handle ICE connection state changes
+    window.peerConnection.oniceconnectionstatechange = function() {
+        console.log('ICE connection state:', window.peerConnection.iceConnectionState);
+    };
+
+    // Handle connection state changes
+    window.peerConnection.onconnectionstatechange = function() {
+        console.log('Connection state:', window.peerConnection.connectionState);
+    };
+
+    // Verify Speech SDK is loaded
+    if (typeof SpeechSDK === 'undefined') {
+        throw new Error('Speech SDK not loaded. Please refresh the page.');
+    }
 
     // Create and initialize avatar synthesizer
     const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(
@@ -113,42 +151,54 @@ async function setupWebRTC(iceServerUrl, username, password, config) {
         config.azureSpeech.region
     );
 
+    console.log('Speech config created');
+
     // Configure TTS voice
-    if (!config.avatar.useBuiltInVoice) {
+    if (!config.avatar.useBuiltInVoice && config.sttTts.ttsVoice) {
         speechConfig.speechSynthesisVoiceName = config.sttTts.ttsVoice;
+        console.log('Using TTS voice:', config.sttTts.ttsVoice);
+    } else {
+        console.log('Using built-in voice');
     }
 
-    // Configure avatar
+    // Configure avatar - handle empty style
+    const avatarStyle = config.avatar.style || 'casual-sitting';
+    console.log('Creating avatar config with character:', config.avatar.character, 'style:', avatarStyle);
+    
     const avatarConfig = new SpeechSDK.AvatarConfig(
         config.avatar.character,
-        config.avatar.style
+        avatarStyle
     );
     
-    avatarConfig.customized = config.avatar.isCustomAvatar;
+    // Set customized flag for custom avatars
+    avatarConfig.customized = config.avatar.isCustomAvatar === true;
+    console.log('Avatar customized flag:', avatarConfig.customized);
 
     const videoFormat = new SpeechSDK.AvatarVideoFormat();
     videoFormat.bitrate = 2000000;
 
+    console.log('Creating avatar synthesizer...');
     window.avatarSynthesizer = new SpeechSDK.AvatarSynthesizer(
         speechConfig,
         avatarConfig
     );
 
     window.avatarSynthesizer.avatarEventReceived = function(s, e) {
-        console.log('Avatar event:', e.description);
+        console.log('[Avatar Event]:', e.description);
     };
 
     // Start avatar connection
+    console.log('Starting avatar...');
     await new Promise((resolve, reject) => {
         window.avatarSynthesizer.startAvatarAsync(
             window.peerConnection,
             () => {
-                console.log('Avatar started successfully');
+                console.log('Avatar started successfully!');
                 resolve();
             },
             (error) => {
                 console.error('Error starting avatar:', error);
-                reject(error);
+                reject(new Error('Failed to start avatar: ' + error));
             }
         );
     });

@@ -22,7 +22,7 @@ public class ConfigurationService : IConfigurationService
     private AvatarConfiguration? _cachedConfig;
 
     public ConfigurationService(
-        IConfiguration configuration, 
+        IConfiguration configuration,
         IWebHostEnvironment environment,
         ILogger<ConfigurationService> logger)
     {
@@ -31,10 +31,44 @@ public class ConfigurationService : IConfigurationService
         _logger = logger;
     }
 
+    private bool DetermineIfCustomAvatar(IConfiguration config)
+    {
+        // Check if explicitly set
+        var explicitSetting = config["Avatar:IsCustomAvatar"];
+        _logger.LogInformation("Explicit IsCustomAvatar setting: '{Setting}'", explicitSetting ?? "null");
+
+        if (!string.IsNullOrEmpty(explicitSetting))
+        {
+            var result = bool.Parse(explicitSetting);
+            _logger.LogInformation("Using explicit custom avatar setting: {Result}", result);
+            return result;
+        }
+
+        // Auto-detect: custom avatars typically have "-Avatar-" in their name or aren't in the standard list
+        var character = config["Avatar:Character"] ?? config["AVATAR_CHARACTER"] ?? "lisa";
+        var standardAvatars = new[] { "lisa", "harry", "jeff", "lori", "max", "meg" };
+
+        _logger.LogInformation("Checking character '{Character}' against standard avatars", character);
+        _logger.LogInformation("Character lowercase: '{Lower}'", character.ToLowerInvariant());
+
+        var isStandard = standardAvatars.Contains(character.ToLowerInvariant());
+        var isCustom = !isStandard;
+
+        _logger.LogInformation("Is standard avatar: {IsStandard}, Is custom: {IsCustom}", isStandard, isCustom);
+
+        return isCustom;
+    }
+
     public AvatarConfiguration GetConfiguration()
     {
-        if (_cachedConfig != null)
-            return _cachedConfig;
+        // Clear cache to ensure we always get fresh config with proper detection
+        // if (_cachedConfig != null)
+        //     return _cachedConfig;
+
+        _logger.LogInformation("Loading configuration...");
+
+        var avatarCharacter = _configuration["Avatar:Character"] ?? _configuration["AVATAR_CHARACTER"] ?? "lisa";
+        _logger.LogInformation("Avatar character from config: '{Character}'", avatarCharacter);
 
         var config = new AvatarConfiguration
         {
@@ -63,15 +97,18 @@ public class ConfigurationService : IConfigurationService
             },
             Avatar = new AvatarDisplayConfig
             {
-                Character = _configuration["Avatar:Character"] ?? _configuration["AVATAR_CHARACTER"] ?? "lisa",
+                Character = avatarCharacter,
                 Style = _configuration["Avatar:Style"] ?? _configuration["AVATAR_STYLE"] ?? "casual-sitting",
-                IsCustomAvatar = bool.Parse(_configuration["Avatar:IsCustomAvatar"] ?? "false"),
+                IsCustomAvatar = DetermineIfCustomAvatar(_configuration),
                 UseBuiltInVoice = bool.Parse(_configuration["Avatar:UseBuiltInVoice"] ?? "false"),
-                EnableSubtitles = bool.Parse(_configuration["Avatar:EnableSubtitles"] ?? _configuration["ENABLE_SUBTITLES"] ?? "false"),
-                EnableAutoReconnect = bool.Parse(_configuration["Avatar:EnableAutoReconnect"] ?? _configuration["ENABLE_AUTO_RECONNECT"] ?? "false"),
+                EnableSubtitles = bool.Parse(_configuration["Avatar:EnableSubtitles"] ?? _configuration["ENABLE_SUBTITLES"] ?? "true"),
+                EnableAutoReconnect = bool.Parse(_configuration["Avatar:EnableAutoReconnect"] ?? _configuration["ENABLE_AUTO_RECONNECT"] ?? "true"),
                 AudioGain = double.Parse(_configuration["Avatar:AudioGain"] ?? "1.8")
             }
         };
+
+        _logger.LogInformation("Configuration loaded - Avatar Character: {Character}, IsCustom: {IsCustom}",
+            config.Avatar.Character, config.Avatar.IsCustomAvatar);
 
         // Check if Cognitive Search is configured
         var searchEndpoint = _configuration["AzureCognitiveSearch:Endpoint"] ?? _configuration["AZURE_COGNITIVE_SEARCH_ENDPOINT"];
@@ -104,7 +141,7 @@ public class ConfigurationService : IConfigurationService
         try
         {
             var promptsPath = Path.Combine(_environment.ContentRootPath, "..", "..", "prompts", "index.json");
-            
+
             if (!File.Exists(promptsPath))
             {
                 _logger.LogWarning("Prompt profiles file not found at {Path}", promptsPath);
@@ -131,7 +168,7 @@ public class ConfigurationService : IConfigurationService
         try
         {
             var promptPath = Path.Combine(_environment.ContentRootPath, "..", "..", "prompts", fileName);
-            
+
             if (!File.Exists(promptPath))
             {
                 _logger.LogWarning("Prompt file not found at {Path}", promptPath);

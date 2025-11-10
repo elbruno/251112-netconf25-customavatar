@@ -3,6 +3,30 @@ using AzureAIAvatarBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Load environment variables from .env file if it exists
+var envPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", ".env");
+if (File.Exists(envPath))
+{
+    Console.WriteLine($"Loading environment variables from: {envPath}");
+    foreach (var line in File.ReadAllLines(envPath))
+    {
+        var trimmedLine = line.Trim();
+        if (string.IsNullOrWhiteSpace(trimmedLine) || trimmedLine.StartsWith("#"))
+            continue;
+
+        var parts = trimmedLine.Split('=', 2);
+        if (parts.Length == 2)
+        {
+            var key = parts[0].Trim();
+            var value = parts[1].Trim().Trim('\'', '"');
+            Environment.SetEnvironmentVariable(key, value);
+        }
+    }
+}
+
+// Add environment variables to configuration
+builder.Configuration.AddEnvironmentVariables();
+
 // Add user secrets support for development
 if (builder.Environment.IsDevelopment())
 {
