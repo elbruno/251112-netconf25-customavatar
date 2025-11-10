@@ -1,0 +1,291 @@
+# Quick Start Guide
+
+Get up and running with the Azure AI Avatar Blazor application in minutes!
+
+## 🚀 5-Minute Setup
+
+### Step 1: Prerequisites Check
+
+Verify you have the required software:
+
+```bash
+# Check .NET version (should be 9.0 or higher)
+dotnet --version
+
+# Check git
+git --version
+```
+
+If you don't have .NET 9:
+- **Windows/macOS/Linux**: Download from https://dotnet.microsoft.com/download/dotnet/9.0
+
+### Step 2: Clone and Navigate
+
+```bash
+# Clone the repository
+git clone https://github.com/elbruno/customavatarlabs.git
+
+# Navigate to the .NET project
+cd customavatarlabs/dotnet/AzureAIAvatarBlazor
+```
+
+### Step 3: Configure Credentials
+
+Choose your preferred method:
+
+#### Method A: User Secrets (Recommended)
+
+```bash
+# Set up Azure Speech Service
+dotnet user-secrets set "AzureSpeech:Region" "westus2"
+dotnet user-secrets set "AzureSpeech:ApiKey" "YOUR_SPEECH_API_KEY"
+
+# Set up Azure OpenAI
+dotnet user-secrets set "AzureOpenAI:Endpoint" "https://YOUR_RESOURCE.openai.azure.com"
+dotnet user-secrets set "AzureOpenAI:ApiKey" "YOUR_OPENAI_API_KEY"
+dotnet user-secrets set "AzureOpenAI:DeploymentName" "gpt-4o-mini"
+```
+
+Replace:
+- `YOUR_SPEECH_API_KEY`: Your Azure Speech Service key
+- `YOUR_RESOURCE`: Your Azure OpenAI resource name
+- `YOUR_OPENAI_API_KEY`: Your Azure OpenAI key
+- `gpt-4o-mini`: Your deployed model name
+
+#### Method B: Environment Variables
+
+**Windows (PowerShell)**:
+```powershell
+$env:AzureSpeech__Region = "westus2"
+$env:AzureSpeech__ApiKey = "YOUR_SPEECH_API_KEY"
+$env:AzureOpenAI__Endpoint = "https://YOUR_RESOURCE.openai.azure.com"
+$env:AzureOpenAI__ApiKey = "YOUR_OPENAI_API_KEY"
+$env:AzureOpenAI__DeploymentName = "gpt-4o-mini"
+```
+
+**macOS/Linux (Bash)**:
+```bash
+export AzureSpeech__Region="westus2"
+export AzureSpeech__ApiKey="YOUR_SPEECH_API_KEY"
+export AzureOpenAI__Endpoint="https://YOUR_RESOURCE.openai.azure.com"
+export AzureOpenAI__ApiKey="YOUR_OPENAI_API_KEY"
+export AzureOpenAI__DeploymentName="gpt-4o-mini"
+```
+
+### Step 4: Run the Application
+
+```bash
+# Start the application
+dotnet run
+```
+
+You should see output like:
+```
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: https://localhost:5001
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://localhost:5000
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+```
+
+### Step 5: Open in Browser
+
+Open your browser and navigate to:
+- **HTTPS** (recommended): https://localhost:5001
+- **HTTP**: http://localhost:5000
+
+## 🎯 First Steps in the Application
+
+### 1. Home Page
+
+When you first open the application, you'll see:
+- **Welcome screen** with feature overview
+- **Two main options**: Start Chat or Configure
+
+### 2. Configuration (Optional but Recommended)
+
+Click **"Configure"** to verify and customize settings:
+
+1. **Azure Speech Service**
+   - Region should match your resource
+   - API key is already set from secrets
+   
+2. **Azure OpenAI**
+   - Endpoint, key, and deployment are configured
+   - Customize the system prompt if desired
+   
+3. **Avatar Settings**
+   - Choose avatar character (Lisa, Harry, Jeff, etc.)
+   - Select style (casual-sitting, business, formal)
+   - Adjust audio gain if needed
+   
+4. Click **"Save Configuration"**
+
+### 3. Start Chatting
+
+1. Click **"Back to Chat"** or navigate to **"Chat"**
+2. Click **"Open Avatar Session"**
+   - Wait for the avatar video to load
+   - You'll see the avatar appear in the video panel
+3. Enable **"Type Message"** checkbox
+4. Type a message and press **Enter** or click **"Send"**
+5. Watch the avatar respond with voice and lip sync!
+
+## 🎨 Customization Tips
+
+### Change Avatar
+
+In Config page:
+```
+Character: Lisa
+Style: casual-sitting
+```
+
+Try different combinations:
+- **Harry**: business, casual, youthful
+- **Lisa**: casual-sitting
+- **Lori**: casual, formal, graceful
+
+### Adjust System Prompt
+
+Customize how the AI responds:
+
+**Friendly Assistant**:
+```
+You are a friendly and helpful AI assistant. You provide clear, 
+concise answers and always maintain a positive tone.
+```
+
+**Technical Expert**:
+```
+You are a technical expert specializing in software development. 
+Provide detailed, accurate answers with code examples when relevant.
+```
+
+**Language Tutor**:
+```
+You are a language tutor. Help users learn new languages by providing
+translations, explanations, and encouraging practice.
+```
+
+### Adjust Voice Volume
+
+If the avatar voice is too quiet or loud:
+
+1. Go to **Config**
+2. Scroll to **Avatar Configuration**
+3. Adjust **Audio Gain** slider (0.1x - 5.0x)
+   - **< 1.0**: Quieter
+   - **= 1.0**: Normal
+   - **> 1.0**: Louder (recommended: 1.5-2.0)
+
+### Multiple Languages
+
+Update STT Locales in Config:
+```
+en-US,es-ES,fr-FR,de-DE,it-IT,ja-JP,ko-KR,zh-CN
+```
+
+The avatar will automatically detect the input language!
+
+## 🔧 Troubleshooting
+
+### "Azure Speech credentials not configured"
+
+**Solution**: Set up your Speech Service credentials:
+```bash
+dotnet user-secrets set "AzureSpeech:Region" "westus2"
+dotnet user-secrets set "AzureSpeech:ApiKey" "YOUR_KEY"
+```
+
+### "Failed to get avatar token"
+
+**Possible causes**:
+1. **Wrong region**: Check your Speech resource region in Azure Portal
+2. **Invalid API key**: Verify the key is correct and not expired
+3. **Network issue**: Check internet connection
+
+**Solution**:
+```bash
+# Verify credentials
+az cognitiveservices account show --name YOUR_SPEECH_RESOURCE --resource-group YOUR_RG
+```
+
+### Avatar video won't load
+
+**Check**:
+1. Browser supports WebRTC (Chrome, Edge, Firefox, Safari)
+2. No firewall blocking WebRTC
+3. Check browser console for errors (F12)
+
+**Try**:
+- Use Chrome or Edge (best WebRTC support)
+- Disable browser extensions temporarily
+- Try incognito/private mode
+
+### Chat not responding
+
+**Check**:
+1. Azure OpenAI credentials are correct
+2. Model deployment is active
+3. Not exceeding rate limits
+
+**Solution**:
+```bash
+# Test OpenAI connection
+curl -X POST "https://YOUR_RESOURCE.openai.azure.com/openai/deployments/YOUR_MODEL/chat/completions?api-version=2024-02-01" \
+  -H "api-key: YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"messages":[{"role":"user","content":"Hello"}]}'
+```
+
+### Port already in use
+
+**Error**: `Failed to bind to address http://127.0.0.1:5000`
+
+**Solution**:
+```bash
+# Run on different port
+dotnet run --urls "http://localhost:5100;https://localhost:5101"
+```
+
+## 📚 Next Steps
+
+Now that you're up and running:
+
+1. **Explore Features**
+   - Try different avatars and styles
+   - Experiment with system prompts
+   - Test multiple languages
+
+2. **Read Documentation**
+   - [Full README](../README.md) - Complete feature list
+   - [Architecture](./ARCHITECTURE.md) - Technical details
+   - [Deployment](./DEPLOYMENT.md) - Production deployment
+
+3. **Customize**
+   - Modify UI in Blazor components
+   - Add new features to services
+   - Extend configuration options
+
+4. **Deploy**
+   - Deploy to Azure App Service
+   - Set up CI/CD pipeline
+   - Enable monitoring and logging
+
+## 🆘 Getting Help
+
+If you're stuck:
+
+1. **Check logs**: Look at console output for errors
+2. **Browser console**: Press F12 and check for JavaScript errors
+3. **Review docs**: Check the documentation files
+4. **GitHub Issues**: Search or create an issue
+5. **Azure Support**: For Azure-specific issues
+
+## 🎉 Success!
+
+You've successfully set up the Azure AI Avatar Blazor application!
+
+Enjoy exploring the power of Azure AI Services with .NET 9 and Blazor! 🚀
