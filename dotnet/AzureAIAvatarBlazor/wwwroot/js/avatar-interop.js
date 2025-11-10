@@ -88,12 +88,34 @@ async function setupWebRTC(iceServerUrl, username, password, config) {
 
     console.log('Peer connection created');
 
+    // Ensure we have media transceivers for receiving audio/video from the service
+    try {
+        const videoTransceiver = window.peerConnection.addTransceiver('video', { direction: 'recvonly' });
+        console.log('[WebRTC] Video transceiver added:', videoTransceiver?.mid || 'unknown mid');
+    } catch (error) {
+        console.error('[WebRTC] ❌ Failed to add video transceiver:', error);
+        throw error;
+    }
+
+    try {
+        const audioTransceiver = window.peerConnection.addTransceiver('audio', { direction: 'recvonly' });
+        console.log('[WebRTC] Audio transceiver added:', audioTransceiver?.mid || 'unknown mid');
+    } catch (error) {
+        console.error('[WebRTC] ❌ Failed to add audio transceiver:', error);
+        throw error;
+    }
+
     // Handle incoming video/audio tracks
     window.peerConnection.ontrack = function(event) {
-        console.log('Received track:', event.track.kind);
+        console.log('[Track] Received track:', event.track.kind, 'Ready state:', event.track.readyState);
+        console.log('[Track] Streams count:', event.streams.length);
         
         if (event.track.kind === 'video') {
-            console.log('Setting up video element...');
+            console.log('[Video] Setting up video element...');
+            console.log('[Video] Stream ID:', event.streams[0].id);
+            console.log('[Video] Stream active:', event.streams[0].active);
+            console.log('[Video] Video tracks:', event.streams[0].getVideoTracks().length);
+            
             let videoElement = document.createElement('video');
             videoElement.id = 'videoPlayer';
             videoElement.srcObject = event.streams[0];
@@ -102,17 +124,38 @@ async function setupWebRTC(iceServerUrl, username, password, config) {
             videoElement.style.width = '100%';
             videoElement.style.height = 'auto';
 
+            // Add event listeners to track video loading
+            videoElement.onloadedmetadata = function() {
+                console.log('[Video] Metadata loaded - dimensions:', videoElement.videoWidth, 'x', videoElement.videoHeight);
+            };
+            
+            videoElement.onloadeddata = function() {
+                console.log('[Video] Data loaded, ready to play');
+            };
+            
+            videoElement.onplay = function() {
+                console.log('[Video] ✅ Video playing!');
+            };
+            
+            videoElement.onerror = function(e) {
+                console.error('[Video] ❌ Error loading video:', e);
+            };
+
             const remoteVideo = document.getElementById('remoteVideo');
             if (remoteVideo) {
                 // Clear existing video
                 remoteVideo.innerHTML = '';
                 remoteVideo.appendChild(videoElement);
-                console.log('Video element added to DOM');
+                console.log('[Video] Video element added to DOM');
             } else {
-                console.error('remoteVideo element not found in DOM');
+                console.error('[Video] ❌ remoteVideo element not found in DOM!');
             }
         } else if (event.track.kind === 'audio') {
-            console.log('Setting up audio element...');
+            console.log('[Audio] Setting up audio element...');
+            console.log('[Audio] Stream ID:', event.streams[0].id);
+            console.log('[Audio] Stream active:', event.streams[0].active);
+            console.log('[Audio] Audio tracks:', event.streams[0].getAudioTracks().length);
+            
             let audioElement = document.createElement('audio');
             audioElement.id = 'audioPlayer';
             audioElement.srcObject = event.streams[0];
@@ -120,94 +163,170 @@ async function setupWebRTC(iceServerUrl, username, password, config) {
 
             // Setup Web Audio API for gain control
             const audioGain = config.avatar.audioGain || 1.8;
+            console.log('[Audio] Setting up audio gain:', audioGain);
             setupAudioGain(audioElement, event.streams[0], audioGain);
 
             const remoteVideo = document.getElementById('remoteVideo');
             if (remoteVideo) {
                 remoteVideo.appendChild(audioElement);
-                console.log('Audio element added to DOM');
+                console.log('[Audio] Audio element added to DOM');
+            } else {
+                console.error('[Audio] ❌ remoteVideo element not found in DOM!');
             }
         }
     };
 
     // Handle ICE connection state changes
     window.peerConnection.oniceconnectionstatechange = function() {
-        console.log('ICE connection state:', window.peerConnection.iceConnectionState);
+        console.log('[ICE] Connection state changed:', window.peerConnection.iceConnectionState);
+        if (window.peerConnection.iceConnectionState === 'failed') {
+            console.error('[ICE] Connection failed. This may indicate network or firewall issues.');
+        }
     };
 
     // Handle connection state changes
     window.peerConnection.onconnectionstatechange = function() {
-        console.log('Connection state:', window.peerConnection.connectionState);
+        console.log('[WebRTC] Connection state changed:', window.peerConnection.connectionState);
+        if (window.peerConnection.connectionState === 'failed') {
+            console.error('[WebRTC] Connection failed. Avatar may not load properly.');
+        } else if (window.peerConnection.connectionState === 'connected') {
+            console.log('[WebRTC] Successfully connected!');
+        }
+    };
+
+    // Handle ICE gathering state
+    window.peerConnection.onicegatheringstatechange = function() {
+        console.log('[ICE] Gathering state:', window.peerConnection.iceGatheringState);
+    };
+
+    // Handle ICE candidates
+    window.peerConnection.onicecandidate = function(event) {
+        if (event.candidate) {
+            console.log('[ICE] New candidate:', event.candidate.type, event.candidate.protocol);
+        } else {
+            console.log('[ICE] All candidates gathered');
+        }
+    };
+
+    // Handle signaling state
+    window.peerConnection.onsignalingstatechange = function() {
+        console.log('[WebRTC] Signaling state:', window.peerConnection.signalingState);
     };
 
     // Verify Speech SDK is loaded
     if (typeof SpeechSDK === 'undefined') {
+        console.error('[SDK] Speech SDK not found!');
         throw new Error('Speech SDK not loaded. Please refresh the page.');
     }
+    console.log('[SDK] Speech SDK version:', SpeechSDK.SDK_VERSION || 'unknown');
 
     // Create and initialize avatar synthesizer
+    console.log('[Config] Creating speech config for region:', config.azureSpeech.region);
     const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(
         config.azureSpeech.apiKey,
         config.azureSpeech.region
     );
 
-    console.log('Speech config created');
+    console.log('[Config] Speech config created successfully');
 
     // Configure TTS voice
     if (!config.avatar.useBuiltInVoice && config.sttTts.ttsVoice) {
         speechConfig.speechSynthesisVoiceName = config.sttTts.ttsVoice;
-        console.log('Using TTS voice:', config.sttTts.ttsVoice);
+        console.log('[Voice] Using TTS voice:', config.sttTts.ttsVoice);
     } else {
-        console.log('Using built-in voice');
+        console.log('[Voice] Using built-in avatar voice');
     }
 
     // Configure avatar - handle empty style
     const avatarStyle = config.avatar.style;
     const isCustom = config.avatar.isCustomAvatar === true;
     
-    console.log('Creating avatar config with character:', config.avatar.character, 'style:', avatarStyle || '(none)', 'isCustom:', isCustom);
+    console.log('[Avatar] Configuration details:');
+    console.log('  - Character:', config.avatar.character);
+    console.log('  - Style:', avatarStyle || '(none)');
+    console.log('  - Is Custom:', isCustom);
+    console.log('  - Use Built-in Voice:', config.avatar.useBuiltInVoice);
     
     // For custom avatars or when style is empty/null, don't pass style parameter
     let avatarConfig;
     if (!avatarStyle || avatarStyle === '') {
-        console.log('Creating avatar without style parameter');
+        console.log('[Avatar] Creating avatar config WITHOUT style (recommended for custom avatars)');
         avatarConfig = new SpeechSDK.AvatarConfig(config.avatar.character);
     } else {
-        console.log('Creating avatar with style parameter:', avatarStyle);
+        console.log('[Avatar] Creating avatar config WITH style:', avatarStyle);
         avatarConfig = new SpeechSDK.AvatarConfig(config.avatar.character, avatarStyle);
     }
     
     // Set customized flag for custom avatars
     avatarConfig.customized = isCustom;
-    console.log('Avatar customized flag:', avatarConfig.customized);
+    console.log('[Avatar] Customized flag set to:', avatarConfig.customized);
 
     const videoFormat = new SpeechSDK.AvatarVideoFormat();
     videoFormat.bitrate = 2000000;
+    console.log('[Avatar] Video format configured - bitrate:', videoFormat.bitrate);
 
-    console.log('Creating avatar synthesizer...');
+    console.log('[Synthesizer] Creating avatar synthesizer with video format...');
     window.avatarSynthesizer = new SpeechSDK.AvatarSynthesizer(
         speechConfig,
-        avatarConfig
+        avatarConfig,
+        videoFormat
     );
+    console.log('[Synthesizer] Avatar synthesizer created successfully');
 
+    // Set up avatar event handler before starting
     window.avatarSynthesizer.avatarEventReceived = function(s, e) {
-        console.log('[Avatar Event]:', e.description);
+        console.log('[Avatar Event] Offset:', e.offset, 'Description:', e.description);
     };
 
-    // Start avatar connection
-    console.log('Starting avatar...');
-    await new Promise((resolve, reject) => {
+    // Start avatar connection with proper callback handling
+    console.log('[Connection] Initiating avatar start sequence...');
+    console.log('[Connection] Peer connection state:', window.peerConnection.connectionState);
+    console.log('[Connection] ICE connection state:', window.peerConnection.iceConnectionState);
+    
+    return new Promise((resolve, reject) => {
+        const startTime = Date.now();
+        console.log('[Connection] Calling startAvatarAsync...');
+        
+        // Set a timeout in case the callback never fires
+        const timeout = setTimeout(() => {
+            console.error('[Timeout] ❌ Avatar start timed out after 30 seconds');
+            console.error('[Timeout] Peer connection state:', window.peerConnection.connectionState);
+            console.error('[Timeout] ICE connection state:', window.peerConnection.iceConnectionState);
+            reject(new Error('Avatar start timeout - connection did not complete'));
+        }, 30000);
+        
         window.avatarSynthesizer.startAvatarAsync(
             window.peerConnection,
-            () => {
-                console.log('Avatar started successfully!');
-                resolve();
+            (result) => {
+                clearTimeout(timeout);
+                const duration = Date.now() - startTime;
+                
+                if (result.reason === SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
+                    console.log(`[Success] ✅ Avatar started successfully in ${duration}ms!`);
+                    console.log('[Success] Result reason:', result.reason);
+                    console.log('[Success] Final peer connection state:', window.peerConnection.connectionState);
+                    console.log('[Success] Final ICE connection state:', window.peerConnection.iceConnectionState);
+                    resolve();
+                } else {
+                    console.error(`[Error] ❌ Avatar start returned unexpected reason: ${result.reason}`);
+                    console.error('[Error] Error details:', result.errorDetails);
+                    reject(new Error('Avatar start failed: ' + result.errorDetails));
+                }
             },
             (error) => {
-                console.error('Error starting avatar:', error);
+                clearTimeout(timeout);
+                const duration = Date.now() - startTime;
+                console.error(`[Error] ❌ Avatar start failed after ${duration}ms`);
+                console.error('[Error] Error details:', error);
+                console.error('[Error] Error type:', typeof error);
+                console.error('[Error] Error string:', String(error));
+                console.error('[Error] Peer connection state:', window.peerConnection.connectionState);
+                console.error('[Error] ICE connection state:', window.peerConnection.iceConnectionState);
                 reject(new Error('Failed to start avatar: ' + error));
             }
         );
+        
+        console.log('[Connection] startAvatarAsync called, waiting for callback...');
     });
 }
 
