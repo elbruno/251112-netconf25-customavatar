@@ -3,6 +3,8 @@ using AzureAIAvatarBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.AddServiceDefaults();
+
 // Note: .env file loading is disabled to prioritize appsettings.Development.json
 // Uncomment the following code if you need to use .env file in production
 /*
@@ -44,6 +46,8 @@ builder.Services.AddScoped<IAzureSpeechService, AzureSpeechService>();
 builder.Services.AddScoped<IConfigurationService, ConfigurationService>();
 
 var app = builder.Build();
+
+app.MapDefaultEndpoints();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

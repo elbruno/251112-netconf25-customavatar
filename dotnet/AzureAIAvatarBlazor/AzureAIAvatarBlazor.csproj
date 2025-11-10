@@ -14,4 +14,8 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="9.0.10" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\AzureAIAvatarBlazor.ServiceDefaults\AzureAIAvatarBlazor.ServiceDefaults.csproj" />
+  </ItemGroup>
+
 </Project>

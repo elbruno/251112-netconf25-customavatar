@@ -1,3 +1,5 @@
 <Solution>
+  <Project Path="AzureAIAvatarBlazor.AppHost/AzureAIAvatarBlazor.AppHost.csproj" Id="f4ad3f17-2a27-483f-bcad-21fbd9df4318" />
+  <Project Path="AzureAIAvatarBlazor.ServiceDefaults/AzureAIAvatarBlazor.ServiceDefaults.csproj" />
   <Project Path="AzureAIAvatarBlazor/AzureAIAvatarBlazor.csproj" />
 </Solution>
