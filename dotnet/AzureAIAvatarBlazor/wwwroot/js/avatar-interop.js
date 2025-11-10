@@ -251,21 +251,56 @@ async function setupWebRTC(iceServerUrl, username, password, config) {
     console.log('[SDK] Speech SDK version:', SpeechSDK.SDK_VERSION || 'unknown');
 
     // Create and initialize avatar synthesizer
-    console.log('[Config] Creating speech config for region:', config.azureSpeech.region);
-    const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(
-        config.azureSpeech.apiKey,
-        config.azureSpeech.region
-    );
+    console.log('[Config] Creating speech config...');
+    console.log('[Config] Region:', config.azureSpeech.region);
+    console.log('[Config] Enable private endpoint:', config.azureSpeech.enablePrivateEndpoint);
+    console.log('[Config] Private endpoint:', config.azureSpeech.privateEndpoint || '(not set)');
+    
+    let speechConfig;
+    if (config.azureSpeech.enablePrivateEndpoint && config.azureSpeech.privateEndpoint) {
+        // Use private endpoint
+        const privateEndpoint = config.azureSpeech.privateEndpoint;
+        // Extract the host part and construct WebSocket URL
+        const endpointHost = privateEndpoint.startsWith('https://') 
+            ? privateEndpoint.slice(8) 
+            : privateEndpoint;
+        const wsUrl = `wss://${endpointHost}/tts/cognitiveservices/websocket/v1?enableTalkingAvatar=true`;
+        console.log('[Config] Using private endpoint WebSocket URL:', wsUrl);
+        speechConfig = SpeechSDK.SpeechConfig.fromEndpoint(new URL(wsUrl), config.azureSpeech.apiKey);
+    } else {
+        // Use standard subscription
+        console.log('[Config] Using standard subscription endpoint');
+        speechConfig = SpeechSDK.SpeechConfig.fromSubscription(
+            config.azureSpeech.apiKey,
+            config.azureSpeech.region
+        );
+    }
 
     console.log('[Config] Speech config created successfully');
 
-    // Configure TTS voice
-    if (!config.avatar.useBuiltInVoice && config.sttTts.ttsVoice) {
-        speechConfig.speechSynthesisVoiceName = config.sttTts.ttsVoice;
-        console.log('[Voice] Using TTS voice:', config.sttTts.ttsVoice);
+    // Configure TTS voice and custom endpoint
+    const customVoiceEndpointId = config.sttTts.customVoiceEndpointId || '';
+    const customVoiceEndpointIdTrim = customVoiceEndpointId.trim().toLowerCase();
+    const isPlaceholder = !customVoiceEndpointIdTrim || 
+                         customVoiceEndpointIdTrim === 'your_custom_voice_endpoint_id' || 
+                         customVoiceEndpointIdTrim.startsWith('xxxxx');
+    
+    // Only set custom endpoint if not using built-in voice and endpoint is valid
+    if (!config.avatar.useBuiltInVoice && !isPlaceholder) {
+        speechConfig.endpointId = customVoiceEndpointId;
+        console.log('[Voice] Using custom voice endpoint:', customVoiceEndpointId);
     } else {
-        console.log('[Voice] Using built-in avatar voice');
+        speechConfig.endpointId = '';
+        console.log('[Voice] Using standard voice endpoint');
     }
+    
+    // Note: We do NOT set speechSynthesisVoiceName here
+    // Voice selection is handled in the speakText function via SSML
+    console.log('[Voice] Configuration:', {
+        useBuiltInVoice: config.avatar.useBuiltInVoice,
+        ttsVoice: config.sttTts.ttsVoice,
+        endpointIdUsed: speechConfig.endpointId ? 'custom-endpoint' : 'standard'
+    });
 
     // Configure avatar - handle empty style
     const avatarStyle = config.avatar.style;
@@ -433,34 +468,77 @@ window.stopAvatarSession = async function() {
     }
 };
 
+// HTML encode function for SSML
+function htmlEncode(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Create SSML wrapper for text
+function createSSML(text, ttsVoice, useBuiltInVoice, endingSilenceMs = 0) {
+    // If using built-in avatar voice, use simple SSML without voice tag
+    if (useBuiltInVoice) {
+        if (endingSilenceMs > 0) {
+            return `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xmlns:mstts='http://www.w3.org/2001/mstts' xml:lang='en-US'><mstts:leadingsilence-exact value='0'/>${htmlEncode(text)}<break time='${endingSilenceMs}ms' /></speak>`;
+        } else {
+            return `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xmlns:mstts='http://www.w3.org/2001/mstts' xml:lang='en-US'><mstts:leadingsilence-exact value='0'/>${htmlEncode(text)}</speak>`;
+        }
+    }
+    
+    // Use specified voice with voice tag
+    if (endingSilenceMs > 0) {
+        return `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xmlns:mstts='http://www.w3.org/2001/mstts' xml:lang='en-US'><voice name='${ttsVoice}'><mstts:leadingsilence-exact value='0'/>${htmlEncode(text)}<break time='${endingSilenceMs}ms' /></voice></speak>`;
+    } else {
+        return `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xmlns:mstts='http://www.w3.org/2001/mstts' xml:lang='en-US'><voice name='${ttsVoice}'><mstts:leadingsilence-exact value='0'/>${htmlEncode(text)}</voice></speak>`;
+    }
+}
+
 // Speak text using avatar
 window.speakText = async function(text) {
     if (!window.avatarSynthesizer) {
-        console.error('Avatar synthesizer not initialized');
+        console.error('[Speak] Avatar synthesizer not initialized');
+        return;
+    }
+
+    if (!window.avatarAppConfig) {
+        console.error('[Speak] Avatar configuration not available');
         return;
     }
 
     try {
+        const useBuiltInVoice = window.avatarAppConfig.avatar.useBuiltInVoice;
+        const ttsVoice = window.avatarAppConfig.sttTts.ttsVoice || 'en-US-AvaMultilingualNeural';
+        
+        // Create SSML for the text
+        const ssml = createSSML(text, ttsVoice, useBuiltInVoice);
+        
+        console.log('[Speak] Starting speech synthesis...');
+        console.log('[Speak] Use built-in voice:', useBuiltInVoice);
+        console.log('[Speak] TTS voice:', ttsVoice);
+        console.log('[Speak] Text length:', text.length);
+        
         await new Promise((resolve, reject) => {
-            window.avatarSynthesizer.speakTextAsync(
-                text,
+            window.avatarSynthesizer.speakSsmlAsync(
+                ssml,
                 (result) => {
                     if (result.reason === SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
-                        console.log('Speech synthesis completed');
+                        console.log('[Speak] ✅ Speech synthesis completed');
                         resolve();
                     } else {
-                        console.error('Speech synthesis failed:', result.errorDetails);
+                        console.error('[Speak] ❌ Speech synthesis failed:', result.errorDetails);
                         reject(new Error(result.errorDetails));
                     }
                 },
                 (error) => {
-                    console.error('Error speaking text:', error);
+                    console.error('[Speak] ❌ Error speaking text:', error);
                     reject(error);
                 }
             );
         });
     } catch (error) {
-        console.error('Error in speakText:', error);
+        console.error('[Speak] ❌ Error in speakText:', error);
+        throw error;
     }
 };
 
