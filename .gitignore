@@ -1,7 +1,9 @@
 # Environment variables - Never commit these!
-.env
 .env.local
-.env.development.local
+\.env
+
+# Visual Studio working files
+**/.vs/
 .env.test.local
 .env.production.local
 
@@ -77,3 +79,4 @@ obj
 *.temp
 .env
 .env
+dotnet/AzureAIAvatarBlazor/.vs/AzureAIAvatarBlazor.slnx/v18/.suo
