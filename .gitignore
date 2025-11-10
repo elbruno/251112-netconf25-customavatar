@@ -23,7 +23,7 @@ build/
 publish/
 
 # IDE and editor files
-.vscode/
+# .vscode/ - KEEP this for sharing tasks and launch configurations
 .idea/
 *.swp
 *.swo
