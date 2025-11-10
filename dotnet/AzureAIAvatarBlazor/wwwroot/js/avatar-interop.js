@@ -13,10 +13,15 @@ window.initializeAvatarSDK = function() {
     console.log('Azure Speech SDK initialized');
 };
 
-// Start avatar session
-window.startAvatarSession = async function(config) {
+// Start avatar session from JSON string
+window.startAvatarSessionFromJson = async function(configJson) {
+    const config = JSON.parse(configJson);
     console.log('Starting avatar session with config:', config);
-    
+    return await startAvatarSession(config);
+};
+
+// Start avatar session
+async function startAvatarSession(config) {
     try {
         // Get Speech SDK token
         const region = config.azureSpeech.region;
@@ -53,7 +58,7 @@ window.startAvatarSession = async function(config) {
         console.error('Error starting avatar session:', error);
         alert('Failed to start avatar session: ' + error.message);
     }
-};
+}
 
 // Setup WebRTC connection
 async function setupWebRTC(iceServerUrl, username, password, config) {

@@ -44,6 +44,11 @@ dotnet user-secrets set "AzureSpeech:ApiKey" "YOUR_SPEECH_API_KEY"
 dotnet user-secrets set "AzureOpenAI:Endpoint" "https://YOUR_RESOURCE.openai.azure.com"
 dotnet user-secrets set "AzureOpenAI:ApiKey" "YOUR_OPENAI_API_KEY"
 dotnet user-secrets set "AzureOpenAI:DeploymentName" "gpt-4o-mini"
+dotnet user-secrets set "AzureOpenAI:SystemPrompt" "You are a helpful AI assistant."
+
+# Optional: Configure avatar
+dotnet user-secrets set "Avatar:Character" "lisa"
+dotnet user-secrets set "Avatar:Style" "casual-sitting"
 ```
 
 Replace:
@@ -52,24 +57,34 @@ Replace:
 - `YOUR_OPENAI_API_KEY`: Your Azure OpenAI key
 - `gpt-4o-mini`: Your deployed model name
 
-#### Method B: Environment Variables
+#### Method B: Environment Variables (Compatible with Original .env)
+
+The app supports both formats: the new .NET style (`AzureSpeech:Region`) and the original JavaScript style (`AZURE_SPEECH_REGION`).
 
 **Windows (PowerShell)**:
 ```powershell
-$env:AzureSpeech__Region = "westus2"
-$env:AzureSpeech__ApiKey = "YOUR_SPEECH_API_KEY"
-$env:AzureOpenAI__Endpoint = "https://YOUR_RESOURCE.openai.azure.com"
-$env:AzureOpenAI__ApiKey = "YOUR_OPENAI_API_KEY"
-$env:AzureOpenAI__DeploymentName = "gpt-4o-mini"
+# Original .env format (compatible with JavaScript version)
+$env:AZURE_SPEECH_REGION = "westus2"
+$env:AZURE_SPEECH_API_KEY = "YOUR_SPEECH_API_KEY"
+$env:AZURE_OPENAI_ENDPOINT = "https://YOUR_RESOURCE.openai.azure.com"
+$env:AZURE_OPENAI_API_KEY = "YOUR_OPENAI_API_KEY"
+$env:AZURE_OPENAI_DEPLOYMENT_NAME = "gpt-4o-mini"
+$env:SYSTEM_PROMPT = "You are a helpful AI assistant."
+$env:AVATAR_CHARACTER = "lisa"
+$env:AVATAR_STYLE = "casual-sitting"
 ```
 
 **macOS/Linux (Bash)**:
 ```bash
-export AzureSpeech__Region="westus2"
-export AzureSpeech__ApiKey="YOUR_SPEECH_API_KEY"
-export AzureOpenAI__Endpoint="https://YOUR_RESOURCE.openai.azure.com"
-export AzureOpenAI__ApiKey="YOUR_OPENAI_API_KEY"
-export AzureOpenAI__DeploymentName="gpt-4o-mini"
+# Original .env format (compatible with JavaScript version)
+export AZURE_SPEECH_REGION="westus2"
+export AZURE_SPEECH_API_KEY="YOUR_SPEECH_API_KEY"
+export AZURE_OPENAI_ENDPOINT="https://YOUR_RESOURCE.openai.azure.com"
+export AZURE_OPENAI_API_KEY="YOUR_OPENAI_API_KEY"
+export AZURE_OPENAI_DEPLOYMENT_NAME="gpt-4o-mini"
+export SYSTEM_PROMPT="You are a helpful AI assistant."
+export AVATAR_CHARACTER="lisa"
+export AVATAR_STYLE="casual-sitting"
 ```
 
 ### Step 4: Run the Application

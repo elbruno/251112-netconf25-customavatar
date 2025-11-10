@@ -40,48 +40,48 @@ public class ConfigurationService : IConfigurationService
         {
             AzureSpeech = new AzureSpeechConfig
             {
-                Region = _configuration["AzureSpeech:Region"] ?? "westus2",
-                ApiKey = _configuration["AzureSpeech:ApiKey"] ?? string.Empty,
+                Region = _configuration["AzureSpeech:Region"] ?? _configuration["AZURE_SPEECH_REGION"] ?? "westus2",
+                ApiKey = _configuration["AzureSpeech:ApiKey"] ?? _configuration["AZURE_SPEECH_API_KEY"] ?? string.Empty,
                 EnablePrivateEndpoint = bool.Parse(_configuration["AzureSpeech:EnablePrivateEndpoint"] ?? "false"),
-                PrivateEndpoint = _configuration["AzureSpeech:PrivateEndpoint"]
+                PrivateEndpoint = _configuration["AzureSpeech:PrivateEndpoint"] ?? _configuration["AZURE_SPEECH_PRIVATE_ENDPOINT"]
             },
             AzureOpenAI = new AzureOpenAIConfig
             {
-                Endpoint = _configuration["AzureOpenAI:Endpoint"] ?? string.Empty,
-                ApiKey = _configuration["AzureOpenAI:ApiKey"] ?? string.Empty,
-                DeploymentName = _configuration["AzureOpenAI:DeploymentName"] ?? string.Empty,
-                SystemPrompt = _configuration["AzureOpenAI:SystemPrompt"] ?? "You are an AI assistant that helps people find information.",
-                PromptProfile = _configuration["AzureOpenAI:PromptProfile"],
-                EnforcePromptProfile = bool.Parse(_configuration["AzureOpenAI:EnforcePromptProfile"] ?? "false")
+                Endpoint = _configuration["AzureOpenAI:Endpoint"] ?? _configuration["AZURE_OPENAI_ENDPOINT"] ?? string.Empty,
+                ApiKey = _configuration["AzureOpenAI:ApiKey"] ?? _configuration["AZURE_OPENAI_API_KEY"] ?? string.Empty,
+                DeploymentName = _configuration["AzureOpenAI:DeploymentName"] ?? _configuration["AZURE_OPENAI_DEPLOYMENT_NAME"] ?? string.Empty,
+                SystemPrompt = _configuration["AzureOpenAI:SystemPrompt"] ?? _configuration["SYSTEM_PROMPT"] ?? "You are an AI assistant that helps people find information.",
+                PromptProfile = _configuration["AzureOpenAI:PromptProfile"] ?? _configuration["PROMPT_PROFILE"],
+                EnforcePromptProfile = bool.Parse(_configuration["AzureOpenAI:EnforcePromptProfile"] ?? _configuration["PROMPT_ENFORCE_PROFILE"] ?? "false")
             },
             SttTts = new SttTtsConfig
             {
                 SttLocales = _configuration["SttTts:SttLocales"] ?? "en-US,es-ES,fr-FR,de-DE",
-                TtsVoice = _configuration["SttTts:TtsVoice"] ?? "en-US-AvaMultilingualNeural",
-                CustomVoiceEndpointId = _configuration["SttTts:CustomVoiceEndpointId"],
-                ContinuousConversation = bool.Parse(_configuration["SttTts:ContinuousConversation"] ?? "false")
+                TtsVoice = _configuration["SttTts:TtsVoice"] ?? _configuration["TTS_VOICE"] ?? "en-US-AvaMultilingualNeural",
+                CustomVoiceEndpointId = _configuration["SttTts:CustomVoiceEndpointId"] ?? _configuration["CUSTOM_VOICE_ENDPOINT_ID"],
+                ContinuousConversation = bool.Parse(_configuration["SttTts:ContinuousConversation"] ?? _configuration["ENABLE_CONTINUOUS_CONVERSATION"] ?? "false")
             },
             Avatar = new AvatarDisplayConfig
             {
-                Character = _configuration["Avatar:Character"] ?? "lisa",
-                Style = _configuration["Avatar:Style"] ?? "casual-sitting",
+                Character = _configuration["Avatar:Character"] ?? _configuration["AVATAR_CHARACTER"] ?? "lisa",
+                Style = _configuration["Avatar:Style"] ?? _configuration["AVATAR_STYLE"] ?? "casual-sitting",
                 IsCustomAvatar = bool.Parse(_configuration["Avatar:IsCustomAvatar"] ?? "false"),
                 UseBuiltInVoice = bool.Parse(_configuration["Avatar:UseBuiltInVoice"] ?? "false"),
-                EnableSubtitles = bool.Parse(_configuration["Avatar:EnableSubtitles"] ?? "false"),
-                EnableAutoReconnect = bool.Parse(_configuration["Avatar:EnableAutoReconnect"] ?? "false"),
+                EnableSubtitles = bool.Parse(_configuration["Avatar:EnableSubtitles"] ?? _configuration["ENABLE_SUBTITLES"] ?? "false"),
+                EnableAutoReconnect = bool.Parse(_configuration["Avatar:EnableAutoReconnect"] ?? _configuration["ENABLE_AUTO_RECONNECT"] ?? "false"),
                 AudioGain = double.Parse(_configuration["Avatar:AudioGain"] ?? "1.8")
             }
         };
 
         // Check if Cognitive Search is configured
-        var searchEndpoint = _configuration["AzureCognitiveSearch:Endpoint"];
+        var searchEndpoint = _configuration["AzureCognitiveSearch:Endpoint"] ?? _configuration["AZURE_COGNITIVE_SEARCH_ENDPOINT"];
         if (!string.IsNullOrEmpty(searchEndpoint))
         {
             config.AzureCognitiveSearch = new AzureCognitiveSearchConfig
             {
                 Endpoint = searchEndpoint,
-                ApiKey = _configuration["AzureCognitiveSearch:ApiKey"] ?? string.Empty,
-                IndexName = _configuration["AzureCognitiveSearch:IndexName"] ?? string.Empty,
+                ApiKey = _configuration["AzureCognitiveSearch:ApiKey"] ?? _configuration["AZURE_COGNITIVE_SEARCH_API_KEY"] ?? string.Empty,
+                IndexName = _configuration["AzureCognitiveSearch:IndexName"] ?? _configuration["AZURE_COGNITIVE_SEARCH_INDEX_NAME"] ?? string.Empty,
                 Enabled = bool.Parse(_configuration["AzureCognitiveSearch:Enabled"] ?? "false")
             };
         }
