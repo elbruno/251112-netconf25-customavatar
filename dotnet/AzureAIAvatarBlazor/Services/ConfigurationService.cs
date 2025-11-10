@@ -33,18 +33,38 @@ public class ConfigurationService : IConfigurationService
 
     private bool DetermineEnablePrivateEndpoint(IConfiguration config)
     {
-        // Check if explicitly set
+        // Check if explicitly set in appsettings
         var explicitSetting = config["AzureSpeech:EnablePrivateEndpoint"];
+        _logger.LogInformation("DEBUG: AzureSpeech:EnablePrivateEndpoint value: '{Value}'", explicitSetting ?? "null");
+
         if (!string.IsNullOrEmpty(explicitSetting))
         {
-            return bool.Parse(explicitSetting);
+            var enabled = bool.Parse(explicitSetting);
+            _logger.LogInformation("Using explicit EnablePrivateEndpoint setting from appsettings: {Enabled}", enabled);
+            return enabled;
+        }
+
+        // Check environment variable
+        var envSetting = config["AZURE_SPEECH_ENABLE_PRIVATE_ENDPOINT"];
+        _logger.LogInformation("DEBUG: AZURE_SPEECH_ENABLE_PRIVATE_ENDPOINT value: '{Value}'", envSetting ?? "null");
+
+        if (!string.IsNullOrEmpty(envSetting))
+        {
+            var enabled = bool.Parse(envSetting);
+            _logger.LogInformation("Using environment EnablePrivateEndpoint setting: {Enabled}", enabled);
+            return enabled;
         }
 
         // Auto-detect: if private endpoint URL is configured, enable it
-        var privateEndpoint = config["AzureSpeech:PrivateEndpoint"] ?? config["AZURE_SPEECH_PRIVATE_ENDPOINT"];
+        var privateEndpointFromSettings = config["AzureSpeech:PrivateEndpoint"];
+        var privateEndpointFromEnv = config["AZURE_SPEECH_PRIVATE_ENDPOINT"];
+        _logger.LogInformation("DEBUG: AzureSpeech:PrivateEndpoint value: '{Value}'", privateEndpointFromSettings ?? "null");
+        _logger.LogInformation("DEBUG: AZURE_SPEECH_PRIVATE_ENDPOINT value: '{Value}'", privateEndpointFromEnv ?? "null");
+
+        var privateEndpoint = privateEndpointFromSettings ?? privateEndpointFromEnv;
         var shouldEnable = !string.IsNullOrEmpty(privateEndpoint);
 
-        _logger.LogInformation("Private endpoint '{Endpoint}' - EnablePrivateEndpoint: {Enabled}",
+        _logger.LogInformation("Auto-detected private endpoint '{Endpoint}' - EnablePrivateEndpoint: {Enabled}",
             privateEndpoint ?? "null", shouldEnable);
 
         return shouldEnable;

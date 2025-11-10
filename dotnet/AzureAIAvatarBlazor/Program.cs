@@ -3,7 +3,9 @@ using AzureAIAvatarBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Load environment variables from .env file if it exists
+// Note: .env file loading is disabled to prioritize appsettings.Development.json
+// Uncomment the following code if you need to use .env file in production
+/*
 var envPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", ".env");
 if (File.Exists(envPath))
 {
@@ -22,10 +24,9 @@ if (File.Exists(envPath))
             Environment.SetEnvironmentVariable(key, value);
         }
     }
+    builder.Configuration.AddEnvironmentVariables();
 }
-
-// Add environment variables to configuration
-builder.Configuration.AddEnvironmentVariables();
+*/
 
 // Add user secrets support for development
 if (builder.Environment.IsDevelopment())

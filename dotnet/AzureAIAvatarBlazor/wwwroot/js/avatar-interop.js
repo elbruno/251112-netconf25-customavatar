@@ -11,6 +11,77 @@ window.avatarAppConfig = null;
 window.dotNetAvatarRef = null;
 window.microphoneActive = false;
 
+const AVATAR_START_TIMEOUT_MS = 30000;
+window.avatarStartControl = null;
+
+function initializeAvatarStartControl(resolve, reject) {
+    window.avatarStartControl = {
+        resolve,
+        reject,
+        timeoutId: null,
+        settled: false,
+        startTime: Date.now()
+    };
+}
+
+function settleAvatarStartControl(success, source, error) {
+    const control = window.avatarStartControl;
+    if (!control || control.settled) {
+        return;
+    }
+
+    control.settled = true;
+    if (control.timeoutId) {
+        clearTimeout(control.timeoutId);
+    }
+
+    const duration = Date.now() - control.startTime;
+    window.avatarStartControl = null;
+
+    if (success) {
+        console.log(`[Connection] ✅ Avatar start confirmed (${source}) in ${duration}ms`);
+        if (window.peerConnection) {
+            console.log('[Connection] Peer connection state:', window.peerConnection.connectionState);
+            console.log('[Connection] ICE connection state:', window.peerConnection.iceConnectionState);
+        }
+        control.resolve();
+    } else {
+        const err = error instanceof Error ? error : new Error(error || 'Avatar start failed');
+        const isCancellation = err && (err.name === 'AvatarStartCancelled' || err.isCancellation === true);
+        const status = isCancellation ? 'cancelled' : 'failed';
+        const emoji = isCancellation ? '⚠️' : '❌';
+        const logFn = isCancellation ? console.warn : console.error;
+
+        logFn(`[Connection] ${emoji} Avatar start ${status} (${source}) after ${duration}ms`, err);
+        if (window.peerConnection) {
+            logFn('[Connection] Peer connection state at failure:', window.peerConnection.connectionState);
+            logFn('[Connection] ICE connection state at failure:', window.peerConnection.iceConnectionState);
+        }
+        control.reject(err);
+    }
+}
+
+function clearAvatarStartControl(reason = 'manual') {
+    const control = window.avatarStartControl;
+    if (!control) {
+        return;
+    }
+
+    if (!control.settled) {
+        console.warn(`[Connection] Avatar start control cleared before settlement (${reason})`);
+        const cancellationError = new Error(`Avatar start cancelled (${reason})`);
+        cancellationError.name = 'AvatarStartCancelled';
+        cancellationError.isCancellation = true;
+        settleAvatarStartControl(false, `cleared (${reason})`, cancellationError);
+        return;
+    }
+
+    if (control.timeoutId) {
+        clearTimeout(control.timeoutId);
+    }
+    window.avatarStartControl = null;
+}
+
 // Initialize the Azure Speech SDK
 window.initializeAvatarSDK = function(dotNetRef) {
     if (dotNetRef) {
@@ -208,19 +279,45 @@ async function setupWebRTC(iceServerUrl, username, password, config) {
 
     // Handle ICE connection state changes
     window.peerConnection.oniceconnectionstatechange = function() {
-        console.log('[ICE] Connection state changed:', window.peerConnection.iceConnectionState);
-        if (window.peerConnection.iceConnectionState === 'failed') {
+        if (!window.peerConnection) {
+            return;
+        }
+
+        const state = window.peerConnection.iceConnectionState;
+        console.log('[ICE] Connection state changed:', state);
+        if (state === 'failed') {
             console.error('[ICE] Connection failed. This may indicate network or firewall issues.');
+            settleAvatarStartControl(false, 'iceConnectionState failed', new Error('ICE connection failed before avatar start completed.'));
+        } else if (state === 'connected') {
+            console.log('[ICE] Connection established (connected state)');
+            if (window.avatarStartControl && !window.avatarStartControl.settled) {
+                const peerConnected = window.peerConnection.connectionState === 'connected';
+                console.log('[ICE] Peer connection state at ICE connected:', window.peerConnection.connectionState);
+                if (peerConnected) {
+                    settleAvatarStartControl(true, 'iceConnectionState connected');
+                } else {
+                    console.log('[ICE] Waiting for peerConnection connected before confirming avatar start');
+                }
+            }
         }
     };
 
     // Handle connection state changes
     window.peerConnection.onconnectionstatechange = function() {
-        console.log('[WebRTC] Connection state changed:', window.peerConnection.connectionState);
-        if (window.peerConnection.connectionState === 'failed') {
+        if (!window.peerConnection) {
+            return;
+        }
+
+        const state = window.peerConnection.connectionState;
+        console.log('[WebRTC] Connection state changed:', state);
+        if (state === 'failed') {
             console.error('[WebRTC] Connection failed. Avatar may not load properly.');
-        } else if (window.peerConnection.connectionState === 'connected') {
+            settleAvatarStartControl(false, 'peerConnection failed', new Error('WebRTC connection failed before avatar start completed.'));
+        } else if (state === 'connected') {
             console.log('[WebRTC] Successfully connected!');
+            settleAvatarStartControl(true, 'peerConnection connected');
+        } else if (state === 'disconnected' && window.avatarStartControl && !window.avatarStartControl.settled) {
+            console.warn('[WebRTC] Connection disconnected before avatar start completed.');
         }
     };
 
@@ -259,14 +356,44 @@ async function setupWebRTC(iceServerUrl, username, password, config) {
     let speechConfig;
     if (config.azureSpeech.enablePrivateEndpoint && config.azureSpeech.privateEndpoint) {
         // Use private endpoint
-        const privateEndpoint = config.azureSpeech.privateEndpoint;
-        // Extract the host part and construct WebSocket URL
-        const endpointHost = privateEndpoint.startsWith('https://') 
-            ? privateEndpoint.slice(8) 
-            : privateEndpoint;
-        const wsUrl = `wss://${endpointHost}/tts/cognitiveservices/websocket/v1?enableTalkingAvatar=true`;
-        console.log('[Config] Using private endpoint WebSocket URL:', wsUrl);
-        speechConfig = SpeechSDK.SpeechConfig.fromEndpoint(new URL(wsUrl), config.azureSpeech.apiKey);
+        const privateEndpointRaw = config.azureSpeech.privateEndpoint.trim();
+
+        try {
+            // Ensure the endpoint can be parsed as a URL
+            const endpointUrl = new URL(
+                /^(https?|wss?):\/\//i.test(privateEndpointRaw)
+                    ? privateEndpointRaw
+                    : `https://${privateEndpointRaw}`
+            );
+
+            // Normalize protocol to secure WebSocket
+            if (endpointUrl.protocol === 'http:' || endpointUrl.protocol === 'ws:') {
+                endpointUrl.protocol = 'wss:';
+            } else if (endpointUrl.protocol === 'https:') {
+                endpointUrl.protocol = 'wss:';
+            }
+
+            // Ensure the path targets the avatar websocket endpoint without duplication
+            // For avatar with private endpoint, use the avatar-specific path
+            const requiredPath = '/cognitiveservices/avatar/websocket/v1';
+            const sanitizedPath = endpointUrl.pathname.replace(/\/+$/g, '');
+            if (!sanitizedPath.includes(requiredPath)) {
+                endpointUrl.pathname = requiredPath;
+            } else {
+                endpointUrl.pathname = sanitizedPath || requiredPath;
+            }
+
+            // Guarantee avatar feature flag
+            endpointUrl.searchParams.set('enableTalkingAvatar', 'true');
+
+            const wsUrl = endpointUrl.toString();
+            console.log('[Config] Using private endpoint WebSocket URL:', wsUrl);
+
+            speechConfig = SpeechSDK.SpeechConfig.fromEndpoint(endpointUrl, config.azureSpeech.apiKey);
+        } catch (urlError) {
+            console.error('[Config] Invalid private endpoint URL:', privateEndpointRaw, urlError);
+            throw new Error('Invalid private endpoint URL. Please verify Azure Speech configuration.');
+        }
     } else {
         // Use standard subscription
         console.log('[Config] Using standard subscription endpoint');
@@ -341,6 +468,13 @@ async function setupWebRTC(iceServerUrl, username, password, config) {
     // Set up avatar event handler before starting
     window.avatarSynthesizer.avatarEventReceived = function(s, e) {
         console.log('[Avatar Event] Offset:', e.offset, 'Description:', e.description);
+
+        const description = (e?.description || '').toLowerCase();
+        if (description.includes('connected') || description.includes('started')) {
+            settleAvatarStartControl(true, `avatarEvent ${e.description || 'connected'}`);
+        } else if ((description.includes('failed') || description.includes('error')) && window.avatarStartControl && !window.avatarStartControl.settled) {
+            settleAvatarStartControl(false, `avatarEvent ${e.description || 'error'}`, new Error(e.description || 'Avatar event error'));
+        }
     };
 
     // Start avatar connection with proper callback handling
@@ -349,48 +483,55 @@ async function setupWebRTC(iceServerUrl, username, password, config) {
     console.log('[Connection] ICE connection state:', window.peerConnection.iceConnectionState);
     
     return new Promise((resolve, reject) => {
-        const startTime = Date.now();
         console.log('[Connection] Calling startAvatarAsync...');
-        
-        // Set a timeout in case the callback never fires
-        const timeout = setTimeout(() => {
-            console.error('[Timeout] ❌ Avatar start timed out after 30 seconds');
-            console.error('[Timeout] Peer connection state:', window.peerConnection.connectionState);
-            console.error('[Timeout] ICE connection state:', window.peerConnection.iceConnectionState);
-            reject(new Error('Avatar start timeout - connection did not complete'));
-        }, 30000);
-        
+
+        initializeAvatarStartControl(
+            () => resolve(),
+            (err) => reject(err)
+        );
+
+        const timeoutId = setTimeout(() => {
+            console.error(`[Timeout] ❌ Avatar start timed out after ${AVATAR_START_TIMEOUT_MS / 1000} seconds`);
+            if (window.peerConnection) {
+                console.error('[Timeout] Peer connection state:', window.peerConnection.connectionState);
+                console.error('[Timeout] ICE connection state:', window.peerConnection.iceConnectionState);
+            }
+            settleAvatarStartControl(false, 'timeout', new Error('Avatar start timeout - connection did not complete'));
+        }, AVATAR_START_TIMEOUT_MS);
+
+        if (window.avatarStartControl) {
+            window.avatarStartControl.timeoutId = timeoutId;
+        }
+
         window.avatarSynthesizer.startAvatarAsync(
             window.peerConnection,
             (result) => {
-                clearTimeout(timeout);
-                const duration = Date.now() - startTime;
-                
-                if (result.reason === SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
-                    console.log(`[Success] ✅ Avatar started successfully in ${duration}ms!`);
-                    console.log('[Success] Result reason:', result.reason);
-                    console.log('[Success] Final peer connection state:', window.peerConnection.connectionState);
-                    console.log('[Success] Final ICE connection state:', window.peerConnection.iceConnectionState);
-                    resolve();
+                console.log('[Connection] startAvatarAsync success callback invoked:', result);
+                if (!result) {
+                    settleAvatarStartControl(false, 'startAvatarAsync callback', new Error('No result returned from startAvatarAsync.'));
+                    return;
+                }
+
+                const reason = result.reason;
+                const reasonLabel = typeof reason === 'number' ? `code ${reason}` : String(reason);
+
+                if (reason === SpeechSDK.ResultReason.SynthesizingAudioCompleted ||
+                    reason === SpeechSDK.ResultReason.SynthesizingAudioStarted) {
+                    console.log('[Success] startAvatarAsync callback reason:', reasonLabel);
+                    settleAvatarStartControl(true, `startAvatarAsync (${reasonLabel})`);
+                } else if (result.errorDetails) {
+                    settleAvatarStartControl(false, 'startAvatarAsync unexpected', new Error(result.errorDetails));
                 } else {
-                    console.error(`[Error] ❌ Avatar start returned unexpected reason: ${result.reason}`);
-                    console.error('[Error] Error details:', result.errorDetails);
-                    reject(new Error('Avatar start failed: ' + result.errorDetails));
+                    settleAvatarStartControl(false, 'startAvatarAsync unexpected', new Error(`Unexpected result reason: ${reasonLabel}`));
                 }
             },
             (error) => {
-                clearTimeout(timeout);
-                const duration = Date.now() - startTime;
-                console.error(`[Error] ❌ Avatar start failed after ${duration}ms`);
-                console.error('[Error] Error details:', error);
-                console.error('[Error] Error type:', typeof error);
-                console.error('[Error] Error string:', String(error));
-                console.error('[Error] Peer connection state:', window.peerConnection.connectionState);
-                console.error('[Error] ICE connection state:', window.peerConnection.iceConnectionState);
-                reject(new Error('Failed to start avatar: ' + error));
+                console.error('[Connection] startAvatarAsync error callback invoked:', error);
+                const err = error instanceof Error ? error : new Error(String(error || 'Unknown error'));
+                settleAvatarStartControl(false, 'startAvatarAsync error', err);
             }
         );
-        
+
         console.log('[Connection] startAvatarAsync called, waiting for callback...');
     });
 }
@@ -427,6 +568,8 @@ function setupAudioGain(audioElement, stream, gain) {
 window.stopAvatarSession = async function() {
     try {
         await window.stopMicrophone(true);
+
+        clearAvatarStartControl('session stopped');
 
         if (window.avatarSynthesizer) {
             window.avatarSynthesizer.close();
@@ -517,21 +660,36 @@ window.speakText = async function(text) {
         console.log('[Speak] Use built-in voice:', useBuiltInVoice);
         console.log('[Speak] TTS voice:', ttsVoice);
         console.log('[Speak] Text length:', text.length);
+        console.log('[Speak] SSML:', ssml.substring(0, Math.min(200, ssml.length)));
+        console.log('[Speak] Peer connection state before speak:', window.peerConnection?.connectionState);
+        console.log('[Speak] ICE connection state before speak:', window.peerConnection?.iceConnectionState);
         
         await new Promise((resolve, reject) => {
+            const speakStartTime = Date.now();
             window.avatarSynthesizer.speakSsmlAsync(
                 ssml,
                 (result) => {
-                    if (result.reason === SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
-                        console.log('[Speak] ✅ Speech synthesis completed');
+                    const duration = Date.now() - speakStartTime;
+                    console.log('[Speak] Callback invoked after', duration, 'ms');
+                    console.log('[Speak] Result reason:', result?.reason, '(SynthesizingAudioCompleted=' + SpeechSDK.ResultReason.SynthesizingAudioCompleted + ')');
+                    console.log('[Speak] Peer connection state after callback:', window.peerConnection?.connectionState);
+                    console.log('[Speak] ICE connection state after callback:', window.peerConnection?.iceConnectionState);
+                    
+                    if (result && result.reason === SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
+                        console.log('[Speak] ✅ Speech synthesis completed successfully');
                         resolve();
                     } else {
-                        console.error('[Speak] ❌ Speech synthesis failed:', result.errorDetails);
-                        reject(new Error(result.errorDetails));
+                        const errorMsg = result?.errorDetails || 'Unknown error';
+                        console.error('[Speak] ❌ Speech synthesis failed. Reason:', result?.reason, 'Error:', errorMsg);
+                        reject(new Error(errorMsg));
                     }
                 },
                 (error) => {
-                    console.error('[Speak] ❌ Error speaking text:', error);
+                    const duration = Date.now() - speakStartTime;
+                    console.error('[Speak] ❌ Error callback invoked after', duration, 'ms');
+                    console.error('[Speak] Error speaking text:', error);
+                    console.error('[Speak] Peer connection state on error:', window.peerConnection?.connectionState);
+                    console.error('[Speak] ICE connection state on error:', window.peerConnection?.iceConnectionState);
                     reject(error);
                 }
             );

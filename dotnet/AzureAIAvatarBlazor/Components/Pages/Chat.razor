@@ -13,7 +13,7 @@
 
 <div class="container-fluid mt-3">
     <div class="d-flex flex-wrap gap-2 mb-3">
-        <button class="btn btn-primary" @onclick="StartAvatarSession" disabled="@isSessionActive">
+        <button class="btn btn-primary" @onclick="StartAvatarSession" disabled="@(isSessionActive || isSessionStarting)">
             <i class="bi bi-play-circle me-1"></i>Open Avatar Session
         </button>
         <button class="btn btn-secondary" @onclick="ToggleMicrophone" disabled="@(!isSessionActive)">
@@ -83,12 +83,21 @@
                         {
                             <div class="input-group">
                                 <input type="text" class="form-control" placeholder="Type a message..." 
-                                       @bind="userMessage" @onkeypress="HandleKeyPress" disabled="@(!isSessionActive)">
+                                       @bind="userMessage" @onkeydown="HandleKeyPress" disabled="@(!isSessionActive)">
                                 <button class="btn btn-primary" @onclick="SendMessage" disabled="@(!isSessionActive || string.IsNullOrWhiteSpace(userMessage))">
                                     <i class="bi bi-send"></i>
                                 </button>
                             </div>
                         }
+
+                        <div class="d-flex flex-wrap gap-2 mt-2">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="SendHelloAsync" disabled="@(!isSessionActive)">
+                                Hello
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="SendDotNetConfAsync" disabled="@(!isSessionActive)">
+                                What can you tell me about .NET Conf 2025
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -102,6 +111,7 @@
     private string userMessage = string.Empty;
     private bool showTypeMessage = false;
     private bool isSessionActive = false;
+    private bool isSessionStarting = false;
     private bool isSpeaking = false;
     private bool isTyping = false;
     private bool isMicrophoneActive = false;
@@ -136,7 +146,7 @@
         try
         {
             Console.WriteLine("Starting avatar session...");
-            isSessionActive = true;
+            isSessionStarting = true;
             StateHasChanged();
             
             // Serialize config with camelCase for JavaScript
@@ -149,22 +159,39 @@
             
             Console.WriteLine($"Config JSON: {configJson}");
             await JSRuntime.InvokeVoidAsync("startAvatarSessionFromJson", configJson);
+            isSessionActive = true;
+            isSessionStarting = false;
             Console.WriteLine("Avatar session started successfully");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error starting avatar session: {ex.Message}");
-            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            var errorMessage = ex.Message ?? string.Empty;
+            var stackTrace = ex.StackTrace ?? "<no stack trace>";
+            var isCancellation = errorMessage.Contains("Avatar start cancelled", System.StringComparison.OrdinalIgnoreCase);
+
+            if (isCancellation)
+            {
+                Console.WriteLine("Avatar session start was cancelled by the user.");
+            }
+            else
+            {
+                Console.WriteLine($"Error starting avatar session: {errorMessage}");
+                Console.WriteLine($"Stack trace: {stackTrace}");
+            }
             isSessionActive = false;
+            isSessionStarting = false;
             StateHasChanged();
             
-            // Show error to user
-            chatMessages.Add(new ChatMessage 
-            { 
-                Role = "system", 
-                Content = $"Error starting avatar: {ex.Message}" 
-            });
-            StateHasChanged();
+            if (!isCancellation)
+            {
+                // Show error to user
+                chatMessages.Add(new ChatMessage
+                {
+                    Role = "system",
+                    Content = $"Error starting avatar: {errorMessage}"
+                });
+                StateHasChanged();
+            }
         }
     }
 
@@ -175,6 +202,7 @@
             await JSRuntime.InvokeVoidAsync("stopAvatarSession");
             isSessionActive = false;
             isMicrophoneActive = false;
+            isSessionStarting = false;
             StateHasChanged();
         }
         catch (Exception ex)
@@ -236,12 +264,33 @@
         }
     }
 
-    private async Task SendMessage()
-    {
-        if (string.IsNullOrWhiteSpace(userMessage)) return;
+    private Task SendMessage() => ProcessOutgoingMessageAsync(userMessage, clearInput: true);
 
-        var message = userMessage.Trim();
-        userMessage = string.Empty;
+    private Task SendPredefinedMessage(string presetMessage) => ProcessOutgoingMessageAsync(presetMessage, clearInput: true);
+
+    private Task SendHelloAsync() => SendPredefinedMessage("Hello");
+
+    private Task SendDotNetConfAsync() => SendPredefinedMessage("What can you tell me about .NET Conf 2025");
+
+    private async Task ProcessOutgoingMessageAsync(string? content, bool clearInput)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            if (clearInput && !string.IsNullOrEmpty(userMessage))
+            {
+                userMessage = string.Empty;
+                StateHasChanged();
+            }
+            return;
+        }
+
+        var message = content.Trim();
+
+        if (clearInput)
+        {
+            userMessage = string.Empty;
+            StateHasChanged();
+        }
 
         Console.WriteLine($"Sending message: {message}");
 
@@ -253,16 +302,16 @@
         try
         {
             Console.WriteLine("Getting chat completion from OpenAI...");
-            
+
             // Get messages for API (including system message)
-            var messagesForAPI = chatMessages.Select(m => new ChatMessage 
-            { 
-                Role = m.Role, 
-                Content = m.Content 
+            var messagesForAPI = chatMessages.Select(m => new ChatMessage
+            {
+                Role = m.Role,
+                Content = m.Content
             }).ToList();
 
             var assistantResponse = new System.Text.StringBuilder();
-            
+
             await foreach (var chunk in OpenAIService.GetChatCompletionStreamAsync(messagesForAPI))
             {
                 assistantResponse.Append(chunk);
@@ -270,21 +319,31 @@
 
             var fullResponse = assistantResponse.ToString();
             Console.WriteLine($"Received response: {fullResponse.Substring(0, Math.Min(100, fullResponse.Length))}...");
-            
+
             chatMessages.Add(new ChatMessage { Role = "assistant", Content = fullResponse });
             StateHasChanged();
-            
+
             // Speak the response using avatar
             if (isSessionActive)
             {
                 Console.WriteLine("Speaking text via avatar...");
                 isSpeaking = true;
                 StateHasChanged();
-                
-                await JSRuntime.InvokeVoidAsync("speakText", fullResponse);
-                
-                isSpeaking = false;
-                Console.WriteLine("Finished speaking");
+
+                try
+                {
+                    await JSRuntime.InvokeVoidAsync("speakText", fullResponse);
+                    Console.WriteLine("✅ Avatar speech completed successfully");
+                }
+                catch (Exception speakEx)
+                {
+                    Console.WriteLine($"⚠️ Speech error: {speakEx.Message}");
+                    // Don't throw - allow conversation to continue
+                }
+                finally
+                {
+                    isSpeaking = false;
+                }
             }
             else
             {
@@ -295,10 +354,10 @@
         {
             Console.WriteLine($"Error in chat: {ex.Message}");
             Console.WriteLine($"Stack trace: {ex.StackTrace}");
-            chatMessages.Add(new ChatMessage 
-            { 
-                Role = "assistant", 
-                Content = $"Error: {ex.Message}. Please check the browser console for more details." 
+            chatMessages.Add(new ChatMessage
+            {
+                Role = "assistant",
+                Content = $"Error: {ex.Message}. Please check the browser console for more details."
             });
         }
         finally
