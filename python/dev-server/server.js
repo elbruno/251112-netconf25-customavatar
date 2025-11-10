@@ -37,11 +37,15 @@ app.use((req, res, next) => {
 // Parse JSON bodies for simple local APIs (dev only)
 app.use(express.json({ limit: '1mb' }));
 
-// Serve static assets from the repository root so we can open chat.html/config.html
-const rootDir = path.resolve(__dirname, '..');
+// Serve static assets from the python folder FIRST (js, css, prompts, image, avatar)
+const pythonDir = path.resolve(__dirname, '..');
+app.use(express.static(pythonDir));
+
+// Also serve from repository root for HTML files
+const rootDir = path.resolve(__dirname, '..', '..');
 app.use(express.static(rootDir));
 
-// Default route -> chat.html
+// Default route -> chat.html (from root)
 app.get('/', (req, res) => {
   res.sendFile(path.join(rootDir, 'chat.html'));
 });
