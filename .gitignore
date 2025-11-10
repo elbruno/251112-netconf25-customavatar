@@ -71,6 +71,9 @@ jspm_packages/
 # Azure Functions
 local.settings.json
 
+# .NET Development Settings (contains sensitive data)
+appsettings.Development.json
+
 # .NET / C# Build artifacts
 bin/
 obj/
@@ -118,3 +121,5 @@ Desktop.ini
 *.tmp
 *.temp
 
+dotnet/AzureAIAvatarBlazor/appsettings.Development.json
+dotnet/AzureAIAvatarBlazor/appsettings.Development.json
