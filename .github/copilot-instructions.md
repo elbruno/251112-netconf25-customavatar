@@ -62,13 +62,25 @@ node server.js  # Serves on http://localhost:5173
 ### Running the .NET App
 
 ```bash
+# Run via Aspire AppHost (recommended - includes dashboard)
+cd dotnet/AzureAIAvatarBlazor.AppHost
+dotnet run  # Launches app + Aspire Dashboard
+
+# Configure secrets (applies to both AppHost and Blazor app)
 cd dotnet/AzureAIAvatarBlazor
 dotnet user-secrets set "AzureSpeech:ApiKey" "your-key"
 dotnet user-secrets set "AzureOpenAI:Endpoint" "https://..."
+
+# Or run Blazor app directly (without Aspire)
+cd dotnet/AzureAIAvatarBlazor
 dotnet run  # Serves on https://localhost:5001
 ```
 
-**Key**: Never edit `appsettings.Development.json` directly (gitignored). Use User Secrets or environment variables.
+**Key**:
+
+- **Aspire AppHost** orchestrates the app and provides dashboard at `https://localhost:15216` (or check console output)
+- Never edit `appsettings.Development.json` directly (gitignored). Use User Secrets or environment variables
+- AppHost uses `AppHost.cs` to define project references: `builder.AddProject<Projects.AzureAIAvatarBlazor>("azureaiavatarblazor")`
 
 ### Configuration Priority
 
@@ -163,8 +175,10 @@ When modifying code, verify:
 - `python/dev-server/server.js`: Dev server logic, `.env` exposure, prompt profile API
 - `python/js/config.js`: Configuration management, avatar catalog, voice list
 - `python/js/chat.js`: Avatar session lifecycle, WebRTC, audio processing
+- `dotnet/AzureAIAvatarBlazor.AppHost/AppHost.cs`: Aspire orchestration entry point
 - `dotnet/AzureAIAvatarBlazor/Program.cs`: DI registration, middleware setup
-- `dotnet/Services/ConfigurationService.cs`: Config priority logic, auto-detection
+- `dotnet/AzureAIAvatarBlazor/Services/ConfigurationService.cs`: Config priority logic, auto-detection
+- `dotnet/AzureAIAvatarBlazor.ServiceDefaults/`: Shared OpenTelemetry & resilience configuration
 - `.vscode/tasks.json`: VS Code tasks for bypassing PowerShell restrictions
 
 ## Security Notes
@@ -178,5 +192,7 @@ When modifying code, verify:
 
 - **Add new avatar**: Update `avatarCharacters` array in `js/config.js`
 - **Add prompt profile**: Create `prompts/your-profile.md`, add entry to `prompts/index.json`
-- **Add .NET service**: Follow interface pattern (`IYourService`), register in `Program.cs`
+- **Add .NET service**: Follow interface pattern (`IYourService`), register in `AzureAIAvatarBlazor/Program.cs`
+- **Add Aspire resource**: Update `AzureAIAvatarBlazor.AppHost/AppHost.cs` (e.g., Redis, SQL, etc.)
+- **Modify telemetry**: Edit `AzureAIAvatarBlazor.ServiceDefaults/Extensions.cs` for custom metrics/traces
 - **Modify UI theme**: Edit `python/css/theme-system.css` (CSS variables)

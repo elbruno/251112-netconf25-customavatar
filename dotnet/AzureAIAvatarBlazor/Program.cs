@@ -5,30 +5,6 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-// Note: .env file loading is disabled to prioritize appsettings.Development.json
-// Uncomment the following code if you need to use .env file in production
-/*
-var envPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", ".env");
-if (File.Exists(envPath))
-{
-    Console.WriteLine($"Loading environment variables from: {envPath}");
-    foreach (var line in File.ReadAllLines(envPath))
-    {
-        var trimmedLine = line.Trim();
-        if (string.IsNullOrWhiteSpace(trimmedLine) || trimmedLine.StartsWith("#"))
-            continue;
-
-        var parts = trimmedLine.Split('=', 2);
-        if (parts.Length == 2)
-        {
-            var key = parts[0].Trim();
-            var value = parts[1].Trim().Trim('\'', '"');
-            Environment.SetEnvironmentVariable(key, value);
-        }
-    }
-    builder.Configuration.AddEnvironmentVariables();
-}
-*/
 
 // Add user secrets support for development
 if (builder.Environment.IsDevelopment())
