@@ -84,31 +84,54 @@ async function setupWebRTC(iceServerUrl, username, password, config) {
         isCustom: config.avatar.isCustomAvatar 
     });
 
+    // Clean up any existing connection before creating a new one
+    if (window.peerConnection) {
+        try {
+            console.warn('[WebRTC] Existing peer connection found. Closing before creating a new one.');
+            window.peerConnection.ontrack = null;
+            window.peerConnection.onicecandidate = null;
+            window.peerConnection.oniceconnectionstatechange = null;
+            window.peerConnection.onconnectionstatechange = null;
+            window.peerConnection.onsignalingstatechange = null;
+            window.peerConnection.onicegatheringstatechange = null;
+            window.peerConnection.close();
+        } catch (cleanupError) {
+            console.error('[WebRTC] Error closing existing peer connection:', cleanupError);
+        }
+    }
+
     // Create peer connection
     window.peerConnection = new RTCPeerConnection({
         iceServers: [{
             urls: [iceServerUrl],
             username: username,
             credential: password
-        }]
+        }],
+        bundlePolicy: 'max-bundle',
+        iceTransportPolicy: 'all',
+        sdpSemantics: 'unified-plan'
     });
 
     console.log('Peer connection created');
 
-    // Ensure we have media transceivers for receiving audio/video from the service
-    try {
-        const videoTransceiver = window.peerConnection.addTransceiver('video', { direction: 'recvonly' });
-        console.log('[WebRTC] Video transceiver added:', videoTransceiver?.mid || 'unknown mid');
-    } catch (error) {
-        console.error('[WebRTC] ❌ Failed to add video transceiver:', error);
-        throw error;
-    }
+    const ensureTransceiver = (kind) => {
+        try {
+            const transceiver = window.peerConnection.addTransceiver(kind, { direction: 'recvonly' });
+            console.log(`[WebRTC] ${kind} transceiver added (recvonly) - mid:`, transceiver?.mid ?? 'n/a');
+            return transceiver;
+        } catch (recvOnlyError) {
+            console.warn(`[WebRTC] Unable to add ${kind} transceiver with recvonly. Retrying with default direction.`, recvOnlyError);
+            const fallbackTransceiver = window.peerConnection.addTransceiver(kind);
+            console.log(`[WebRTC] ${kind} transceiver added (default direction) - mid:`, fallbackTransceiver?.mid ?? 'n/a');
+            return fallbackTransceiver;
+        }
+    };
 
     try {
-        const audioTransceiver = window.peerConnection.addTransceiver('audio', { direction: 'recvonly' });
-        console.log('[WebRTC] Audio transceiver added:', audioTransceiver?.mid || 'unknown mid');
+        ensureTransceiver('video');
+        ensureTransceiver('audio');
     } catch (error) {
-        console.error('[WebRTC] ❌ Failed to add audio transceiver:', error);
+        console.error('[WebRTC] ❌ Failed to add media transceivers:', error);
         throw error;
     }
 
