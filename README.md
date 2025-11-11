@@ -1,281 +1,371 @@
-## Azure AI Foundry TTS Talking Avatar Demo
+# Azure AI Avatar Demo
 
-Browser-based Talking Avatar built with Azure Speech (STT/TTS + Avatar) and Azure OpenAI. It ships with a Microsoft-inspired UI, persistent configuration, .env tooling for local dev, and a two‑column chat layout with subtitles and audio gain.
+An interactive talking avatar application powered by Azure AI Services. This repository showcases how to build conversational AI experiences using Azure Speech Services (Speech-to-Text, Text-to-Speech, and Avatar) combined with Azure OpenAI for intelligent responses.
 
-## Highlights
-- Microsoft/Fluent‑style theme (Bootstrap 5 + Bootstrap Icons)
-- Consistent header and full‑width gradient footer with developer credit
-- Configuration UI with localStorage persistence and optional .env auto‑load (http/https only)
-- Dependent dropdowns: Avatar Character → Style (custom avatars supported)
-- TTS voice selector (popular voices + custom values)
-- Built‑in voice routing for custom avatars (auto‑clears Custom Voice endpoint)
-- Web Audio Gain (0.1–5.0x) for louder playback
-- Chat by microphone and/or “Type Message” text input
-- Subtitles and Auto‑Reconnect toggles
-- Two‑column layout: Avatar (left) + Conversation (right)
-- Quick “Test connection” buttons for Speech and Azure OpenAI
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
+## 🎯 What is This?
 
-## Implementations
+This project demonstrates how to create a **talking avatar** that can:
+- 👂 Listen to your voice (Speech-to-Text)
+- 🤖 Generate intelligent responses (Azure OpenAI)
+- 🗣️ Speak back with natural voice (Text-to-Speech)
+- 👤 Display synchronized lip movements (Avatar video streaming)
 
-This repository includes **two implementations** of the same Azure AI Avatar demo:
+The avatar appears in a video window and responds to your questions in real-time, creating an immersive conversational experience.
 
-### 1. JavaScript/HTML Implementation (Production Ready)
-**Location**: `python/` folder (root HTML files)
+## 🚀 Who is This For?
 
-**Quick Start**:
-- Open `config.html` or `chat.html` directly in browser, or
-- Use the dev server in `python/dev-server/` for `.env.json` support
+- **Developers** exploring Azure AI capabilities
+- **Solution Architects** designing conversational AI systems
+- **Product Teams** building customer service avatars, virtual assistants, or educational tools
+- **Students** learning about Azure AI Services integration
 
-**Best for**: Quick demos, web-based deployment, learning the Azure Speech SDK
+## 📦 What's Included?
 
-### 2. .NET 9 Blazor with Aspire (Modern Cloud-Native)
+This repository includes **two complete implementations** of the same application:
+
+### 1. JavaScript/HTML Implementation ⚡
+**Location**: `python/` folder + root HTML files
+
+**Best for:**
+- Quick prototyping and demos
+- Web-based deployments
+- Learning Azure Speech SDK basics
+- Static hosting (GitHub Pages, Azure Static Web Apps)
+
+**Tech Stack:**
+- Vanilla JavaScript
+- HTML5 + Bootstrap 5
+- Azure Speech SDK (CDN)
+- Express.js dev server
+
+[👉 Get Started with JavaScript →](python/README.md)
+
+### 2. .NET 9 Blazor with Aspire 🔥
 **Location**: `dotnet/` folder
 
-**Quick Start**:
+**Best for:**
+- Production enterprise applications
+- Cloud-native deployments
+- Teams using .NET ecosystem
+- Applications requiring observability and telemetry
+
+**Tech Stack:**
+- .NET 9 + Blazor Server
+- .NET Aspire for orchestration
+- Azure SDK for .NET
+- OpenTelemetry built-in
+
+[👉 Get Started with .NET →](dotnet/README.md)
+
+## 🎬 Quick Start
+
+### Prerequisites
+
+Before you begin, you'll need:
+
+1. **Azure Subscription** - [Create free account](https://azure.microsoft.com/free/)
+2. **Azure Services:**
+   - [Azure Speech Service](https://portal.azure.com/#create/Microsoft.CognitiveServicesSpeechServices) - For STT/TTS and Avatar
+   - [Azure OpenAI Service](https://portal.azure.com/#create/Microsoft.CognitiveServicesOpenAI) - For chat intelligence
+3. **Development Tools** (choose based on implementation):
+   - JavaScript: Node.js 18+ and a modern browser
+   - .NET: .NET 9 SDK and `dotnet workload install aspire`
+
+### Choose Your Path
+
+<table>
+<tr>
+<td width="50%">
+
+#### JavaScript Quick Start
+
 ```bash
-# Prerequisites
-dotnet workload install aspire
+# Clone the repository
+git clone https://github.com/elbruno/customavatarlabs.git
+cd customavatarlabs
 
-# Configure (one-time)
-cd dotnet/AzureAIAvatarBlazor.AppHost
-dotnet user-secrets set "ConnectionStrings:openai" "Endpoint=https://your-resource.openai.azure.com/;Key=your-key;"
-dotnet user-secrets set "ConnectionStrings:speech" "Endpoint=https://westus2.api.cognitive.microsoft.com/;Key=your-key;"
+# Copy and configure environment
+cp python/.env.example python/.env
+# Edit python/.env with your Azure credentials
 
-# Run (starts both Aspire Dashboard and Blazor app)
-dotnet run
-# OR press Ctrl+Shift+B in VS Code
-```
-
-**Access**:
-- Aspire Dashboard: https://localhost:15216 (metrics, logs, tracing)
-- Blazor App: https://localhost:5001 (main application)
-
-**Best for**: 
-- Production deployments with automatic Azure provisioning (`azd up`)
-- Enterprise applications requiring observability and telemetry
-- Teams using .NET and Visual Studio
-- Learning .NET Aspire orchestration
-
-**Key Features**:
-- ✅ No `appsettings.json` files - all config via Aspire AppHost
-- ✅ Dependency injection with Aspire-managed Azure clients
-- ✅ Built-in OpenTelemetry (logs, metrics, traces)
-- ✅ One-command deployment to Azure with `azd up`
-- ✅ VS Code tasks for easy development (Ctrl+Shift+B)
-
-**Documentation**:
-- [Quick Start Guide](dotnet/docs/QUICKSTART.md)
-- [Architecture](dotnet/docs/ARCHITECTURE.md)
-- [Deployment](dotnet/docs/DEPLOYMENT.md)
-- [Migration Summary](IMPLEMENTATION-COMPLETE.md)
-
----
-## Quick start
-Option A — Open from disk (file://)
-1) Open `config.html` or `chat.html` in your browser.
-2) In `config.html`, click “Import .env (local file)” and select your `.env`. Values are applied and saved to localStorage.
-3) Note: Auto‑loading `/.env.json` is intentionally skipped on file:// to avoid CORS noise.
-
-Option B — Dev server for `.env.json`
-1) Start the helper in `dev-server/`:
-
-```powershell
-cd dev-server
+# Start dev server
+cd python/dev-server
 npm install
 npm start
+
+# Open browser
+# http://localhost:5173/config.html
 ```
 
-2) Serve the app over http/https (any static server) and open `config.html`.
-3) The page will auto‑try `/.env.json` and populate values if available. This helper is for local development only.
+[📖 Full JavaScript Guide →](python/README.md)
 
-PowerShell policy note (npm.ps1 blocked)
-If you see "running scripts is disabled on this system" in PowerShell, you can start the server directly with Node and a temporary policy bypass for the current process:
+</td>
+<td width="50%">
 
-Generic (adjust the path to your repo):
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass; cd "<path-to-repo>\dev-server"; node server.js
+#### .NET Quick Start
+
+```bash
+# Clone the repository
+git clone https://github.com/elbruno/customavatarlabs.git
+cd customavatarlabs/dotnet
+
+# Install Aspire workload
+dotnet workload install aspire
+
+# Configure secrets (AppHost)
+cd AzureAIAvatarBlazor.AppHost
+dotnet user-secrets set "ConnectionStrings:openai" \
+  "Endpoint=https://YOUR_RESOURCE.openai.azure.com/;Key=YOUR_KEY;"
+dotnet user-secrets set "ConnectionStrings:speech" \
+  "Endpoint=https://westus2.api.cognitive.microsoft.com/;Key=YOUR_KEY;"
+
+# Run with Aspire
+dotnet run
+# OR press Ctrl+Shift+B in VS Code
+
+# Open browser
+# https://localhost:5001 (Blazor App)
+# https://localhost:15216 (Aspire Dashboard)
 ```
 
-Example with this repo path:
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass; cd "c:\GIT Repos\AzureAIFoundry-TTS-Avatar-Demo\dev-server"; node server.js
-```
+[📖 Full .NET Guide →](dotnet/README.md)
 
-### HTTPS on localhost (optional)
-Some browsers/features require https. The dev server can start over HTTPS if local certs exist:
+</td>
+</tr>
+</table>
 
-Default locations (already git‑ignored):
-- `dev-server/certs/localhost-key.pem`
-- `dev-server/certs/localhost.pem`
+## 🌟 Key Features
 
-Generate trusted certs on Windows using mkcert:
-1) Install mkcert (Chocolatey):
-    ```powershell
-    choco install mkcert -y
-    ```
-2) Install the local CA (one‑time):
-    ```powershell
-    mkcert -install
-    ```
-3) Create certs in `dev-server/certs`:
-    ```powershell
-    cd dev-server/certs
-    mkcert -key-file localhost-key.pem -cert-file localhost.pem localhost 127.0.0.1 ::1
-    ```
-4) Start the server (uses HTTPS automatically if certs are present):
-    ```powershell
-    cd ../
-    npm start
-    # o: node server.js
-    ```
+### Core Capabilities
+- ✅ **Real-time Avatar Video** - WebRTC-based streaming with lip sync
+- ✅ **Multi-language Support** - Automatic language detection for 40+ languages
+- ✅ **Custom Avatars** - Use built-in avatars or your own custom characters
+- ✅ **Voice Customization** - Select from 400+ neural voices or use custom voices
+- ✅ **Streaming Responses** - Real-time AI responses as the avatar speaks
+- ✅ **Persistent Configuration** - Save your settings locally or in environment variables
+- ✅ **Audio Gain Control** - Adjust volume from 0.1x to 5.0x
+- ✅ **Subtitle Support** - Display text captions during speech
 
-Overrides (opcional):
-```powershell
-$env:SSL_KEY_PATH="C:\ruta\a\mi-key.pem"
-$env:SSL_CERT_PATH="C:\ruta\a\mi-cert.pem"
-npm start
-```
+### Advanced Features
+- 🎯 **Prompt Profiles** - Pre-configured AI personalities and behaviors
+- 🔄 **Auto-reconnect** - Automatically recover from connection issues
+- 📊 **On Your Data** - Connect to Azure Cognitive Search for custom knowledge bases
+- 🎨 **Customizable UI** - Bootstrap-based themes (Microsoft/Fluent style included)
+- 📝 **Conversation History** - View and manage chat history
+- 🔊 **Mixed Input** - Type messages or use voice input
 
-Ahora podrás abrir:
-- https://localhost:5173/
-- https://localhost:5173/config.html
-- Endpoint: https://localhost:5173/.env.json
+## 📚 Documentation
 
-## Configuration guide (config.html)
-Azure Speech
-- Region, API Key, optional Private Endpoint
-- Use “Test Speech Connection” to verify credentials quickly
+### Getting Started
+- [JavaScript Implementation Guide](python/README.md) - Setup, configuration, and deployment
+- [.NET Blazor Implementation Guide](dotnet/README.md) - Aspire setup and enterprise features
+- [Prompt Profiles Guide](python/prompts/README-PROFILES.md) - Customize AI behavior
 
-Azure OpenAI
-- Endpoint, API Key, Deployment Name, System Prompt
-- Use “Test OpenAI Connection” for a minimal chat probe
- - Optional: Prompt Profiles (dropdown) loaded from `/prompts/index.json` and variable interpolation
+### .NET Documentation
+- [Quick Start](dotnet/docs/QUICKSTART.md) - Get running in 5 minutes
+- [Architecture](dotnet/docs/ARCHITECTURE.md) - Technical architecture and design
+- [Deployment Guide](dotnet/docs/DEPLOYMENT.md) - Production deployment options
+- [Migration Docs](dotnet/docs/migration/) - Aspire migration details (for maintainers)
 
-On Your Data (optional)
-- Azure AI Search Endpoint, API Key, Index Name
-- Enabled only when the toggle is checked
+### Configuration
+Both implementations support flexible configuration:
 
-STT/TTS
-- STT Locales list (e.g., `en-US,de-DE,…`) for auto language detection
-- TTS Voice dropdown with common voices; custom names from .env/URL are supported
-- Custom Voice Deployment ID (Endpoint ID) for your Custom Voice
-- Audio Gain (0.1–5.0x), stored as `azureAIFoundryAudioGain` in localStorage
-
-Avatar
-- Character dropdown auto‑filters available Styles
-- Custom Avatar unlocks “Use Built‑In Voice”; when on, the Custom Voice endpoint is cleared to avoid conflicts/silence
-- Some custom avatars require an empty Style value (e.g., special cases)
-- Subtitles and Auto‑Reconnect toggles
-
-## Using the Chat (chat.html)
-1) Ensure Speech + Azure OpenAI settings are configured (via `config.html` or localStorage).
-2) Click “Open Avatar Session”.
-3) Use the microphone (Start Microphone) or enable “Type Message” to send text.
-4) Layout:
-     - Left (lg‑8): avatar video (responsive)
-     - Right (lg‑4): conversation history (scrollable) + input box
-
-Tips
-- Volume too low? Raise Audio Gain in `config.html`; it applies on the next audio connection.
-- Custom avatars with built‑in voice: enable “Custom Avatar”, then check “Use Built‑In Voice”. The app routes TTS correctly and clears any Custom Voice endpoint.
-- The footer includes developer credit and links (LinkedIn + GitHub).
-
-## Environment variables (.env)
-The UI can import a local `.env` file, or a dev server can expose `/.env.json`. Supported keys map directly to config fields:
-
-```
-# Azure Speech
-AZURE_SPEECH_API_KEY=your_speech_key
+```bash
+# Azure Speech Service
 AZURE_SPEECH_REGION=westus2
-AZURE_SPEECH_PRIVATE_ENDPOINT=https://your-name.cognitiveservices.azure.com/
+AZURE_SPEECH_API_KEY=your_key_here
 
 # Azure OpenAI
 AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com
-AZURE_OPENAI_API_KEY=your_openai_key
+AZURE_OPENAI_API_KEY=your_key_here
 AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4o-mini
-SYSTEM_PROMPT=You are an AI assistant that helps people find information.
-PROMPT_PROFILE=pablito-piova-es
-# Force the selected profile to be applied on every load
-PROMPT_ENFORCE_PROFILE=true
-# Variables for prompt templates (keys after PROMPT_VAR_ are lowercased for interpolation)
-PROMPT_VAR_tone=helpful
-PROMPT_VAR_format=concise
 
-
-### Ejecutar con un clic desde VS Code
-Se añadieron tareas de VS Code para arrancar el servidor sin pelear con la política de PowerShell.
-
-1) Abre la paleta de comandos y ejecuta: “Tasks: Run Task”.
-2) Elige una de:
-    - Dev Server (HTTP)
-    - Dev Server (HTTPS)
-
-Ambas usan `-ExecutionPolicy Bypass` solo para esa terminal de VS Code y ejecutan `node server.js` en `dev-server/`.
-# Azure AI Search (optional)
-AZURE_COGNITIVE_SEARCH_ENDPOINT=https://your-search.search.windows.net
-AZURE_COGNITIVE_SEARCH_API_KEY=your_search_key
-AZURE_COGNITIVE_SEARCH_INDEX_NAME=your_index
-
-# TTS / Avatar
-TTS_VOICE=en-US-AvaMultilingualNeural
-CUSTOM_VOICE_ENDPOINT_ID=
+# Avatar Settings
 AVATAR_CHARACTER=lisa
 AVATAR_STYLE=casual-sitting
-ENABLE_CONTINUOUS_CONVERSATION=false
-ENABLE_SUBTITLES=false
-ENABLE_AUTO_RECONNECT=false
+TTS_VOICE=en-US-AvaMultilingualNeural
+
+# System Prompt
+SYSTEM_PROMPT=You are a helpful AI assistant.
 ```
 
-Notes
-- Boolean values accept `true`/`false` (case‑insensitive).
-- Secrets are never hardcoded; the dev server is local‑only and not for production.
- - Prompt Profiles: Create templates in `/prompts/*.md` and list them in `/prompts/index.json`. Use `{{var}}` placeholders.
- - Variables precedence: defaults from profile < PROMPT_VAR_* from .env < JSON in the “Prompt Variables” box.
- - To always use one profile (e.g., “Pablito Piova (ES)”), set `PROMPT_PROFILE=pablito-piova-es` and `PROMPT_ENFORCE_PROFILE=true`. This overrides any saved System Prompt.
+## 🏗️ Architecture Overview
 
-## Project structure
 ```
-├── basic.html                # Legacy demo (disabled banner shown)
-├── chat.html                 # Chat experience (two‑column layout)
-├── config.html               # Configuration UI
-├── css/
-│   ├── styles.css
-│   └── theme-microsoft.css   # Microsoft/Fluent‑inspired theme
-├── js/
-│   ├── basic.js
-│   ├── chat.js
-│   └── config.js
-├── dev-server/
-│   ├── package.json
-│   └── server.js             # local‑only .env → /.env.json helper
-├── image/ | avatar/ | video/
-├── .env.example
-└── README.md
+┌─────────────────────────────────────────────────┐
+│                  User Interface                  │
+│         (Browser - JavaScript or Blazor)         │
+└─────────────────┬───────────────────────────────┘
+                  │
+        ┌─────────┴─────────┐
+        │                   │
+   ┌────▼────┐       ┌──────▼──────┐
+   │  Azure  │       │    Azure    │
+   │ Speech  │       │   OpenAI    │
+   │ Service │       │   Service   │
+   └─────────┘       └─────────────┘
+        │                   │
+   ┌────▼────────────────────▼────┐
+   │      WebRTC Connection       │
+   │   (Avatar Video Streaming)   │
+   └──────────────────────────────┘
 ```
 
-## Troubleshooting
-- 401/403 or silence
-    - Check keys/region and avoid mixing Built‑In Voice with a Custom Voice endpoint
-- Low volume
-    - Increase Audio Gain in `config.html` (0.1–5.0x)
-- 4429 throttling / concurrency
-    - Don’t start multiple sessions at once; the app tears down old sessions before starting a new one. If it persists, wait ~30 seconds and retry
-- 1007 “not owned” (custom avatar)
-    - Ensure the avatar exists in your Speech resource/region and is owned by your account
-- CORS on file://
-    - Expected for `/.env.json`; use the import button or run the dev helper over http
-- Autoplay policies
-    - Some browsers require a user gesture before audio; if silent, click the page or press a button to resume the audio context
+### Data Flow
+1. **User speaks** → Azure Speech STT → Text
+2. **Text** → Azure OpenAI → AI Response
+3. **AI Response** → Azure Speech TTS → Audio
+4. **Audio + Avatar** → WebRTC → Video Stream
+5. **Video Stream** → Browser → User sees talking avatar
 
-## Customization
-- Theme/colors: edit `css/theme-microsoft.css` (CSS variables + navbar/footer gradients)
-- Voices/avatars: extend lists in `js/config.js` (voice dropdown + avatar catalog)
-- Layout: tweak Bootstrap columns in `chat.html` (e.g., `col-lg-8` / `col-lg-4`)
+## 🚢 Deployment Options
 
-## Security
-- Don’t commit secrets. `.env` is git‑ignored.
-- Rotate any secret that might have leaked.
+### JavaScript Implementation
+- **Static Hosting**: Azure Static Web Apps, GitHub Pages, Netlify, Vercel
+- **Container**: Docker + Azure Container Apps or App Service
+- **CDN**: Azure CDN for global distribution
 
-## License
-MIT
+### .NET Implementation
+- **Azure App Service**: Traditional web hosting
+- **Azure Container Apps**: Containerized deployment with scaling
+- **Azure Kubernetes Service (AKS)**: For complex orchestration
+- **Aspire Deployment**: One-command deployment with `azd up`
+
+[📖 Detailed Deployment Guide →](dotnet/docs/DEPLOYMENT.md)
+
+## 🔒 Security Best Practices
+
+⚠️ **Important**: Never commit API keys or secrets to source control!
+
+### Recommended Approaches
+1. **Development**:
+   - JavaScript: Use `.env` files (git-ignored)
+   - .NET: Use User Secrets (`dotnet user-secrets set`)
+
+2. **Production**:
+   - Use Azure Key Vault for secret storage
+   - Use Managed Identities for authentication (no keys needed!)
+   - Set secrets as environment variables in your hosting platform
+
+### What's Protected
+- `.env` files are in `.gitignore`
+- `appsettings.Development.json` is excluded
+- User secrets are stored outside the project directory
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+<details>
+<summary><b>Avatar video won't load</b></summary>
+
+**Causes:**
+- Invalid Speech Service credentials
+- Wrong region configuration
+- Browser doesn't support WebRTC
+- Firewall blocking WebRTC connections
+
+**Solutions:**
+1. Verify your Speech Service key and region in Azure Portal
+2. Test with Chrome or Edge (best WebRTC support)
+3. Check browser console (F12) for JavaScript errors
+4. Disable browser extensions temporarily
+</details>
+
+<details>
+<summary><b>No audio from avatar</b></summary>
+
+**Causes:**
+- Audio gain set too low
+- Browser autoplay policy blocking audio
+- Audio output device issues
+
+**Solutions:**
+1. Increase Audio Gain in configuration (try 1.5x - 2.0x)
+2. Click anywhere on the page to resume audio context
+3. Check system audio output settings
+4. Try in a different browser
+</details>
+
+<details>
+<summary><b>Chat not responding</b></summary>
+
+**Causes:**
+- Invalid OpenAI credentials
+- Model not deployed in Azure
+- Rate limit exceeded
+- Network connectivity issues
+
+**Solutions:**
+1. Verify OpenAI endpoint, key, and deployment name
+2. Check deployment status in Azure Portal
+3. Wait a few minutes if rate limited
+4. Test connection using the "Test OpenAI Connection" button
+</details>
+
+<details>
+<summary><b>403 errors with custom avatar</b></summary>
+
+**Cause:** Mixing custom avatar with custom voice endpoint
+
+**Solution:** Enable "Use Built-In Voice" checkbox, or clear the Custom Voice Endpoint ID field
+</details>
+
+## 🤝 Contributing
+
+Contributions are welcome! Here's how you can help:
+
+1. **Report Bugs**: Open an issue with detailed reproduction steps
+2. **Suggest Features**: Share your ideas in discussions
+3. **Submit PRs**: Fork, create a feature branch, and submit a pull request
+4. **Improve Docs**: Help make documentation clearer and more complete
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 👥 Credits
+
+- **Original Idea & Design**: Pablo Piovano ([LinkedIn](https://www.linkedin.com/in/ppiova/))
+- **Implementation**: Bruno Capuano ([GitHub](https://github.com/elbruno)) ([LinkedIn](https://www.linkedin.com/in/brunocapuano/))
+- **Powered By**: Microsoft Azure AI Services
+
+## 🆘 Support
+
+Need help? Try these resources:
+
+1. **Documentation**: Check the guides above
+2. **Issues**: [GitHub Issues](https://github.com/elbruno/customavatarlabs/issues)
+3. **Azure Docs**:
+   - [Azure Speech Service](https://docs.microsoft.com/azure/cognitive-services/speech-service/)
+   - [Azure OpenAI](https://learn.microsoft.com/azure/ai-services/openai/)
+4. **Community**: Azure Developer Community forums
+
+## 🌟 Show Your Support
+
+If you find this project helpful:
+- ⭐ Star this repository
+- 🐦 Share on social media
+- 📝 Write a blog post about your experience
+- 🔗 Reference it in your projects
+
+## 📈 What's Next?
+
+### Potential Enhancements
+- [ ] Multi-user support with sessions
+- [ ] Voice cloning integration
+- [ ] Mobile app versions (iOS/Android)
+- [ ] Real-time translation between languages
+- [ ] Avatar customization editor
+- [ ] Background/scene customization
+- [ ] Emotion detection and expression
+
+Want to contribute? Pick an enhancement and start a discussion!
+
+---
+
+**Built with ❤️ using Azure AI Services**
+
+[JavaScript Guide](python/README.md) | [.NET Guide](dotnet/README.md) | [Issues](https://github.com/elbruno/customavatarlabs/issues) | [License](LICENSE)
