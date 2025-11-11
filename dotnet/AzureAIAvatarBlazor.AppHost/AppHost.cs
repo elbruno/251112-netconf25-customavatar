@@ -32,8 +32,10 @@ if (!string.IsNullOrEmpty(searchEndpoint))
 var avatarApp = builder.AddProject<Projects.AzureAIAvatarBlazor>("azureaiavatarblazor")
     .WithReference(openai)
     .WithReference(speech)
-    .WithEnvironment("Avatar__Character", builder.Configuration["Avatar:Character"] ?? "lisa")
-    .WithEnvironment("Avatar__Style", builder.Configuration["Avatar:Style"] ?? "casual-sitting")
+    .WithEnvironment("Avatar__Character", builder.Configuration["Avatar:Character"] ?? "Bruno-Avatar-02")
+    .WithEnvironment("Avatar__Style", builder.Configuration["Avatar:Style"] ?? "")
+    .WithEnvironment("Avatar__IsCustomAvatar", builder.Configuration["Avatar:IsCustomAvatar"] ?? "true")
+    .WithEnvironment("Avatar__UseBuiltInVoice", builder.Configuration["Avatar:UseBuiltInVoice"] ?? "true")
     .WithEnvironment("OpenAI__DeploymentName", builder.Configuration["OpenAI:DeploymentName"] ?? "gpt-4o-mini")
     .WithEnvironment("SystemPrompt", builder.Configuration["SystemPrompt"] ?? "You are a helpful AI assistant.");
 

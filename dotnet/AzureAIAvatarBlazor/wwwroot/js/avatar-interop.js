@@ -395,6 +395,11 @@ async function setupWebRTC(iceServerUrl, username, password, config) {
     console.log('  - Style:', avatarStyle || '(none)');
     console.log('  - Is Custom:', isCustom);
     console.log('  - Use Built-in Voice:', config.avatar.useBuiltInVoice);
+    console.log('  - Custom Voice Endpoint ID:', customVoiceEndpointId || '(none)');
+    console.log('  - Speech Config Endpoint ID:', speechConfig.endpointId || '(none)');
+    
+    console.log('  - Is Custom:', isCustom);
+    console.log('  - Use Built-in Voice:', config.avatar.useBuiltInVoice);
     
     // For custom avatars or when style is empty/null, don't pass style parameter
     let avatarConfig;
@@ -610,49 +615,94 @@ window.speakText = async function(text) {
         const useBuiltInVoice = window.avatarAppConfig.avatar.useBuiltInVoice;
         const ttsVoice = window.avatarAppConfig.sttTts.ttsVoice || 'en-US-AvaMultilingualNeural';
         
-        // Create SSML for the text
-        const ssml = createSSML(text, ttsVoice, useBuiltInVoice);
-        
         console.log('[Speak] Starting speech synthesis...');
         console.log('[Speak] Use built-in voice:', useBuiltInVoice);
         console.log('[Speak] TTS voice:', ttsVoice);
         console.log('[Speak] Text length:', text.length);
-        console.log('[Speak] SSML:', ssml.substring(0, Math.min(200, ssml.length)));
+        console.log('[Speak] Text content:', text.substring(0, Math.min(100, text.length)));
         console.log('[Speak] Peer connection state before speak:', window.peerConnection?.connectionState);
         console.log('[Speak] ICE connection state before speak:', window.peerConnection?.iceConnectionState);
+        console.log('[Speak] Avatar synthesizer state:', window.avatarSynthesizer ? 'initialized' : 'null');
         
         await new Promise((resolve, reject) => {
             const speakStartTime = Date.now();
-            window.avatarSynthesizer.speakSsmlAsync(
-                ssml,
-                (result) => {
-                    const duration = Date.now() - speakStartTime;
-                    console.log('[Speak] Callback invoked after', duration, 'ms');
-                    console.log('[Speak] Result reason:', result?.reason, '(SynthesizingAudioCompleted=' + SpeechSDK.ResultReason.SynthesizingAudioCompleted + ')');
-                    console.log('[Speak] Peer connection state after callback:', window.peerConnection?.connectionState);
-                    console.log('[Speak] ICE connection state after callback:', window.peerConnection?.iceConnectionState);
-                    
-                    if (result && result.reason === SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
-                        console.log('[Speak] ✅ Speech synthesis completed successfully');
-                        resolve();
-                    } else {
-                        const errorMsg = result?.errorDetails || 'Unknown error';
-                        console.error('[Speak] ❌ Speech synthesis failed. Reason:', result?.reason, 'Error:', errorMsg);
-                        reject(new Error(errorMsg));
+            
+            // Match Python implementation: use speakTextAsync for built-in voice, speakSsmlAsync otherwise
+            if (useBuiltInVoice) {
+                console.log('[Speak] Using speakTextAsync (built-in avatar voice)');
+                window.avatarSynthesizer.speakTextAsync(
+                    text,
+                    (result) => {
+                        const duration = Date.now() - speakStartTime;
+                        console.log('[Speak] speakTextAsync callback invoked after', duration, 'ms');
+                        console.log('[Speak] Result reason:', result?.reason, '(SynthesizingAudioCompleted=' + SpeechSDK.ResultReason.SynthesizingAudioCompleted + ')');
+                        console.log('[Speak] Result ID:', result?.resultId);
+                        console.log('[Speak] Peer connection state after callback:', window.peerConnection?.connectionState);
+                        console.log('[Speak] ICE connection state after callback:', window.peerConnection?.iceConnectionState);
+                        
+                        if (result && result.reason === SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
+                            console.log('[Speak] ✅ Speech synthesis completed successfully (speakTextAsync)');
+                            resolve();
+                        } else {
+                            const errorMsg = result?.errorDetails || 'Unknown error';
+                            console.error('[Speak] ❌ Speech synthesis failed (speakTextAsync). Reason:', result?.reason, 'Error:', errorMsg);
+                            reject(new Error(errorMsg));
+                        }
+                    },
+                    (error) => {
+                        const duration = Date.now() - speakStartTime;
+                        console.error('[Speak] ❌ Error callback invoked after', duration, 'ms');
+                        console.error('[Speak] Error speaking text (speakTextAsync):', error);
+                        console.error('[Speak] Error type:', typeof error);
+                        console.error('[Speak] Error message:', error?.message || error);
+                        console.error('[Speak] Peer connection state on error:', window.peerConnection?.connectionState);
+                        console.error('[Speak] ICE connection state on error:', window.peerConnection?.iceConnectionState);
+                        reject(error);
                     }
-                },
-                (error) => {
-                    const duration = Date.now() - speakStartTime;
-                    console.error('[Speak] ❌ Error callback invoked after', duration, 'ms');
-                    console.error('[Speak] Error speaking text:', error);
-                    console.error('[Speak] Peer connection state on error:', window.peerConnection?.connectionState);
-                    console.error('[Speak] ICE connection state on error:', window.peerConnection?.iceConnectionState);
-                    reject(error);
-                }
-            );
+                );
+            } else {
+                // Create SSML for the text with voice tag
+                const ssml = createSSML(text, ttsVoice, useBuiltInVoice);
+                console.log('[Speak] Using speakSsmlAsync with custom voice');
+                console.log('[Speak] SSML:', ssml.substring(0, Math.min(200, ssml.length)));
+                
+                window.avatarSynthesizer.speakSsmlAsync(
+                    ssml,
+                    (result) => {
+                        const duration = Date.now() - speakStartTime;
+                        console.log('[Speak] speakSsmlAsync callback invoked after', duration, 'ms');
+                        console.log('[Speak] Result reason:', result?.reason, '(SynthesizingAudioCompleted=' + SpeechSDK.ResultReason.SynthesizingAudioCompleted + ')');
+                        console.log('[Speak] Result ID:', result?.resultId);
+                        console.log('[Speak] Peer connection state after callback:', window.peerConnection?.connectionState);
+                        console.log('[Speak] ICE connection state after callback:', window.peerConnection?.iceConnectionState);
+                        
+                        if (result && result.reason === SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
+                            console.log('[Speak] ✅ Speech synthesis completed successfully (speakSsmlAsync)');
+                            resolve();
+                        } else {
+                            const errorMsg = result?.errorDetails || 'Unknown error';
+                            console.error('[Speak] ❌ Speech synthesis failed (speakSsmlAsync). Reason:', result?.reason, 'Error:', errorMsg);
+                            reject(new Error(errorMsg));
+                        }
+                    },
+                    (error) => {
+                        const duration = Date.now() - speakStartTime;
+                        console.error('[Speak] ❌ Error callback invoked after', duration, 'ms');
+                        console.error('[Speak] Error speaking SSML (speakSsmlAsync):', error);
+                        console.error('[Speak] Error type:', typeof error);
+                        console.error('[Speak] Error message:', error?.message || error);
+                        console.error('[Speak] Peer connection state on error:', window.peerConnection?.connectionState);
+                        console.error('[Speak] ICE connection state on error:', window.peerConnection?.iceConnectionState);
+                        reject(error);
+                    }
+                );
+            }
         });
+        
+        console.log('[Speak] ✅ Speech synthesis promise resolved');
     } catch (error) {
         console.error('[Speak] ❌ Error in speakText:', error);
+        console.error('[Speak] Error stack:', error?.stack);
         throw error;
     }
 };
