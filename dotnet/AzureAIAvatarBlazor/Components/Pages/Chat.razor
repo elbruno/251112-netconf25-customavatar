@@ -36,11 +36,20 @@
         <div class="col-12 col-lg-8">
             <div class="card shadow-sm">
                 <div class="card-body p-0">
-                    <div id="videoContainer" class="video-container" style="min-height: 400px; background: #000;">
+                    <div id="videoContainer" class="video-container" style="min-height: 400px; background: #000; position: relative;">
                         <div id="remoteVideo"></div>
                         @if (config?.Avatar?.EnableSubtitles == true)
                         {
                             <div id="subtitles" class="subtitles"></div>
+                        }
+                        @if (isSessionStarting)
+                        {
+                            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000;">
+                                <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="text-white mt-3">Connecting to avatar...</p>
+                            </div>
                         }
                     </div>
                 </div>
@@ -120,17 +129,32 @@
 
     protected override async Task OnInitializedAsync()
     {
-        config = ConfigService.GetConfiguration();
-
-        // Add system message (not displayed in UI, but used for API calls)
-        if (!string.IsNullOrEmpty(config.AzureOpenAI.SystemPrompt))
+        Console.WriteLine("[Init] Initializing Chat component...");
+        try
         {
-            chatMessages.Add(new ChatMessage
+            config = ConfigService.GetConfiguration();
+            Console.WriteLine("[Init] Configuration loaded successfully");
+            Console.WriteLine($"[Init] Avatar Character: {config?.Avatar?.Character ?? "null"}");
+            Console.WriteLine($"[Init] Azure Speech Region: {config?.AzureSpeech?.Region ?? "null"}");
+            Console.WriteLine($"[Init] Azure OpenAI Endpoint: {config?.AzureOpenAI?.Endpoint ?? "null"}");
+
+            // Add system message (not displayed in UI, but used for API calls)
+            if (!string.IsNullOrEmpty(config.AzureOpenAI.SystemPrompt))
             {
-                Role = "system",
-                Content = config.AzureOpenAI.SystemPrompt
-            });
+                chatMessages.Add(new ChatMessage
+                {
+                    Role = "system",
+                    Content = config.AzureOpenAI.SystemPrompt
+                });
+                Console.WriteLine($"[Init] System prompt added ({config.AzureOpenAI.SystemPrompt.Length} characters)");
+            }
         }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Init] ERROR during initialization: {ex.Message}");
+            Console.WriteLine($"[Init] Stack trace: {ex.StackTrace}");
+        }
+        await Task.CompletedTask;
     }
 
     private string GetMessageLabel(string role)
@@ -161,32 +185,69 @@
     {
         if (firstRender)
         {
-            dotNetReference = DotNetObjectReference.Create(this);
-            await JSRuntime.InvokeVoidAsync("initializeAvatarSDK", dotNetReference);
+            Console.WriteLine("[Render] First render - initializing Avatar SDK...");
+            try
+            {
+                dotNetReference = DotNetObjectReference.Create(this);
+                Console.WriteLine("[Render] DotNetObjectReference created");
+                await JSRuntime.InvokeVoidAsync("initializeAvatarSDK", dotNetReference);
+                Console.WriteLine("[Render] Avatar SDK initialized successfully");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Render] ERROR initializing Avatar SDK: {ex.Message}");
+                Console.WriteLine($"[Render] Stack trace: {ex.StackTrace}");
+            }
         }
     }
 
     private async Task StartAvatarSession()
     {
+        Console.WriteLine("[Session] ========================================");
+        Console.WriteLine("[Session] START AVATAR SESSION BUTTON CLICKED");
+        Console.WriteLine("[Session] ========================================");
         try
         {
-            Console.WriteLine("Starting avatar session...");
+            if (config == null)
+            {
+                Console.WriteLine("[Session] ERROR: config is null!");
+                throw new Exception("Configuration not loaded. Please refresh the page.");
+            }
+
+            Console.WriteLine("[Session] Setting isSessionStarting = true...");
             isSessionStarting = true;
             StateHasChanged();
+            Console.WriteLine("[Session] UI updated with loading state");
+
+            // Validate configuration before proceeding
+            Console.WriteLine("[Session] Validating configuration...");
+            var validationError = await ConfigService.ValidateConfigurationAsync(config);
+            if (validationError != null)
+            {
+                Console.WriteLine($"[Session] VALIDATION FAILED: {validationError}");
+                throw new Exception($"Configuration error: {validationError}");
+            }
+            Console.WriteLine("[Session] Configuration validation passed");
 
             // Serialize config with camelCase for JavaScript
+            Console.WriteLine("[Session] Serializing config to JSON...");
             var options = new JsonSerializerOptions
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                WriteIndented = false
+                WriteIndented = true
             };
             var configJson = JsonSerializer.Serialize(config, options);
+            Console.WriteLine($"[Session] Config JSON (length: {configJson.Length} chars):");
+            Console.WriteLine(configJson);
 
-            Console.WriteLine($"Config JSON: {configJson}");
+            Console.WriteLine("[Session] Calling JavaScript function: startAvatarSessionFromJson");
             await JSRuntime.InvokeVoidAsync("startAvatarSessionFromJson", configJson);
+            
+            Console.WriteLine("[Session] JavaScript call completed successfully");
             isSessionActive = true;
             isSessionStarting = false;
-            Console.WriteLine("Avatar session started successfully");
+            StateHasChanged();
+            Console.WriteLine("[Session] Avatar session started successfully!");
         }
         catch (Exception ex)
         {
@@ -194,15 +255,24 @@
             var stackTrace = ex.StackTrace ?? "<no stack trace>";
             var isCancellation = errorMessage.Contains("Avatar start cancelled", System.StringComparison.OrdinalIgnoreCase);
 
-            if (isCancellation)
+            Console.WriteLine("[Session] ========================================");
+            Console.WriteLine($"[Session] ERROR OCCURRED: {(isCancellation ? "CANCELLED" : "FAILED")}");
+            Console.WriteLine("[Session] ========================================");
+            Console.WriteLine($"[Session] Exception type: {ex.GetType().Name}");
+            Console.WriteLine($"[Session] Error message: {errorMessage}");
+            
+            if (!isCancellation)
             {
-                Console.WriteLine("Avatar session start was cancelled by the user.");
+                Console.WriteLine($"[Session] Stack trace:");
+                Console.WriteLine(stackTrace);
+                
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"[Session] Inner exception: {ex.InnerException.Message}");
+                    Console.WriteLine($"[Session] Inner stack trace: {ex.InnerException.StackTrace}");
+                }
             }
-            else
-            {
-                Console.WriteLine($"Error starting avatar session: {errorMessage}");
-                Console.WriteLine($"Stack trace: {stackTrace}");
-            }
+            
             isSessionActive = false;
             isSessionStarting = false;
             StateHasChanged();

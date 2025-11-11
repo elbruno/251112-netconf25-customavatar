@@ -27,18 +27,26 @@ public class AzureSpeechService : IAzureSpeechService
     {
         try
         {
+            _logger.LogInformation("Validating Azure Speech connection...");
+
             var region = GetRegion();
             var key = GetSubscriptionKey();
 
             if (string.IsNullOrEmpty(region) || string.IsNullOrEmpty(key))
             {
-                _logger.LogWarning("Azure Speech credentials not configured");
+                _logger.LogWarning("Azure Speech credentials not configured - Region: {HasRegion}, Key: {HasKey}",
+                    !string.IsNullOrEmpty(region),
+                    !string.IsNullOrEmpty(key));
                 return false;
             }
+
+            _logger.LogInformation("Azure Speech credentials configured - Region: {Region}", region);
 
             // In a real scenario, you would make a test API call here
             // For now, we just validate that the configuration exists
             await Task.CompletedTask;
+
+            _logger.LogInformation("Azure Speech connection validation successful");
             return true;
         }
         catch (Exception ex)
@@ -85,11 +93,15 @@ public class AzureSpeechService : IAzureSpeechService
 
     public string GetSubscriptionKey()
     {
+        _logger.LogDebug("Retrieving Azure Speech subscription key...");
+
         // Extract key from ConnectionString or direct config
         var connectionString = _configuration["ConnectionStrings:speech"];
 
         if (!string.IsNullOrEmpty(connectionString))
         {
+            _logger.LogDebug("Found connection string for speech service");
+
             // Parse Aspire connection string: "Endpoint=...;Key=...;"
             var keyMatch = System.Text.RegularExpressions.Regex.Match(
                 connectionString,
@@ -97,14 +109,26 @@ public class AzureSpeechService : IAzureSpeechService
             );
             if (keyMatch.Success)
             {
+                _logger.LogInformation("Extracted subscription key from connection string");
                 return keyMatch.Groups[1].Value;
             }
         }
 
         // Fallback to environment variables
-        return _configuration["AZURE_SPEECH_API_KEY"]
+        var key = _configuration["AZURE_SPEECH_API_KEY"]
             ?? _configuration["AzureSpeech__ApiKey"]
             ?? _configuration["AzureSpeech:ApiKey"]
             ?? string.Empty;
+
+        if (!string.IsNullOrEmpty(key))
+        {
+            _logger.LogInformation("Retrieved subscription key from environment configuration");
+        }
+        else
+        {
+            _logger.LogWarning("Azure Speech subscription key not found in configuration");
+        }
+
+        return key;
     }
 }

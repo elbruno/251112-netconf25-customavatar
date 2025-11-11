@@ -94,11 +94,14 @@ public class ConfigurationService : IConfigurationService
         // Return cached config if available (respects user changes from Config page)
         if (_cachedConfig != null)
         {
-            _logger.LogInformation("Returning cached configuration");
+            _logger.LogInformation("Returning cached configuration (Character: {Character}, IsCustom: {IsCustom}, UseBuiltInVoice: {UseBuiltInVoice})",
+                _cachedConfig.Avatar.Character,
+                _cachedConfig.Avatar.IsCustomAvatar,
+                _cachedConfig.Avatar.UseBuiltInVoice);
             return _cachedConfig;
         }
 
-        _logger.LogInformation("Loading configuration from AppHost environment...");
+        _logger.LogInformation("Loading configuration from environment/appsettings...");
 
         var avatarCharacter = _configuration["Avatar__Character"] ?? _configuration["Avatar:Character"] ?? _configuration["AVATAR_CHARACTER"] ?? "lisa";
         _logger.LogInformation("Avatar character from config: '{Character}'", avatarCharacter);
@@ -273,53 +276,63 @@ public class ConfigurationService : IConfigurationService
 
     public async Task SaveConfigurationAsync(AvatarConfiguration config)
     {
+        _logger.LogInformation("Saving configuration to cache...");
+        _logger.LogInformation("  - Character: {Character}, Style: {Style}",
+            config.Avatar.Character, config.Avatar.Style ?? "(none)");
+        _logger.LogInformation("  - IsCustomAvatar: {IsCustom}, UseBuiltInVoice: {UseBuiltIn}",
+            config.Avatar.IsCustomAvatar, config.Avatar.UseBuiltInVoice);
+        _logger.LogInformation("  - TTS Voice: {Voice}, Custom Endpoint: {Endpoint}",
+            config.SttTts.TtsVoice, config.SttTts.CustomVoiceEndpointId ?? "(none)");
+
         // In a real application, this would save to a database or configuration store
         // For now, we cache it in memory - it will persist for the app session
         _cachedConfig = config;
         await Task.CompletedTask;
-        _logger.LogInformation("Configuration saved to memory cache - changes will be used until app restart");
 
-        // Log key settings for debugging
-        _logger.LogInformation("Saved config: Character={Character}, UseBuiltInVoice={UseBuiltIn}, EnablePrivateEndpoint={PrivateEndpoint}",
-            config.Avatar.Character,
-            config.Avatar.UseBuiltInVoice,
-            config.AzureSpeech.EnablePrivateEndpoint);
+        _logger.LogInformation("Configuration saved successfully to memory cache - changes will be used until app restart");
     }
 
     public async Task<string?> ValidateConfigurationAsync(AvatarConfiguration config)
     {
+        _logger.LogInformation("Validating configuration...");
         await Task.CompletedTask;
 
         // Validate Azure Speech configuration
         if (config.AzureSpeech == null)
         {
+            _logger.LogWarning("Validation failed: Azure Speech configuration is missing");
             return "Azure Speech configuration is missing.";
         }
 
         if (string.IsNullOrWhiteSpace(config.AzureSpeech.Region))
         {
+            _logger.LogWarning("Validation failed: Azure Speech region is missing");
             return "Azure Speech region is required.";
         }
 
         // Validate region format (lowercase letters and numbers only)
         if (!System.Text.RegularExpressions.Regex.IsMatch(config.AzureSpeech.Region, @"^[a-z0-9]+$"))
         {
+            _logger.LogWarning("Validation failed: Invalid Azure Speech region format: {Region}", config.AzureSpeech.Region);
             return "Azure Speech region format is invalid. Use lowercase format like 'westus2' or 'eastus'.";
         }
 
         if (string.IsNullOrWhiteSpace(config.AzureSpeech.ApiKey))
         {
+            _logger.LogWarning("Validation failed: Azure Speech API key is missing");
             return "Azure Speech API key is required.";
         }
 
         // Validate Azure OpenAI configuration
         if (config.AzureOpenAI == null)
         {
+            _logger.LogWarning("Validation failed: Azure OpenAI configuration is missing");
             return "Azure OpenAI configuration is missing.";
         }
 
         if (string.IsNullOrWhiteSpace(config.AzureOpenAI.Endpoint))
         {
+            _logger.LogWarning("Validation failed: Azure OpenAI endpoint is missing");
             return "Azure OpenAI endpoint is required.";
         }
 
@@ -327,49 +340,58 @@ public class ConfigurationService : IConfigurationService
         if (!Uri.TryCreate(config.AzureOpenAI.Endpoint, UriKind.Absolute, out var uri) ||
             (uri.Scheme != "https" && uri.Scheme != "http"))
         {
+            _logger.LogWarning("Validation failed: Invalid Azure OpenAI endpoint URL: {Endpoint}", config.AzureOpenAI.Endpoint);
             return "Azure OpenAI endpoint must be a valid HTTPS URL.";
         }
 
         if (string.IsNullOrWhiteSpace(config.AzureOpenAI.ApiKey))
         {
+            _logger.LogWarning("Validation failed: Azure OpenAI API key is missing");
             return "Azure OpenAI API key is required.";
         }
 
         if (string.IsNullOrWhiteSpace(config.AzureOpenAI.DeploymentName))
         {
+            _logger.LogWarning("Validation failed: Azure OpenAI deployment name is missing");
             return "Azure OpenAI deployment name is required.";
         }
 
         // Validate Avatar configuration
         if (config.Avatar == null)
         {
+            _logger.LogWarning("Validation failed: Avatar configuration is missing");
             return "Avatar configuration is missing.";
         }
 
         if (string.IsNullOrWhiteSpace(config.Avatar.Character))
         {
+            _logger.LogWarning("Validation failed: Avatar character is missing");
             return "Avatar character is required.";
         }
 
         // Validate audio gain range
         if (config.Avatar.AudioGain < 0.1 || config.Avatar.AudioGain > 5.0)
         {
+            _logger.LogWarning("Validation failed: Invalid audio gain: {Gain}", config.Avatar.AudioGain);
             return "Audio gain must be between 0.1 and 5.0.";
         }
 
         // Validate STT/TTS configuration
         if (config.SttTts == null)
         {
+            _logger.LogWarning("Validation failed: STT/TTS configuration is missing");
             return "STT/TTS configuration is missing.";
         }
 
         if (string.IsNullOrWhiteSpace(config.SttTts.SttLocales))
         {
+            _logger.LogWarning("Validation failed: STT locales are missing");
             return "STT locales are required.";
         }
 
         if (string.IsNullOrWhiteSpace(config.SttTts.TtsVoice))
         {
+            _logger.LogWarning("Validation failed: TTS voice is missing");
             return "TTS voice is required.";
         }
 
@@ -379,10 +401,12 @@ public class ConfigurationService : IConfigurationService
             if (!Uri.TryCreate(config.AzureSpeech.PrivateEndpoint, UriKind.Absolute, out var privateUri) ||
                 (privateUri.Scheme != "https" && privateUri.Scheme != "http"))
             {
+                _logger.LogWarning("Validation failed: Invalid private endpoint URL: {Endpoint}", config.AzureSpeech.PrivateEndpoint);
                 return "Private endpoint must be a valid HTTPS URL.";
             }
         }
 
+        _logger.LogInformation("Configuration validation successful");
         return null; // No errors
     }
 
@@ -390,6 +414,7 @@ public class ConfigurationService : IConfigurationService
     {
         try
         {
+            _logger.LogInformation("Loading prompt profiles from index.json...");
             var promptsPath = Path.Combine(_environment.ContentRootPath, "..", "..", "prompts", "index.json");
 
             if (!File.Exists(promptsPath))
@@ -404,11 +429,19 @@ public class ConfigurationService : IConfigurationService
                 PropertyNameCaseInsensitive = true
             });
 
-            return container?.Profiles ?? new List<PromptProfile>();
+            var profiles = container?.Profiles ?? new List<PromptProfile>();
+            _logger.LogInformation("Loaded {Count} prompt profiles", profiles.Count);
+            if (profiles.Count > 0)
+            {
+                _logger.LogInformation("Available profiles: {Profiles}",
+                    string.Join(", ", profiles.Select(p => p.Id)));
+            }
+
+            return profiles;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error loading prompt profiles");
+            _logger.LogError(ex, "Error loading prompt profiles from index.json");
             return new List<PromptProfile>();
         }
     }
@@ -417,6 +450,7 @@ public class ConfigurationService : IConfigurationService
     {
         try
         {
+            _logger.LogInformation("Loading prompt profile content: {FileName}", fileName);
             var promptPath = Path.Combine(_environment.ContentRootPath, "..", "..", "prompts", fileName);
 
             if (!File.Exists(promptPath))
@@ -425,11 +459,13 @@ public class ConfigurationService : IConfigurationService
                 return string.Empty;
             }
 
-            return await File.ReadAllTextAsync(promptPath);
+            var content = await File.ReadAllTextAsync(promptPath);
+            _logger.LogInformation("Loaded prompt profile content ({Length} characters)", content.Length);
+            return content;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error loading prompt profile content from {FileName}", fileName);
+            _logger.LogError(ex, "Error loading prompt profile content: {FileName}", fileName);
             return string.Empty;
         }
     }

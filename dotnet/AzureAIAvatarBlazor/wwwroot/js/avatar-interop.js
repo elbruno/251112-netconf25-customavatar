@@ -10,6 +10,8 @@ window.sessionActive = false;
 window.avatarAppConfig = null;
 window.dotNetAvatarRef = null;
 window.microphoneActive = false;
+window.currentSpeakingText = '';
+window.peerConnectionDataChannel = null;
 
 const AVATAR_START_TIMEOUT_MS = 30000;
 window.avatarStartControl = null;
@@ -84,41 +86,84 @@ function clearAvatarStartControl(reason = 'manual') {
 
 // Initialize the Azure Speech SDK
 window.initializeAvatarSDK = function(dotNetRef) {
+    console.log('[Init] ========================================');
+    console.log('[Init] INITIALIZING AVATAR SDK');
+    console.log('[Init] ========================================');
+    console.log('[Init] dotNetRef:', dotNetRef ? 'provided' : 'NULL');
+    
     if (dotNetRef) {
         window.dotNetAvatarRef = dotNetRef;
+        console.log('[Init] dotNetAvatarRef stored successfully');
+    } else {
+        console.error('[Init] ERROR: dotNetRef is null or undefined!');
     }
-    console.log('Azure Speech SDK initialized');
+    
+    console.log('[Init] Checking Speech SDK availability...');
+    if (typeof SpeechSDK === 'undefined') {
+        console.error('[Init] ERROR: SpeechSDK is NOT loaded! Check if the script tag is correct.');
+        console.error('[Init] Script should be: https://aka.ms/csspeech/jsbrowserpackageraw');
+    } else {
+        console.log('[Init] ✅ SpeechSDK is available');
+        console.log('[Init] SpeechSDK version:', SpeechSDK.SDK_VERSION || 'unknown');
+    }
+    
+    console.log('[Init] Azure Speech SDK initialization complete');
 };
 
 // Start avatar session from JSON string
 window.startAvatarSessionFromJson = async function(configJson) {
-    const config = JSON.parse(configJson);
-    console.log('Starting avatar session with config:', config);
-    return await startAvatarSession(config);
+    console.log('[StartSession] ========================================');
+    console.log('[StartSession] START AVATAR SESSION FROM JSON CALLED');
+    console.log('[StartSession] ========================================');
+    console.log('[StartSession] Received configJson (type):', typeof configJson);
+    console.log('[StartSession] Config JSON length:', configJson ? configJson.length : 'NULL');
+    
+    try {
+        console.log('[StartSession] Parsing JSON...');
+        const config = JSON.parse(configJson);
+        console.log('[StartSession] ✅ JSON parsed successfully');
+        console.log('[StartSession] Config object:', config);
+        console.log('[StartSession] Starting avatar session with parsed config...');
+        return await startAvatarSession(config);
+    } catch (error) {
+        console.error('[StartSession] ❌ ERROR parsing or starting session:', error);
+        console.error('[StartSession] Error message:', error.message);
+        console.error('[StartSession] Error stack:', error.stack);
+        throw error;
+    }
 };
 
 // Start avatar session
 async function startAvatarSession(config) {
+    console.log('[AvatarSession] ========================================');
+    console.log('[AvatarSession] STARTING AVATAR SESSION');
+    console.log('[AvatarSession] ========================================');
+    
     try {
-        console.log('Starting avatar session...', config);
+        console.log('[AvatarSession] Config received:', config);
+        console.log('[AvatarSession] Storing config in window.avatarAppConfig...');
         window.avatarAppConfig = config;
         
         // Get Speech SDK token
-        const region = config.azureSpeech.region;
-        const subscriptionKey = config.azureSpeech.apiKey;
+        console.log('[AvatarSession] Extracting Azure Speech credentials...');
+        const region = config.azureSpeech?.region;
+        const subscriptionKey = config.azureSpeech?.apiKey;
+        
+        console.log('[AvatarSession] Region:', region || 'MISSING');
+        console.log('[AvatarSession] Subscription Key:', subscriptionKey ? '***' + subscriptionKey.slice(-4) : 'MISSING');
         
         if (!subscriptionKey || !region) {
-            const error = 'Please configure Azure Speech credentials in the Configuration page.';
-            console.error(error);
+            const error = 'Azure Speech credentials are missing! Please configure them in the Configuration page.';
+            console.error('[AvatarSession] ❌ ERROR:', error);
             alert(error);
-            return;
+            throw new Error(error);
         }
 
-        console.log(`Requesting avatar token from region: ${region}`);
-
-        // Request avatar relay token
+        console.log('[AvatarSession] Building token URL for region:', region);
         const tokenUrl = `https://${region}.tts.speech.microsoft.com/cognitiveservices/avatar/relay/token/v1`;
-        
+        console.log('[AvatarSession] Token URL:', tokenUrl);
+
+        console.log('[AvatarSession] Requesting avatar relay token...');
         const response = await fetch(tokenUrl, {
             method: 'GET',
             headers: {
@@ -126,22 +171,35 @@ async function startAvatarSession(config) {
             }
         });
 
+        console.log('[AvatarSession] Token response status:', response.status);
+        
         if (!response.ok) {
             const errorText = await response.text();
+            console.error('[AvatarSession] ❌ Token request failed:', response.status);
+            console.error('[AvatarSession] Error details:', errorText);
             throw new Error(`Failed to get avatar token: ${response.status} - ${errorText}`);
         }
 
+        console.log('[AvatarSession] Parsing token response...');
         const tokenData = await response.json();
-        console.log('Avatar token retrieved successfully');
+        console.log('[AvatarSession] ✅ Avatar token retrieved successfully');
+        console.log('[AvatarSession] Token data has URLs:', tokenData.Urls ? tokenData.Urls.length : 'NONE');
 
-        // Setup WebRTC connection
+        console.log('[AvatarSession] Setting up WebRTC connection...');
         await setupWebRTC(tokenData.Urls[0], tokenData.Username, tokenData.Password, config);
         
         window.sessionActive = true;
-        console.log('Avatar session started successfully');
+        console.log('[AvatarSession] ✅ ✅ ✅ Avatar session started successfully!');
     } catch (error) {
-        console.error('Error starting avatar session:', error);
-        alert('Failed to start avatar session: ' + error.message + '\n\nPlease check:\n1. Your Azure Speech credentials are correct\n2. Your subscription supports avatar features\n3. Browser console for more details');
+        console.error('[AvatarSession] ========================================');
+        console.error('[AvatarSession] ❌ ❌ ❌ ERROR STARTING AVATAR SESSION');
+        console.error('[AvatarSession] ========================================');
+        console.error('[AvatarSession] Error type:', error.constructor.name);
+        console.error('[AvatarSession] Error message:', error.message);
+        console.error('[AvatarSession] Error stack:', error.stack);
+        
+        const errorDetails = `Failed to start avatar session: ${error.message}\n\nPlease check:\n1. Your Azure Speech credentials are correct\n2. Your subscription supports avatar features\n3. Browser console for more details`;
+        alert(errorDetails);
         throw error;
     }
 }
@@ -340,6 +398,61 @@ async function setupWebRTC(iceServerUrl, username, password, config) {
         console.log('[WebRTC] Signaling state:', window.peerConnection.signalingState);
     };
 
+    // Handle data channel for subtitle events (matching Python implementation)
+    window.peerConnection.addEventListener('datachannel', event => {
+        console.log('[DataChannel] 📡 Data channel received:', event.channel.label);
+        window.peerConnectionDataChannel = event.channel;
+        
+        window.peerConnectionDataChannel.onmessage = e => {
+            try {
+                const webRTCEvent = JSON.parse(e.data);
+                const eventType = webRTCEvent?.event?.eventType;
+                console.log('[DataChannel] Event received:', eventType, 'at', new Date().toISOString());
+                
+                const subtitlesElement = document.getElementById('subtitles');
+                if (!subtitlesElement) {
+                    console.warn('[Subtitle] ⚠️ Subtitle element not found in DOM');
+                    return;
+                }
+                
+                const showSubtitles = config?.avatar?.enableSubtitles !== false; // Default to true
+                console.log('[Subtitle] Show subtitles enabled:', showSubtitles);
+                
+                if (eventType === 'EVENT_TYPE_TURN_START' && showSubtitles) {
+                    subtitlesElement.hidden = false;
+                    subtitlesElement.innerHTML = window.currentSpeakingText;
+                    console.log('[Subtitle] ✅ Subtitle shown:', window.currentSpeakingText.substring(0, 50));
+                } else if (eventType === 'EVENT_TYPE_SESSION_END' || eventType === 'EVENT_TYPE_SWITCH_TO_IDLE') {
+                    subtitlesElement.hidden = true;
+                    console.log('[Subtitle] ⏹️ Subtitle hidden (event:', eventType + ')');
+                }
+            } catch (error) {
+                console.error('[DataChannel] ❌ Error processing data channel message:', error);
+            }
+        };
+        
+        window.peerConnectionDataChannel.onopen = () => {
+            console.log('[DataChannel] ✅ Data channel opened');
+        };
+        
+        window.peerConnectionDataChannel.onclose = () => {
+            console.log('[DataChannel] ⏹️ Data channel closed');
+        };
+        
+        window.peerConnectionDataChannel.onerror = (error) => {
+            console.error('[DataChannel] ❌ Data channel error:', error);
+        };
+    });
+
+    // Create a data channel from client side to ensure the data channel listening works
+    // This is a workaround matching Python implementation
+    try {
+        const clientDataChannel = window.peerConnection.createDataChannel('eventChannel');
+        console.log('[DataChannel] 📤 Client-side event channel created:', clientDataChannel.label);
+    } catch (error) {
+        console.error('[DataChannel] ❌ Failed to create client data channel:', error);
+    }
+
     // Verify Speech SDK is loaded
     if (typeof SpeechSDK === 'undefined') {
         console.error('[SDK] Speech SDK not found!');
@@ -362,28 +475,42 @@ async function setupWebRTC(iceServerUrl, username, password, config) {
 
     console.log('[Config] Speech config created successfully');
 
-    // Configure TTS voice and custom endpoint
+    // Configure TTS voice and custom endpoint (matching Python implementation logic)
     const customVoiceEndpointId = config.sttTts.customVoiceEndpointId || '';
     const customVoiceEndpointIdTrim = customVoiceEndpointId.trim().toLowerCase();
     const isPlaceholder = !customVoiceEndpointIdTrim || 
                          customVoiceEndpointIdTrim === 'your_custom_voice_endpoint_id' || 
                          customVoiceEndpointIdTrim.startsWith('xxxxx');
     
+    console.log('[Voice] 🔧 Voice configuration analysis:');
+    console.log('[Voice]   - Custom Voice Endpoint ID:', customVoiceEndpointId || '(empty)');
+    console.log('[Voice]   - Is Placeholder:', isPlaceholder);
+    console.log('[Voice]   - Use Built-In Voice:', config.avatar.useBuiltInVoice);
+    console.log('[Voice]   - TTS Voice:', config.sttTts.ttsVoice);
+    console.log('[Voice]   - Is Custom Avatar:', config.avatar.isCustomAvatar);
+    
     // Only set custom endpoint if not using built-in voice and endpoint is valid
     if (!config.avatar.useBuiltInVoice && !isPlaceholder) {
         speechConfig.endpointId = customVoiceEndpointId;
-        console.log('[Voice] Using custom voice endpoint:', customVoiceEndpointId);
+        console.log('[Voice] ✅ Using custom voice endpoint:', customVoiceEndpointId);
     } else {
         speechConfig.endpointId = '';
-        console.log('[Voice] Using standard voice endpoint');
+        if (config.avatar.useBuiltInVoice) {
+            console.log('[Voice] ✅ Using standard voice endpoint (built-in voice enabled)');
+        } else if (isPlaceholder) {
+            console.log('[Voice] ⚠️ Custom voice endpoint is placeholder - using standard endpoint');
+        } else {
+            console.log('[Voice] ✅ Using standard voice endpoint');
+        }
     }
     
     // Note: We do NOT set speechSynthesisVoiceName here
     // Voice selection is handled in the speakText function via SSML
-    console.log('[Voice] Configuration:', {
+    console.log('[Voice] 📋 Final configuration:', {
         useBuiltInVoice: config.avatar.useBuiltInVoice,
         ttsVoice: config.sttTts.ttsVoice,
-        endpointIdUsed: speechConfig.endpointId ? 'custom-endpoint' : 'standard'
+        endpointIdSet: speechConfig.endpointId ? 'custom-endpoint' : 'standard',
+        isCustomAvatar: config.avatar.isCustomAvatar
     });
 
     // Configure avatar - handle empty style
@@ -531,7 +658,23 @@ window.stopAvatarSession = async function() {
     try {
         await window.stopMicrophone(true);
 
+        console.log('[Session] 🛑 Stopping avatar session...');
         clearAvatarStartControl('session stopped');
+
+        // Clear subtitle text
+        window.currentSpeakingText = '';
+        console.log('[Subtitle] Cleared speaking text on session stop');
+
+        // Clear data channel
+        if (window.peerConnectionDataChannel) {
+            try {
+                window.peerConnectionDataChannel.close();
+                console.log('[DataChannel] Closed data channel');
+            } catch (err) {
+                console.warn('[DataChannel] Warning closing data channel:', err);
+            }
+            window.peerConnectionDataChannel = null;
+        }
 
         if (window.avatarSynthesizer) {
             window.avatarSynthesizer.close();
@@ -615,6 +758,10 @@ window.speakText = async function(text) {
         const useBuiltInVoice = window.avatarAppConfig.avatar.useBuiltInVoice;
         const ttsVoice = window.avatarAppConfig.sttTts.ttsVoice || 'en-US-AvaMultilingualNeural';
         
+        // Store text for subtitle display (matching Python implementation)
+        window.currentSpeakingText = text;
+        console.log('[Speak] 📝 Current speaking text stored for subtitles');
+        
         console.log('[Speak] Starting speech synthesis...');
         console.log('[Speak] Use built-in voice:', useBuiltInVoice);
         console.log('[Speak] TTS voice:', ttsVoice);
@@ -642,6 +789,7 @@ window.speakText = async function(text) {
                         
                         if (result && result.reason === SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
                             console.log('[Speak] ✅ Speech synthesis completed successfully (speakTextAsync)');
+                            window.currentSpeakingText = ''; // Clear after completion
                             resolve();
                         } else {
                             const errorMsg = result?.errorDetails || 'Unknown error';
@@ -657,6 +805,7 @@ window.speakText = async function(text) {
                         console.error('[Speak] Error message:', error?.message || error);
                         console.error('[Speak] Peer connection state on error:', window.peerConnection?.connectionState);
                         console.error('[Speak] ICE connection state on error:', window.peerConnection?.iceConnectionState);
+                        window.currentSpeakingText = ''; // Clear on error
                         reject(error);
                     }
                 );
@@ -678,6 +827,7 @@ window.speakText = async function(text) {
                         
                         if (result && result.reason === SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
                             console.log('[Speak] ✅ Speech synthesis completed successfully (speakSsmlAsync)');
+                            window.currentSpeakingText = ''; // Clear after completion
                             resolve();
                         } else {
                             const errorMsg = result?.errorDetails || 'Unknown error';
@@ -693,6 +843,7 @@ window.speakText = async function(text) {
                         console.error('[Speak] Error message:', error?.message || error);
                         console.error('[Speak] Peer connection state on error:', window.peerConnection?.connectionState);
                         console.error('[Speak] ICE connection state on error:', window.peerConnection?.iceConnectionState);
+                        window.currentSpeakingText = ''; // Clear on error
                         reject(error);
                     }
                 );
