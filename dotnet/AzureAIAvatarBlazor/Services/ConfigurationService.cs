@@ -33,33 +33,25 @@ public class ConfigurationService : IConfigurationService
 
     private bool DetermineEnablePrivateEndpoint(IConfiguration config)
     {
-        // Check if explicitly set in configuration
+        // Check if explicitly set in configuration  
         var explicitSetting = config["AZURE_SPEECH_ENABLE_PRIVATE_ENDPOINT"]
             ?? config["AzureSpeech__EnablePrivateEndpoint"]
             ?? config["AzureSpeech:EnablePrivateEndpoint"];
-        
-        _logger.LogInformation("DEBUG: EnablePrivateEndpoint value: '{Value}'", explicitSetting ?? "null");
+
+        _logger.LogInformation("DEBUG: EnablePrivateEndpoint explicit setting: '{Value}'", explicitSetting ?? "null");
 
         if (!string.IsNullOrEmpty(explicitSetting))
         {
-            var enabled = bool.Parse(explicitSetting);
+            var enabled = bool.TryParse(explicitSetting, out var result) && result;
             _logger.LogInformation("Using explicit EnablePrivateEndpoint setting: {Enabled}", enabled);
             return enabled;
         }
 
-        // Auto-detect: if private endpoint URL is configured, enable it
-        var privateEndpoint = config["AZURE_SPEECH_PRIVATE_ENDPOINT"]
-            ?? config["AzureSpeech__PrivateEndpoint"]
-            ?? config["AzureSpeech:PrivateEndpoint"];
-        
-        _logger.LogInformation("DEBUG: PrivateEndpoint value: '{Value}'", privateEndpoint ?? "null");
-
-        var shouldEnable = !string.IsNullOrEmpty(privateEndpoint);
-
-        _logger.LogInformation("Auto-detected private endpoint '{Endpoint}' - EnablePrivateEndpoint: {Enabled}",
-            privateEndpoint ?? "null", shouldEnable);
-
-        return shouldEnable;
+        // For avatars, ALWAYS default to false
+        // The standard regional endpoint works correctly for avatars
+        // Private endpoints must be explicitly enabled
+        _logger.LogInformation("No explicit private endpoint setting - defaulting to FALSE (standard regional endpoint)");
+        return false;
     }
 
     private bool DetermineIfCustomAvatar(IConfiguration config)
@@ -67,7 +59,7 @@ public class ConfigurationService : IConfigurationService
         // Check if explicitly set
         var explicitSetting = config["Avatar__IsCustomAvatar"]
             ?? config["Avatar:IsCustomAvatar"];
-        
+
         _logger.LogInformation("Explicit IsCustomAvatar setting: '{Setting}'", explicitSetting ?? "null");
 
         if (!string.IsNullOrEmpty(explicitSetting))
@@ -82,7 +74,7 @@ public class ConfigurationService : IConfigurationService
             ?? config["Avatar:Character"]
             ?? config["AVATAR_CHARACTER"]
             ?? "lisa";
-        
+
         var standardAvatars = new[] { "lisa", "harry", "jeff", "lori", "max", "meg" };
 
         _logger.LogInformation("Checking character '{Character}' against standard avatars", character);
@@ -98,9 +90,12 @@ public class ConfigurationService : IConfigurationService
 
     public AvatarConfiguration GetConfiguration()
     {
-        // Clear cache to ensure we always get fresh config with proper detection
-        // if (_cachedConfig != null)
-        //     return _cachedConfig;
+        // Return cached config if available (respects user changes from Config page)
+        if (_cachedConfig != null)
+        {
+            _logger.LogInformation("Returning cached configuration");
+            return _cachedConfig;
+        }
 
         _logger.LogInformation("Loading configuration from AppHost environment...");
 
@@ -111,33 +106,33 @@ public class ConfigurationService : IConfigurationService
         {
             AzureSpeech = new AzureSpeechConfig
             {
-                Region = _configuration["AZURE_SPEECH_REGION"] 
+                Region = _configuration["AZURE_SPEECH_REGION"]
                     ?? _configuration["AzureSpeech__Region"]
                     ?? _configuration["AzureSpeech:Region"]
                     ?? "westus2",
-                ApiKey = ExtractKeyFromConnectionString("speech") 
+                ApiKey = ExtractKeyFromConnectionString("speech")
                     ?? _configuration["AZURE_SPEECH_API_KEY"]
                     ?? _configuration["AzureSpeech__ApiKey"]
                     ?? _configuration["AzureSpeech:ApiKey"]
                     ?? string.Empty,
-                PrivateEndpoint = _configuration["AZURE_SPEECH_PRIVATE_ENDPOINT"] 
-                    ?? _configuration["AzureSpeech__PrivateEndpoint"]
-                    ?? _configuration["AzureSpeech:PrivateEndpoint"],
-                EnablePrivateEndpoint = DetermineEnablePrivateEndpoint(_configuration)
+                // DO NOT use PrivateEndpoint for avatars - always use standard regional endpoint
+                PrivateEndpoint = null,
+                // Force EnablePrivateEndpoint to false for avatar support
+                EnablePrivateEndpoint = false
             },
             AzureOpenAI = new AzureOpenAIConfig
             {
-                Endpoint = ExtractEndpointFromConnectionString("openai") 
+                Endpoint = ExtractEndpointFromConnectionString("openai")
                     ?? _configuration["AZURE_OPENAI_ENDPOINT"]
                     ?? _configuration["AzureOpenAI__Endpoint"]
                     ?? _configuration["AzureOpenAI:Endpoint"]
                     ?? string.Empty,
-                ApiKey = ExtractKeyFromConnectionString("openai") 
+                ApiKey = ExtractKeyFromConnectionString("openai")
                     ?? _configuration["AZURE_OPENAI_API_KEY"]
                     ?? _configuration["AzureOpenAI__ApiKey"]
                     ?? _configuration["AzureOpenAI:ApiKey"]
                     ?? string.Empty,
-                DeploymentName = _configuration["OpenAI__DeploymentName"] 
+                DeploymentName = _configuration["OpenAI__DeploymentName"]
                     ?? _configuration["AZURE_OPENAI_DEPLOYMENT_NAME"]
                     ?? _configuration["AzureOpenAI__DeploymentName"]
                     ?? _configuration["AzureOpenAI:DeploymentName"]
@@ -151,7 +146,7 @@ public class ConfigurationService : IConfigurationService
                     ?? _configuration["AzureOpenAI__PromptProfile"]
                     ?? _configuration["AzureOpenAI:PromptProfile"],
                 EnforcePromptProfile = bool.Parse(
-                    _configuration["PROMPT_ENFORCE_PROFILE"] 
+                    _configuration["PROMPT_ENFORCE_PROFILE"]
                     ?? _configuration["AzureOpenAI__EnforcePromptProfile"]
                     ?? _configuration["AzureOpenAI:EnforcePromptProfile"]
                     ?? "false")
@@ -183,10 +178,12 @@ public class ConfigurationService : IConfigurationService
                     ?? _configuration["AVATAR_STYLE"]
                     ?? string.Empty,
                 IsCustomAvatar = DetermineIfCustomAvatar(_configuration),
+                // For custom avatars, default to built-in voice unless explicitly disabled
+                // Custom voice requires a valid CustomVoiceEndpointId
                 UseBuiltInVoice = bool.Parse(
                     _configuration["Avatar__UseBuiltInVoice"]
                     ?? _configuration["Avatar:UseBuiltInVoice"]
-                    ?? "false"),
+                    ?? "true"), // Changed default from false to true
                 EnableSubtitles = bool.Parse(
                     _configuration["ENABLE_SUBTITLES"]
                     ?? _configuration["Avatar__EnableSubtitles"]
@@ -212,13 +209,13 @@ public class ConfigurationService : IConfigurationService
             ?? _configuration["AZURE_COGNITIVE_SEARCH_ENDPOINT"]
             ?? _configuration["AzureCognitiveSearch__Endpoint"]
             ?? _configuration["AzureCognitiveSearch:Endpoint"];
-        
+
         if (!string.IsNullOrEmpty(searchEndpoint))
         {
             config.AzureCognitiveSearch = new AzureCognitiveSearchConfig
             {
                 Endpoint = searchEndpoint,
-                ApiKey = ExtractKeyFromConnectionString("search") 
+                ApiKey = ExtractKeyFromConnectionString("search")
                     ?? _configuration["AZURE_COGNITIVE_SEARCH_API_KEY"]
                     ?? _configuration["AzureCognitiveSearch__ApiKey"]
                     ?? _configuration["AzureCognitiveSearch:ApiKey"]
@@ -246,7 +243,7 @@ public class ConfigurationService : IConfigurationService
         if (string.IsNullOrEmpty(connectionString)) return null;
 
         var match = System.Text.RegularExpressions.Regex.Match(
-            connectionString, 
+            connectionString,
             @"Endpoint=([^;]+)"
         );
         return match.Success ? match.Groups[1].Value : null;
@@ -259,7 +256,7 @@ public class ConfigurationService : IConfigurationService
         if (string.IsNullOrEmpty(connectionString)) return null;
 
         var match = System.Text.RegularExpressions.Regex.Match(
-            connectionString, 
+            connectionString,
             @"Key=([^;]+)"
         );
         return match.Success ? match.Groups[1].Value : null;
@@ -268,10 +265,16 @@ public class ConfigurationService : IConfigurationService
     public async Task SaveConfigurationAsync(AvatarConfiguration config)
     {
         // In a real application, this would save to a database or configuration store
-        // For now, we just cache it in memory
+        // For now, we cache it in memory - it will persist for the app session
         _cachedConfig = config;
         await Task.CompletedTask;
-        _logger.LogInformation("Configuration saved to memory cache");
+        _logger.LogInformation("Configuration saved to memory cache - changes will be used until app restart");
+
+        // Log key settings for debugging
+        _logger.LogInformation("Saved config: Character={Character}, UseBuiltInVoice={UseBuiltIn}, EnablePrivateEndpoint={PrivateEndpoint}",
+            config.Avatar.Character,
+            config.Avatar.UseBuiltInVoice,
+            config.AzureSpeech.EnablePrivateEndpoint);
     }
 
     public async Task<List<PromptProfile>> GetPromptProfilesAsync()

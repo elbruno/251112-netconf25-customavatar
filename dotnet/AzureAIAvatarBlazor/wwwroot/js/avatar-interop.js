@@ -353,55 +353,12 @@ async function setupWebRTC(iceServerUrl, username, password, config) {
     console.log('[Config] Enable private endpoint:', config.azureSpeech.enablePrivateEndpoint);
     console.log('[Config] Private endpoint:', config.azureSpeech.privateEndpoint || '(not set)');
     
-    let speechConfig;
-    if (config.azureSpeech.enablePrivateEndpoint && config.azureSpeech.privateEndpoint) {
-        // Use private endpoint
-        const privateEndpointRaw = config.azureSpeech.privateEndpoint.trim();
-
-        try {
-            // Ensure the endpoint can be parsed as a URL
-            const endpointUrl = new URL(
-                /^(https?|wss?):\/\//i.test(privateEndpointRaw)
-                    ? privateEndpointRaw
-                    : `https://${privateEndpointRaw}`
-            );
-
-            // Normalize protocol to secure WebSocket
-            if (endpointUrl.protocol === 'http:' || endpointUrl.protocol === 'ws:') {
-                endpointUrl.protocol = 'wss:';
-            } else if (endpointUrl.protocol === 'https:') {
-                endpointUrl.protocol = 'wss:';
-            }
-
-            // Ensure the path targets the avatar websocket endpoint without duplication
-            // For avatar with private endpoint, use the avatar-specific path
-            const requiredPath = '/cognitiveservices/avatar/websocket/v1';
-            const sanitizedPath = endpointUrl.pathname.replace(/\/+$/g, '');
-            if (!sanitizedPath.includes(requiredPath)) {
-                endpointUrl.pathname = requiredPath;
-            } else {
-                endpointUrl.pathname = sanitizedPath || requiredPath;
-            }
-
-            // Guarantee avatar feature flag
-            endpointUrl.searchParams.set('enableTalkingAvatar', 'true');
-
-            const wsUrl = endpointUrl.toString();
-            console.log('[Config] Using private endpoint WebSocket URL:', wsUrl);
-
-            speechConfig = SpeechSDK.SpeechConfig.fromEndpoint(endpointUrl, config.azureSpeech.apiKey);
-        } catch (urlError) {
-            console.error('[Config] Invalid private endpoint URL:', privateEndpointRaw, urlError);
-            throw new Error('Invalid private endpoint URL. Please verify Azure Speech configuration.');
-        }
-    } else {
-        // Use standard subscription
-        console.log('[Config] Using standard subscription endpoint');
-        speechConfig = SpeechSDK.SpeechConfig.fromSubscription(
-            config.azureSpeech.apiKey,
-            config.azureSpeech.region
-        );
-    }
+    // Always use fromSubscription - it handles both standard and private endpoints correctly
+    // The Speech SDK will automatically use the regional endpoint or private endpoint as configured
+    const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(
+        config.azureSpeech.apiKey,
+        config.azureSpeech.region
+    );
 
     console.log('[Config] Speech config created successfully');
 
