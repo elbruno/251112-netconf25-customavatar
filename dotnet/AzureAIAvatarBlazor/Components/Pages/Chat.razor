@@ -17,16 +17,19 @@
             disabled="@(isSessionActive || isSessionStarting)">
             <i class="bi bi-play-circle me-1"></i>Open Avatar Session
         </button>
-        <button class="btn btn-secondary" @onclick="ToggleMicrophone" disabled="@(!isSessionActive)">
+        <button class="btn btn-secondary" @onclick="ToggleMicrophone" 
+            disabled="@(!isSessionActive)">
             <i class="bi @(isMicrophoneActive ? "bi-mic-mute" : "bi-mic") me-1"></i>@(isMicrophoneActive ? "Stop            Microphone" : "Start Microphone")
         </button>
-        <button class="btn btn-outline-secondary" @onclick="StopSpeaking" disabled="@(!isSpeaking)">
+        <button class="btn btn-outline-secondary" @onclick="StopSpeaking" 
+            disabled="@(!isSpeaking)">
             <i class="bi bi-stop-fill me-1"></i>Stop Speaking
         </button>
         <button class="btn btn-outline-danger" @onclick="ClearChatHistory">
             <i class="bi bi-trash me-1"></i>Clear Chat History
         </button>
-        <button class="btn btn-outline-primary" @onclick="StopSession" disabled="@(!isSessionActive)">
+        <button class="btn btn-outline-primary" @onclick="StopSession" 
+            disabled="@(!isSessionActive)">
             <i class="bi bi-x-circle me-1"></i>Close Avatar Session
         </button>
     </div>
@@ -203,51 +206,51 @@
 
     private async Task StartAvatarSession()
     {
-        Console.WriteLine("[Session] ========================================");
-        Console.WriteLine("[Session] START AVATAR SESSION BUTTON CLICKED");
-        Console.WriteLine("[Session] ========================================");
+        await JSRuntime.InvokeVoidAsync("console.log", "[Session] ========================================");
+        await JSRuntime.InvokeVoidAsync("console.log", "[Session] START AVATAR SESSION BUTTON CLICKED");
+        await JSRuntime.InvokeVoidAsync("console.log", "[Session] ========================================");
         try
         {
             if (config == null)
             {
-                Console.WriteLine("[Session] ERROR: config is null!");
+                await JSRuntime.InvokeVoidAsync("console.error", "[Session] ERROR: config is null!");
                 throw new Exception("Configuration not loaded. Please refresh the page.");
             }
 
-            Console.WriteLine("[Session] Setting isSessionStarting = true...");
+            await JSRuntime.InvokeVoidAsync("console.log", "[Session] Setting isSessionStarting = true...");
             isSessionStarting = true;
             StateHasChanged();
-            Console.WriteLine("[Session] UI updated with loading state");
+            await JSRuntime.InvokeVoidAsync("console.log", "[Session] UI updated with loading state");
 
             // Validate configuration before proceeding
-            Console.WriteLine("[Session] Validating configuration...");
+            await JSRuntime.InvokeVoidAsync("console.log", "[Session] Validating configuration...");
             var validationError = await ConfigService.ValidateConfigurationAsync(config);
             if (validationError != null)
             {
-                Console.WriteLine($"[Session] VALIDATION FAILED: {validationError}");
+                await JSRuntime.InvokeVoidAsync("console.error", $"[Session] VALIDATION FAILED: {validationError}");
                 throw new Exception($"Configuration error: {validationError}");
             }
-            Console.WriteLine("[Session] Configuration validation passed");
+            await JSRuntime.InvokeVoidAsync("console.log", "[Session] Configuration validation passed");
 
             // Serialize config with camelCase for JavaScript
-            Console.WriteLine("[Session] Serializing config to JSON...");
+            await JSRuntime.InvokeVoidAsync("console.log", "[Session] Serializing config to JSON...");
             var options = new JsonSerializerOptions
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
                 WriteIndented = true
             };
             var configJson = JsonSerializer.Serialize(config, options);
-            Console.WriteLine($"[Session] Config JSON (length: {configJson.Length} chars):");
-            Console.WriteLine(configJson);
+            await JSRuntime.InvokeVoidAsync("console.log", $"[Session] Config JSON (length: {configJson.Length} chars):");
+            await JSRuntime.InvokeVoidAsync("console.log", configJson);
 
-            Console.WriteLine("[Session] Calling JavaScript function: startAvatarSessionFromJson");
+            await JSRuntime.InvokeVoidAsync("console.log", "[Session] Calling JavaScript function: startAvatarSessionFromJson");
             await JSRuntime.InvokeVoidAsync("startAvatarSessionFromJson", configJson);
             
-            Console.WriteLine("[Session] JavaScript call completed successfully");
+            await JSRuntime.InvokeVoidAsync("console.log", "[Session] JavaScript call completed successfully");
             isSessionActive = true;
             isSessionStarting = false;
             StateHasChanged();
-            Console.WriteLine("[Session] Avatar session started successfully!");
+            await JSRuntime.InvokeVoidAsync("console.log", "[Session] Avatar session started successfully!");
         }
         catch (Exception ex)
         {
@@ -255,21 +258,21 @@
             var stackTrace = ex.StackTrace ?? "<no stack trace>";
             var isCancellation = errorMessage.Contains("Avatar start cancelled", System.StringComparison.OrdinalIgnoreCase);
 
-            Console.WriteLine("[Session] ========================================");
-            Console.WriteLine($"[Session] ERROR OCCURRED: {(isCancellation ? "CANCELLED" : "FAILED")}");
-            Console.WriteLine("[Session] ========================================");
-            Console.WriteLine($"[Session] Exception type: {ex.GetType().Name}");
-            Console.WriteLine($"[Session] Error message: {errorMessage}");
+            await JSRuntime.InvokeVoidAsync("console.error", "[Session] ========================================");
+            await JSRuntime.InvokeVoidAsync("console.error", $"[Session] ERROR OCCURRED: {(isCancellation ? "CANCELLED" : "FAILED")}");
+            await JSRuntime.InvokeVoidAsync("console.error", "[Session] ========================================");
+            await JSRuntime.InvokeVoidAsync("console.error", $"[Session] Exception type: {ex.GetType().Name}");
+            await JSRuntime.InvokeVoidAsync("console.error", $"[Session] Error message: {errorMessage}");
             
             if (!isCancellation)
             {
-                Console.WriteLine($"[Session] Stack trace:");
-                Console.WriteLine(stackTrace);
+                await JSRuntime.InvokeVoidAsync("console.error", $"[Session] Stack trace:");
+                await JSRuntime.InvokeVoidAsync("console.error", stackTrace);
                 
                 if (ex.InnerException != null)
                 {
-                    Console.WriteLine($"[Session] Inner exception: {ex.InnerException.Message}");
-                    Console.WriteLine($"[Session] Inner stack trace: {ex.InnerException.StackTrace}");
+                    await JSRuntime.InvokeVoidAsync("console.error", $"[Session] Inner exception: {ex.InnerException.Message}");
+                    await JSRuntime.InvokeVoidAsync("console.error", $"[Session] Inner stack trace: {ex.InnerException.StackTrace}");
                 }
             }
             
@@ -292,6 +295,7 @@
 
     private async Task StopSession()
     {
+        await JSRuntime.InvokeVoidAsync("console.log", "[Button Click] STOP SESSION button clicked");
         try
         {
             await JSRuntime.InvokeVoidAsync("stopAvatarSession");
@@ -308,6 +312,7 @@
 
     private async Task ToggleMicrophone()
     {
+        await JSRuntime.InvokeVoidAsync("console.log", $"[Button Click] TOGGLE MICROPHONE button clicked (current state: {(isMicrophoneActive ? "active" : "inactive")})");
         try
         {
             if (!isMicrophoneActive)
@@ -327,6 +332,7 @@
 
     private async Task StopSpeaking()
     {
+        await JSRuntime.InvokeVoidAsync("console.log", "[Button Click] STOP SPEAKING button clicked");
         try
         {
             await JSRuntime.InvokeVoidAsync("stopSpeaking");
@@ -339,8 +345,9 @@
         }
     }
 
-    private void ClearChatHistory()
+    private async void ClearChatHistory()
     {
+        await JSRuntime.InvokeVoidAsync("console.log", "[Button Click] CLEAR CHAT HISTORY button clicked");
         // Keep system message, clear the rest
         var systemMessage = chatMessages.FirstOrDefault(m => m.Role == "system");
         chatMessages.Clear();
@@ -359,14 +366,26 @@
         }
     }
 
-    private Task SendMessage() => ProcessOutgoingMessageAsync(userMessage, clearInput: true);
+    private async Task SendMessage()
+    {
+        await JSRuntime.InvokeVoidAsync("console.log", "[Button Click] SEND MESSAGE button clicked");
+        await ProcessOutgoingMessageAsync(userMessage, clearInput: true);
+    }
 
     private Task SendPredefinedMessage(string presetMessage) => ProcessOutgoingMessageAsync(presetMessage, clearInput:
     true);
 
-    private Task SendHelloAsync() => SendPredefinedMessage("Hello");
+    private async Task SendHelloAsync()
+    {
+        await JSRuntime.InvokeVoidAsync("console.log", "[Button Click] SEND HELLO button clicked");
+        await SendPredefinedMessage("Hello");
+    }
 
-    private Task SendDotNetConfAsync() => SendPredefinedMessage("What can you tell me about .NET Conf 2025");
+    private async Task SendDotNetConfAsync()
+    {
+        await JSRuntime.InvokeVoidAsync("console.log", "[Button Click] SEND DOTNET CONF button clicked");
+        await SendPredefinedMessage("What can you tell me about .NET Conf 2025");
+    }
 
     private async Task ProcessOutgoingMessageAsync(string? content, bool clearInput)
     {

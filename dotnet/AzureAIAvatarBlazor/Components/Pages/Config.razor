@@ -32,7 +32,8 @@
 
     <div class="alert alert-warning" role="alert">
         <i class="bi bi-exclamation-triangle-fill me-2"></i>
-        <strong>Security Notice:</strong> Exported configuration files contain sensitive information including API keys, endpoints, and subscription keys. 
+        <strong>Security Notice:</strong> Exported configuration files contain sensitive information including API keys,
+        endpoints, and subscription keys.
         Store these files securely and never share them publicly or commit them to version control.
     </div>
 
@@ -64,13 +65,13 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">API Key</label>
-                        <input type="password" class="form-control" @bind="config.AzureSpeech.ApiKey" 
-                               placeholder="Enter your Speech API key">
+                        <input type="password" class="form-control" @bind="config.AzureSpeech.ApiKey"
+                            placeholder="Enter your Speech API key">
                         <div class="form-text">Your API key is stored securely.</div>
                     </div>
                     <div class="form-check mb-3">
-                        <input type="checkbox" class="form-check-input" id="enablePrivateEndpoint" 
-                               @bind="config.AzureSpeech.EnablePrivateEndpoint">
+                        <input type="checkbox" class="form-check-input" id="enablePrivateEndpoint"
+                            @bind="config.AzureSpeech.EnablePrivateEndpoint">
                         <label class="form-check-label" for="enablePrivateEndpoint">
                             Enable Private Endpoint
                         </label>
@@ -79,8 +80,8 @@
                     {
                         <div class="mb-3">
                             <label class="form-label">Private Endpoint URL</label>
-                            <input type="text" class="form-control" @bind="config.AzureSpeech.PrivateEndpoint" 
-                                   placeholder="https://your-endpoint.cognitiveservices.azure.com/">
+                            <input type="text" class="form-control" @bind="config.AzureSpeech.PrivateEndpoint"
+                                placeholder="https://your-endpoint.cognitiveservices.azure.com/">
                         </div>
                     }
                 </div>
@@ -96,18 +97,18 @@
                 <div class="card-body">
                     <div class="mb-3">
                         <label class="form-label">Endpoint</label>
-                        <input type="text" class="form-control" @bind="config.AzureOpenAI.Endpoint" 
-                               placeholder="https://your-resource.openai.azure.com">
+                        <input type="text" class="form-control" @bind="config.AzureOpenAI.Endpoint"
+                            placeholder="https://your-resource.openai.azure.com">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">API Key</label>
-                        <input type="password" class="form-control" @bind="config.AzureOpenAI.ApiKey" 
-                               placeholder="Enter your OpenAI API key">
+                        <input type="password" class="form-control" @bind="config.AzureOpenAI.ApiKey"
+                            placeholder="Enter your OpenAI API key">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Deployment Name</label>
-                        <input type="text" class="form-control" @bind="config.AzureOpenAI.DeploymentName" 
-                               placeholder="gpt-4o-mini">
+                        <input type="text" class="form-control" @bind="config.AzureOpenAI.DeploymentName"
+                            placeholder="gpt-4o-mini">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">System Prompt</label>
@@ -131,13 +132,14 @@
                 <div class="card-body">
                     <div class="mb-3">
                         <label class="form-label">STT Locales</label>
-                        <input type="text" class="form-control" @bind="config.SttTts.SttLocales" 
-                               placeholder="en-US,es-ES,fr-FR">
+                        <input type="text" class="form-control" @bind="config.SttTts.SttLocales"
+                            placeholder="en-US,es-ES,fr-FR">
                         <div class="form-text">Comma-separated list of locale codes</div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">TTS Voice</label>
                         <select class="form-select" @bind="config.SttTts.TtsVoice">
+                            <option value="">(Use Custom Avatar's Built-In Voice)</option>
                             <option value="en-US-AvaMultilingualNeural">en-US-AvaMultilingualNeural</option>
                             <option value="en-US-AndrewMultilingualNeural">en-US-AndrewMultilingualNeural</option>
                             <option value="en-US-EmmaMultilingualNeural">en-US-EmmaMultilingualNeural</option>
@@ -145,15 +147,17 @@
                             <option value="es-ES-ElviraNeural">es-ES-ElviraNeural</option>
                             <option value="fr-FR-DeniseNeural">fr-FR-DeniseNeural</option>
                         </select>
+                        <div class="form-text">Select "(Use Custom Avatar's Built-In Voice)" for custom avatars with
+                            their own voice</div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Custom Voice Endpoint ID (Optional)</label>
-                        <input type="text" class="form-control" @bind="config.SttTts.CustomVoiceEndpointId" 
-                               placeholder="Leave empty for standard voices">
+                        <input type="text" class="form-control" @bind="config.SttTts.CustomVoiceEndpointId"
+                            placeholder="Leave empty for standard voices">
                     </div>
                     <div class="form-check">
-                        <input type="checkbox" class="form-check-input" id="continuousConversation" 
-                               @bind="config.SttTts.ContinuousConversation">
+                        <input type="checkbox" class="form-check-input" id="continuousConversation"
+                            @bind="config.SttTts.ContinuousConversation">
                         <label class="form-check-label" for="continuousConversation">
                             Continuous Conversation
                         </label>
@@ -193,37 +197,37 @@
                         <div class="form-text">Select "No Style" for custom avatars that don't require a style</div>
                     </div>
                     <div class="form-check mb-2">
-                        <input type="checkbox" class="form-check-input" id="customAvatar" 
-                               @bind="config.Avatar.IsCustomAvatar">
+                        <input type="checkbox" class="form-check-input" id="customAvatar"
+                            @bind="config.Avatar.IsCustomAvatar">
                         <label class="form-check-label" for="customAvatar">
                             Custom Avatar
                         </label>
                     </div>
                     <div class="form-check mb-2">
-                        <input type="checkbox" class="form-check-input" id="useBuiltInVoice" 
-                               @bind="config.Avatar.UseBuiltInVoice">
+                        <input type="checkbox" class="form-check-input" id="useBuiltInVoice"
+                            @bind="config.Avatar.UseBuiltInVoice">
                         <label class="form-check-label" for="useBuiltInVoice">
                             Use Built-In Voice
                         </label>
                     </div>
                     <div class="form-check mb-2">
-                        <input type="checkbox" class="form-check-input" id="enableSubtitles" 
-                               @bind="config.Avatar.EnableSubtitles">
+                        <input type="checkbox" class="form-check-input" id="enableSubtitles"
+                            @bind="config.Avatar.EnableSubtitles">
                         <label class="form-check-label" for="enableSubtitles">
                             Enable Subtitles
                         </label>
                     </div>
                     <div class="form-check mb-3">
-                        <input type="checkbox" class="form-check-input" id="enableAutoReconnect" 
-                               @bind="config.Avatar.EnableAutoReconnect">
+                        <input type="checkbox" class="form-check-input" id="enableAutoReconnect"
+                            @bind="config.Avatar.EnableAutoReconnect">
                         <label class="form-check-label" for="enableAutoReconnect">
                             Enable Auto Reconnect
                         </label>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Audio Gain: @config.Avatar.AudioGain.ToString("F1")</label>
-                        <input type="range" class="form-range" min="0.1" max="5.0" step="0.1" 
-                               @bind="config.Avatar.AudioGain">
+                        <input type="range" class="form-range" min="0.1" max="5.0" step="0.1"
+                            @bind="config.Avatar.AudioGain">
                         <div class="form-text">Adjust volume amplification (0.1x - 5.0x)</div>
                     </div>
                 </div>

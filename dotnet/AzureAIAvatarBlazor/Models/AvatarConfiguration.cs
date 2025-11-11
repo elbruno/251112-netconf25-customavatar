@@ -72,8 +72,8 @@ public class AzureCognitiveSearchConfig
 /// </summary>
 public class SttTtsConfig
 {
-    public string SttLocales { get; set; } = "en-US,es-ES,fr-FR,de-DE,it-IT,ja-JP,ko-KR,zh-CN";
-    public string TtsVoice { get; set; } = "en-US-AvaMultilingualNeural";
+    public string SttLocales { get; set; } = "";
+    public string TtsVoice { get; set; } = "";
     public string? CustomVoiceEndpointId { get; set; }
     public bool ContinuousConversation { get; set; }
 }
