@@ -756,7 +756,7 @@ window.speakText = async function(text) {
 
     try {
         const useBuiltInVoice = window.avatarAppConfig.avatar.useBuiltInVoice;
-        const ttsVoice = window.avatarAppConfig.sttTts.ttsVoice || 'en-US-AvaMultilingualNeural';
+        const ttsVoice = window.avatarAppConfig.sttTts.ttsVoice || '';
         
         // Store text for subtitle display (matching Python implementation)
         window.currentSpeakingText = text;

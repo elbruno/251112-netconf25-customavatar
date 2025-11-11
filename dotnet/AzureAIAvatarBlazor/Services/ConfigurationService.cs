@@ -120,9 +120,13 @@ public class ConfigurationService : IConfigurationService
                     ?? _configuration["AzureSpeech:ApiKey"]
                     ?? string.Empty,
                 // DO NOT use PrivateEndpoint for avatars - always use standard regional endpoint
-                PrivateEndpoint = null,
+                PrivateEndpoint = _configuration["AzureSpeech:PrivateEndpoint"]
+                ?? "",
                 // Force EnablePrivateEndpoint to false for avatar support
-                EnablePrivateEndpoint = false
+                EnablePrivateEndpoint = bool.TryParse(
+                    _configuration["AzureSpeech:EnablePrivateEndpoint"], out var enablePrivateEndpointValue)
+                    ? enablePrivateEndpointValue
+                    : false,
             },
             AzureOpenAI = new AzureOpenAIConfig
             {
@@ -160,14 +164,15 @@ public class ConfigurationService : IConfigurationService
                 SttLocales = _configuration["STT_LOCALES"]
                     ?? _configuration["SttTts__SttLocales"]
                     ?? _configuration["SttTts:SttLocales"]
-                    ?? "en-US,es-ES,fr-FR,de-DE",
+                    ?? "en-US",
                 TtsVoice = _configuration["TTS_VOICE"]
                     ?? _configuration["SttTts__TtsVoice"]
                     ?? _configuration["SttTts:TtsVoice"]
-                    ?? "en-US-AvaMultilingualNeural",
+                    ?? "",
                 CustomVoiceEndpointId = _configuration["CUSTOM_VOICE_ENDPOINT_ID"]
                     ?? _configuration["SttTts__CustomVoiceEndpointId"]
-                    ?? _configuration["SttTts:CustomVoiceEndpointId"],
+                    ?? _configuration["SttTts:CustomVoiceEndpointId"]
+                    ?? "",
                 ContinuousConversation = bool.Parse(
                     _configuration["ENABLE_CONTINUOUS_CONVERSATION"]
                     ?? _configuration["SttTts__ContinuousConversation"]
@@ -389,11 +394,16 @@ public class ConfigurationService : IConfigurationService
             return "STT locales are required.";
         }
 
-        if (string.IsNullOrWhiteSpace(config.SttTts.TtsVoice))
+        // TTS voice is only required if NOT using built-in voice
+        if (!config.Avatar.UseBuiltInVoice && string.IsNullOrWhiteSpace(config.SttTts.TtsVoice))
         {
-            _logger.LogWarning("Validation failed: TTS voice is missing");
-            return "TTS voice is required.";
+            _logger.LogWarning("Validation failed: TTS voice is missing (and UseBuiltInVoice is false)");
+            return "TTS voice is required when not using built-in avatar voice.";
         }
+
+        _logger.LogInformation("TTS voice validation: UseBuiltInVoice={UseBuiltIn}, TtsVoice='{Voice}'",
+            config.Avatar.UseBuiltInVoice,
+            config.SttTts.TtsVoice ?? "(empty)");
 
         // Validate private endpoint if enabled
         if (config.AzureSpeech.EnablePrivateEndpoint && !string.IsNullOrWhiteSpace(config.AzureSpeech.PrivateEndpoint))
