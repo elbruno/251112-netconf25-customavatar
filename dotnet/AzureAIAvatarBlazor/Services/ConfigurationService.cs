@@ -157,7 +157,14 @@ public class ConfigurationService : IConfigurationService
                     _configuration["PROMPT_ENFORCE_PROFILE"]
                     ?? _configuration["AzureOpenAI__EnforcePromptProfile"]
                     ?? _configuration["AzureOpenAI:EnforcePromptProfile"]
-                    ?? "false")
+                    ?? "false"),
+                Mode = _configuration["AGENT_MODE"]
+                    ?? _configuration["AzureOpenAI__Mode"]
+                    ?? _configuration["AzureOpenAI:Mode"]
+                    ?? "LLM",
+                AgentId = _configuration["AGENT_ID"]
+                    ?? _configuration["AzureOpenAI__AgentId"]
+                    ?? _configuration["AzureOpenAI:AgentId"]
             },
             SttTts = new SttTtsConfig
             {
@@ -335,30 +342,92 @@ public class ConfigurationService : IConfigurationService
             return "Azure OpenAI configuration is missing.";
         }
 
-        if (string.IsNullOrWhiteSpace(config.AzureOpenAI.Endpoint))
-        {
-            _logger.LogWarning("Validation failed: Azure OpenAI endpoint is missing");
-            return "Azure OpenAI endpoint is required.";
-        }
+        var mode = config.AzureOpenAI.Mode ?? "LLM";
 
-        // Validate endpoint URL format
-        if (!Uri.TryCreate(config.AzureOpenAI.Endpoint, UriKind.Absolute, out var uri) ||
-            (uri.Scheme != "https" && uri.Scheme != "http"))
+        // Validate based on mode
+        if (mode == "LLM")
         {
-            _logger.LogWarning("Validation failed: Invalid Azure OpenAI endpoint URL: {Endpoint}", config.AzureOpenAI.Endpoint);
-            return "Azure OpenAI endpoint must be a valid HTTPS URL.";
-        }
+            // Standard LLM validation
+            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.Endpoint))
+            {
+                _logger.LogWarning("Validation failed: Azure OpenAI endpoint is missing");
+                return "Azure OpenAI endpoint is required.";
+            }
 
-        if (string.IsNullOrWhiteSpace(config.AzureOpenAI.ApiKey))
-        {
-            _logger.LogWarning("Validation failed: Azure OpenAI API key is missing");
-            return "Azure OpenAI API key is required.";
-        }
+            // Validate endpoint URL format
+            if (!Uri.TryCreate(config.AzureOpenAI.Endpoint, UriKind.Absolute, out var uri) ||
+                (uri.Scheme != "https" && uri.Scheme != "http"))
+            {
+                _logger.LogWarning("Validation failed: Invalid Azure OpenAI endpoint URL: {Endpoint}", config.AzureOpenAI.Endpoint);
+                return "Azure OpenAI endpoint must be a valid HTTPS URL.";
+            }
 
-        if (string.IsNullOrWhiteSpace(config.AzureOpenAI.DeploymentName))
+            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.ApiKey))
+            {
+                _logger.LogWarning("Validation failed: Azure OpenAI API key is missing");
+                return "Azure OpenAI API key is required.";
+            }
+
+            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.DeploymentName))
+            {
+                _logger.LogWarning("Validation failed: Azure OpenAI deployment name is missing");
+                return "Azure OpenAI deployment name is required.";
+            }
+        }
+        else if (mode == "Agent-LLM")
         {
-            _logger.LogWarning("Validation failed: Azure OpenAI deployment name is missing");
-            return "Azure OpenAI deployment name is required.";
+            // Agent-LLM mode validation
+            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.Endpoint))
+            {
+                _logger.LogWarning("Validation failed: Azure OpenAI endpoint is required for Agent-LLM mode");
+                return "Azure OpenAI endpoint is required for Agent-LLM mode.";
+            }
+
+            if (!Uri.TryCreate(config.AzureOpenAI.Endpoint, UriKind.Absolute, out var uri) ||
+                (uri.Scheme != "https" && uri.Scheme != "http"))
+            {
+                _logger.LogWarning("Validation failed: Invalid Azure OpenAI endpoint URL: {Endpoint}", config.AzureOpenAI.Endpoint);
+                return "Azure OpenAI endpoint must be a valid HTTPS URL.";
+            }
+
+            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.ApiKey))
+            {
+                _logger.LogWarning("Validation failed: Azure OpenAI API key is required for Agent-LLM mode");
+                return "Azure OpenAI API key is required for Agent-LLM mode.";
+            }
+
+            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.DeploymentName))
+            {
+                _logger.LogWarning("Validation failed: Azure OpenAI deployment name is required for Agent-LLM mode");
+                return "Azure OpenAI deployment name is required for Agent-LLM mode.";
+            }
+        }
+        else if (mode == "Agent-AIFoundry")
+        {
+            // Agent-AIFoundry mode validation
+            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.Endpoint))
+            {
+                _logger.LogWarning("Validation failed: Azure AI Foundry endpoint is required for Agent-AIFoundry mode");
+                return "Azure AI Foundry endpoint is required for Agent-AIFoundry mode.";
+            }
+
+            if (!Uri.TryCreate(config.AzureOpenAI.Endpoint, UriKind.Absolute, out var uri) ||
+                (uri.Scheme != "https" && uri.Scheme != "http"))
+            {
+                _logger.LogWarning("Validation failed: Invalid Azure AI Foundry endpoint URL: {Endpoint}", config.AzureOpenAI.Endpoint);
+                return "Azure AI Foundry endpoint must be a valid HTTPS URL.";
+            }
+
+            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentId))
+            {
+                _logger.LogWarning("Validation failed: Agent ID is required for Agent-AIFoundry mode");
+                return "Agent ID is required for Agent-AIFoundry mode.";
+            }
+        }
+        else
+        {
+            _logger.LogWarning("Validation failed: Invalid mode: {Mode}", mode);
+            return $"Invalid mode '{mode}'. Supported modes are: LLM, Agent-LLM, Agent-AIFoundry.";
         }
 
         // Validate Avatar configuration
