@@ -1,333 +1,467 @@
-# Azure AI Avatar Demo - .NET 9 Blazor Implementation
+# Azure AI Avatar - .NET 9 Blazor with Aspire
 
-A modern, server-side Blazor application that demonstrates Azure AI capabilities including Speech Services (STT/TTS with Talking Avatar) and Azure OpenAI for intelligent conversations.
+A modern, cloud-native Blazor application powered by .NET Aspire that demonstrates Azure AI capabilities including Speech Services (STT/TTS with Talking Avatar) and Azure OpenAI for intelligent conversations.
+
+## 🎯 Overview
+
+This is the **.NET 9 Blazor implementation** of the Azure AI Avatar demo, featuring:
+- **Cloud-Native Architecture** with .NET Aspire orchestration
+- **Enterprise-Grade Features** including OpenTelemetry, health checks, and resilience patterns
+- **Automatic Azure Provisioning** with Azure Developer CLI (`azd up`)
+- **Production-Ready** with managed identities and secure secret management
+- **Developer Experience** optimized with Aspire Dashboard and VS Code integration
 
 ## 🚀 Features
 
 ### Core Capabilities
-- **Interactive Chat**: Real-time conversations with AI-powered avatars
-- **Speech-to-Text (STT)**: Multi-language voice input recognition
-- **Text-to-Speech (TTS)**: Natural-sounding voice synthesis
-- **Talking Avatar**: WebRTC-based video streaming with synchronized lip movement
-- **Azure OpenAI Integration**: Streaming chat completions for natural conversations
-- **Custom Avatars**: Support for custom avatar characters and styles
-- **Multi-language Support**: Automatic language detection for multiple locales
+- ✅ **Interactive Chat**: Real-time conversations with AI-powered avatars
+- ✅ **Speech-to-Text (STT)**: Multi-language voice input recognition
+- ✅ **Text-to-Speech (TTS)**: Natural-sounding voice synthesis  
+- ✅ **Talking Avatar**: WebRTC-based video streaming with synchronized lip movement
+- ✅ **Azure OpenAI Integration**: Streaming chat completions for natural conversations
+- ✅ **Custom Avatars**: Support for custom avatar characters and styles
+- ✅ **Multi-language Support**: Automatic language detection for 40+ languages
 
-### Technical Features
-- **Built with .NET 9**: Latest .NET framework with improved performance
-- **Blazor Server**: Real-time interactivity with SignalR
-- **Azure AI SDKs**: 
-  - `Azure.AI.OpenAI` (2.1.0) for chat completions
-  - `Microsoft.CognitiveServices.Speech` (1.41.1) for speech and avatar
-  - `Azure.Search.Documents` (11.7.0) for On Your Data scenarios
-- **Modern UI**: Bootstrap 5 with Bootstrap Icons
-- **JavaScript Interop**: Seamless integration with Azure Speech SDK
-- **Secure Configuration**: User secrets and appsettings.json
+### Enterprise Features (.NET Aspire)
+- ✅ **Centralized Orchestration**: Single AppHost manages all resources
+- ✅ **No Configuration Files**: Zero appsettings.json files in application
+- ✅ **Built-in Telemetry**: OpenTelemetry with logs, metrics, and distributed tracing
+- ✅ **Service Discovery**: Automatic service registration and discovery
+- ✅ **Health Checks**: Built-in health monitoring and dashboards
+- ✅ **Resilience Patterns**: Automatic retries, circuit breakers, and timeouts
+- ✅ **One-Command Deployment**: Deploy to Azure with `azd up`
+- ✅ **Aspire Dashboard**: Real-time monitoring at https://localhost:15216
 
 ## 📋 Prerequisites
 
-Before you begin, ensure you have the following:
-
 ### Required Software
-- [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0) or later
-- A modern web browser (Chrome, Edge, Firefox, Safari)
-- Visual Studio 2022, Visual Studio Code, or Rider (recommended)
+1. **[.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)** or later
+2. **.NET Aspire Workload**:
+   ```bash
+   dotnet workload install aspire
+   ```
+3. **Modern Browser**: Chrome, Edge, Firefox, or Safari
+4. **IDE** (Recommended): Visual Studio 2022 or VS Code
 
 ### Required Azure Resources
-1. **Azure Speech Service**
-   - Create a Speech resource in Azure Portal
-   - Note the API Key and Region
-   - Enable Avatar feature if using custom avatars
+1. **[Azure Speech Service](https://portal.azure.com/#create/Microsoft.CognitiveServicesSpeechServices)**
+   - Note your API Key and Region (e.g., `westus2`)
+   - Avatar feature must be enabled
 
-2. **Azure OpenAI Service**
-   - Create an Azure OpenAI resource
-   - Deploy a chat model (e.g., gpt-4o-mini, gpt-4)
-   - Note the Endpoint, API Key, and Deployment Name
+2. **[Azure OpenAI Service](https://portal.azure.com/#create/Microsoft.CognitiveServicesOpenAI)**
+   - Deploy a chat model (e.g., `gpt-4o-mini`, `gpt-4`)
+   - Note your Endpoint, API Key, and Deployment Name
 
-3. **Azure Cognitive Search** (Optional - for "On Your Data" scenarios)
-   - Create a Cognitive Search service
+3. **Azure Cognitive Search** (Optional - for "On Your Data")
    - Create and populate a search index
-   - Note the Endpoint, API Key, and Index Name
+   - Note Endpoint, API Key, and Index Name
 
-## 🛠️ Setup Instructions
+## 🚀 Quick Start
 
-### 1. Clone the Repository
+### 5-Minute Setup
 
 ```bash
+# 1. Clone the repository
 git clone https://github.com/elbruno/customavatarlabs.git
-cd customavatarlabs/dotnet/AzureAIAvatarBlazor
+cd customavatarlabs/dotnet
+
+# 2. Install Aspire workload (if not already installed)
+dotnet workload install aspire
+
+# 3. Configure AppHost secrets
+cd AzureAIAvatarBlazor.AppHost
+dotnet user-secrets set "ConnectionStrings:openai" "Endpoint=https://YOUR_RESOURCE.openai.azure.com/;Key=YOUR_OPENAI_KEY;"
+dotnet user-secrets set "ConnectionStrings:speech" "Endpoint=https://westus2.api.cognitive.microsoft.com/;Key=YOUR_SPEECH_KEY;"
+dotnet user-secrets set "Avatar:Character" "lisa"
+dotnet user-secrets set "OpenAI:DeploymentName" "gpt-4o-mini"
+
+# 4. Run with Aspire
+dotnet run
+# OR press Ctrl+Shift+B in VS Code
+
+# 5. Open in browser
+# Aspire Dashboard: https://localhost:15216
+# Blazor App: https://localhost:5001
 ```
 
-### 2. Configure Azure Credentials
+**Replace:**
+- `YOUR_RESOURCE`: Your Azure OpenAI resource name
+- `YOUR_OPENAI_KEY`: Your Azure OpenAI API key
+- `YOUR_SPEECH_KEY`: Your Azure Speech Service API key
+- `gpt-4o-mini`: Your deployed model name
 
-You have three options for configuration:
+### Access Points
 
-#### Option A: User Secrets (Recommended for Development)
+Once running, you'll have two URLs:
+
+1. **Aspire Dashboard**: https://localhost:15216
+   - Monitor all services in real-time
+   - View logs, metrics, and traces
+   - Check resource health and dependencies
+   - Distributed tracing visualization
+
+2. **Blazor Application**: https://localhost:5001
+   - Main avatar chat interface
+   - Configuration management
+   - Interactive demo
+
+## 📚 Documentation
+
+### Getting Started
+- **[Quick Start Guide](docs/QUICKSTART.md)** - Get running in 5 minutes
+- **[Configuration Guide](#-configuration)** - Detailed setup options
+
+### Architecture & Design  
+- **[Architecture Overview](docs/ARCHITECTURE.md)** - System design and components
+- **[Technology Stack](#-technology-stack)** - Libraries and frameworks used
+
+### Deployment
+- **[Deployment Guide](docs/DEPLOYMENT.md)** - Production deployment options
+- **[Azure Provisioning](#-deployment)** - Automatic resource creation with `azd up`
+
+### Migration & History
+- **[Aspire Migration](docs/migration/)** - Migration from appsettings.json to Aspire
+  - [Migration Summary](docs/migration/MIGRATION-SUMMARY.md) - Overview and key changes
+  - [Implementation Details](docs/migration/IMPLEMENTATION-COMPLETE.md) - Technical implementation
+  - [Final Summary](docs/migration/FINAL-SUMMARY.md) - Results and verification
+
+## ⚙️ Configuration
+
+### Aspire Connection Strings (Recommended)
+
+With Aspire, all configuration is managed by the AppHost project:
 
 ```bash
-# Initialize user secrets
-dotnet user-secrets init
+cd AzureAIAvatarBlazor.AppHost
 
-# Set Azure Speech credentials
-dotnet user-secrets set "AzureSpeech:Region" "westus2"
-dotnet user-secrets set "AzureSpeech:ApiKey" "your-speech-api-key"
+# Azure OpenAI (connection string format)
+dotnet user-secrets set "ConnectionStrings:openai" \
+  "Endpoint=https://YOUR_RESOURCE.openai.azure.com/;Key=YOUR_KEY;"
 
-# Set Azure OpenAI credentials
-dotnet user-secrets set "AzureOpenAI:Endpoint" "https://your-resource.openai.azure.com"
-dotnet user-secrets set "AzureOpenAI:ApiKey" "your-openai-api-key"
-dotnet user-secrets set "AzureOpenAI:DeploymentName" "gpt-4o-mini"
+# Azure Speech Service (connection string format)
+dotnet user-secrets set "ConnectionStrings:speech" \
+  "Endpoint=https://westus2.api.cognitive.microsoft.com/;Key=YOUR_KEY;"
 
-# Optional: Customize system prompt
-dotnet user-secrets set "AzureOpenAI:SystemPrompt" "You are a helpful AI assistant."
-
-# Optional: Configure avatar
+# Application defaults
 dotnet user-secrets set "Avatar:Character" "lisa"
 dotnet user-secrets set "Avatar:Style" "casual-sitting"
-
-# Optional: Set Azure Cognitive Search credentials
-dotnet user-secrets set "AzureCognitiveSearch:Endpoint" "https://your-search.search.windows.net"
-dotnet user-secrets set "AzureCognitiveSearch:ApiKey" "your-search-api-key"
-dotnet user-secrets set "AzureCognitiveSearch:IndexName" "your-index-name"
+dotnet user-secrets set "OpenAI:DeploymentName" "gpt-4o-mini"
+dotnet user-secrets set "SystemPrompt" "You are a helpful AI assistant."
 ```
 
-#### Option B: Environment Variables (Compatible with Original .env Format)
+### Environment Variables (CI/CD)
 
-The application also supports the original environment variable names from the JavaScript version:
+For automated deployments and CI/CD pipelines:
 
-**Windows (PowerShell)**:
+**Windows PowerShell:**
 ```powershell
-$env:AZURE_SPEECH_REGION = "westus2"
-$env:AZURE_SPEECH_API_KEY = "your-speech-api-key"
-$env:AZURE_OPENAI_ENDPOINT = "https://your-resource.openai.azure.com"
-$env:AZURE_OPENAI_API_KEY = "your-openai-api-key"
-$env:AZURE_OPENAI_DEPLOYMENT_NAME = "gpt-4o-mini"
-$env:SYSTEM_PROMPT = "You are a helpful AI assistant."
-$env:AVATAR_CHARACTER = "lisa"
-$env:AVATAR_STYLE = "casual-sitting"
-$env:TTS_VOICE = "en-US-AvaMultilingualNeural"
+$env:ConnectionStrings__openai = "Endpoint=https://...;Key=...;"
+$env:ConnectionStrings__speech = "Endpoint=https://westus2.api.cognitive.microsoft.com/;Key=...;"
+$env:Avatar__Character = "lisa"
+$env:OpenAI__DeploymentName = "gpt-4o-mini"
 ```
 
-**macOS/Linux (Bash)**:
+**Linux/macOS:**
 ```bash
-export AZURE_SPEECH_REGION="westus2"
-export AZURE_SPEECH_API_KEY="your-speech-api-key"
-export AZURE_OPENAI_ENDPOINT="https://your-resource.openai.azure.com"
-export AZURE_OPENAI_API_KEY="your-openai-api-key"
-export AZURE_OPENAI_DEPLOYMENT_NAME="gpt-4o-mini"
-export SYSTEM_PROMPT="You are a helpful AI assistant."
-export AVATAR_CHARACTER="lisa"
-export AVATAR_STYLE="casual-sitting"
-export TTS_VOICE="en-US-AvaMultilingualNeural"
+export ConnectionStrings__openai="Endpoint=https://...;Key=...;"
+export ConnectionStrings__speech="Endpoint=https://westus2.api.cognitive.microsoft.com/;Key=...;"
+export Avatar__Character="lisa"
+export OpenAI__DeploymentName="gpt-4o-mini"
 ```
 
-#### Option C: appsettings.json (Not Recommended - Less Secure)
+**Note:** Use double underscores (`__`) for nested configuration keys.
 
-Edit `appsettings.json` and add your credentials:
+### Legacy Environment Variables (Backward Compatible)
 
-```json
-{
-  "AzureSpeech": {
-    "Region": "westus2",
-    "ApiKey": "your-speech-api-key"
-  },
-  "AzureOpenAI": {
-    "Endpoint": "https://your-resource.openai.azure.com",
-    "ApiKey": "your-openai-api-key",
-    "DeploymentName": "gpt-4o-mini",
-    "SystemPrompt": "You are a helpful AI assistant."
-  },
-  "Avatar": {
-    "Character": "lisa",
-    "Style": "casual-sitting"
-  }
-}
-```
-
-⚠️ **Security Warning**: Never commit API keys to source control!
-
-### 3. Build and Run
+The application also supports legacy variable names from the JavaScript version:
 
 ```bash
-# Restore dependencies
-dotnet restore
+AZURE_SPEECH_REGION=westus2
+AZURE_SPEECH_API_KEY=your_key
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com
+AZURE_OPENAI_API_KEY=your_key
+AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4o-mini
+AVATAR_CHARACTER=lisa
+TTS_VOICE=en-US-AvaMultilingualNeural
+```
 
-# Build the project
-dotnet build
+## 🏗️ Technology Stack
 
-# Run the application
+### Framework & Runtime
+- **.NET 9** - Latest .NET framework with performance improvements
+- **Blazor Server** - Server-side rendering with SignalR real-time communication
+- **.NET Aspire 9.5** - Cloud-native orchestration and observability
+
+### Azure SDK Integration
+- **Aspire.Azure.AI.OpenAI (9.5.2-preview)** - Managed OpenAI client with DI
+- **Microsoft.CognitiveServices.Speech (1.46.0)** - Speech SDK for STT/TTS/Avatar
+- **Azure.Search.Documents (11.7.0)** - Optional search integration
+
+### Aspire Components
+- **Aspire.Hosting.AppHost** - Orchestration host
+- **Aspire.Hosting.Azure.CognitiveServices** - Azure AI resource definitions
+- **Aspire.Hosting.Azure.Search** - Search resource definitions
+- **ServiceDefaults** - Shared telemetry and resilience patterns
+
+### UI & Frontend
+- **Bootstrap 5** - Responsive UI framework
+- **Bootstrap Icons** - Icon library
+- **JavaScript Interop** - Browser WebRTC integration
+
+## 💬 Using the Application
+
+### Home Page
+- Welcome screen with feature overview
+- Quick navigation to Chat or Configure
+
+### Configuration Page (`/config`)
+1. **Verify Credentials** - Check Azure service settings
+2. **Customize Avatar** - Choose character and style
+3. **Adjust Settings** - Audio gain, subtitles, reconnect options
+4. **Test Connections** - Validate Speech and OpenAI connectivity
+5. **Save** - Persist to browser localStorage
+
+### Chat Page (`/chat`)
+1. **Open Avatar Session** - Establish WebRTC connection
+2. **Type Messages** - Enable "Type Message" and send text
+3. **View Conversation** - Chat history in right panel
+4. **Control Avatar** - Stop speaking, clear history, close session
+
+## 🚢 Deployment
+
+### Local Development
+
+**Option 1: VS Code (Easiest)**
+```bash
+# Press Ctrl+Shift+B (default task)
+# OR
+# Ctrl+Shift+P → "Tasks: Run Task" → "Aspire: Run"
+```
+
+**Option 2: Command Line**
+```bash
+cd AzureAIAvatarBlazor.AppHost
 dotnet run
 ```
 
-The application will start and be available at:
-- HTTP: `http://localhost:5000`
-- HTTPS: `https://localhost:5001`
+**Option 3: Visual Studio 2022**
+1. Open `AzureAIAvatarBlazor.slnx`
+2. Set `AzureAIAvatarBlazor.AppHost` as startup project
+3. Press **F5** to debug
 
-## 📖 Usage Guide
+### Azure Deployment (Production)
 
-### Getting Started
+**One-Command Deployment with Azure Developer CLI:**
 
-1. **Navigate to Home Page**: Open your browser to the application URL
-2. **Configure Settings**: Click "Configure" or go to `/config`
-3. **Enter Credentials**: Add your Azure service credentials
-4. **Save Configuration**: Click "Save Configuration"
-5. **Start Chatting**: Navigate to "Chat" page and click "Open Avatar Session"
+```bash
+# Install Azure Developer CLI
+winget install microsoft.azd  # Windows
+brew install azd              # macOS
+curl -fsSL https://aka.ms/install-azd.sh | bash  # Linux
 
-### Configuration Options
+# Initialize (one-time)
+cd AzureAIAvatarBlazor.AppHost
+azd init
 
-#### Azure Speech Service
-- **Region**: Select your Azure Speech resource region
-- **API Key**: Enter your Speech Service subscription key
-- **Private Endpoint**: Optional custom endpoint URL
-
-#### Azure OpenAI
-- **Endpoint**: Your Azure OpenAI resource endpoint
-- **API Key**: Your Azure OpenAI subscription key
-- **Deployment Name**: The name of your deployed model
-- **System Prompt**: Customize the AI assistant's behavior
-
-#### STT/TTS Settings
-- **STT Locales**: Comma-separated list of language codes (e.g., `en-US,es-ES,fr-FR`)
-- **TTS Voice**: Select from available neural voices
-- **Custom Voice**: Optional endpoint ID for custom voices
-- **Continuous Conversation**: Enable for ongoing dialogue
-
-#### Avatar Settings
-- **Character**: Select avatar character (Lisa, Harry, Jeff, etc.)
-- **Style**: Choose avatar style (casual-sitting, business, formal)
-- **Custom Avatar**: Enable for custom avatar support
-- **Use Built-In Voice**: Use avatar's native voice
-- **Enable Subtitles**: Show text subtitles during speech
-- **Audio Gain**: Adjust volume amplification (0.1x - 5.0x)
-
-### Using the Chat Interface
-
-1. **Open Avatar Session**: Click the button to establish WebRTC connection
-2. **Type Messages**: Enable "Type Message" checkbox and send text
-3. **View Conversation**: Messages appear in the conversation panel
-4. **Stop Speaking**: Interrupt the avatar at any time
-5. **Clear History**: Reset conversation while keeping system prompt
-6. **Close Session**: Disconnect when finished
-
-## 🏗️ Architecture Overview
-
-### Technology Stack
-
-```
-┌─────────────────────────────────────────┐
-│         Blazor Server (.NET 9)          │
-├─────────────────────────────────────────┤
-│  Components  │  Services  │   Models    │
-│  - Chat      │  - OpenAI  │  - Config   │
-│  - Config    │  - Speech  │  - Messages │
-│  - Home      │  - Config  │  - Profiles │
-├─────────────────────────────────────────┤
-│        JavaScript Interop Layer         │
-│     (avatar-interop.js + Speech SDK)    │
-├─────────────────────────────────────────┤
-│            Azure Services               │
-│  ┌──────────┬──────────┬──────────┐   │
-│  │  Speech  │  OpenAI  │  Search  │   │
-│  │  Service │  Service │  Service │   │
-│  └──────────┴──────────┴──────────┘   │
-└─────────────────────────────────────────┘
+# Deploy to Azure
+azd up
 ```
 
-### Component Architecture
+**What `azd up` does:**
+1. ✅ Creates Azure OpenAI resource
+2. ✅ Deploys GPT-4o-mini model
+3. ✅ Creates Azure Speech Service  
+4. ✅ Creates Container Apps environment
+5. ✅ Builds and deploys Blazor app as container
+6. ✅ Configures managed identities (no keys needed!)
+7. ✅ Sets up monitoring and logging
 
-- **Pages**: Blazor components for UI (`Chat.razor`, `Config.razor`, `Home.razor`)
-- **Services**: 
-  - `AzureOpenAIService`: Handles chat completions with streaming
-  - `AzureSpeechService`: Provides speech credentials
-  - `ConfigurationService`: Manages application settings
-- **Models**: Data structures for configuration and messages
-- **JavaScript**: Browser-side WebRTC and Speech SDK integration
+**Customize deployment:**
+```bash
+# Set custom region
+azd env set AZURE_LOCATION westus2
 
-### Data Flow
+# Set resource group prefix
+azd env set AZURE_RESOURCE_GROUP_PREFIX rg-avatar
 
-1. User interacts with Blazor UI
-2. UI calls C# service methods
-3. Services communicate with Azure APIs
-4. JavaScript interop handles WebRTC/Speech SDK
-5. Real-time updates via SignalR
+# Deploy
+azd up
+```
 
-## 🔒 Security Best Practices
-
-### Credential Management
-- ✅ Use **User Secrets** for local development
-- ✅ Use **Azure Key Vault** for production
-- ✅ Use **Managed Identities** when possible
-- ❌ Never commit secrets to source control
-- ❌ Don't hardcode API keys in code
-
-### Configuration Files
-- `.gitignore` excludes sensitive files
-- `appsettings.json` should only contain non-sensitive defaults
-- `appsettings.Development.json` is for development overrides
-- User secrets stored outside project directory
+See [Deployment Guide](docs/DEPLOYMENT.md) for detailed options including Azure App Service, Container Apps, and Kubernetes.
 
 ## 🐛 Troubleshooting
 
-### Common Issues
+### "Azure Speech credentials not configured"
 
-#### Avatar Session Won't Start
-- **Check credentials**: Verify Speech API key and region in configuration
-- **Check browser**: Ensure WebRTC is supported (Chrome, Edge, Firefox, Safari)
-- **Check network**: WebRTC requires network access for STUN/TURN servers
-- **Check console**: Open browser DevTools for JavaScript errors
+**Solution**: Configure AppHost secrets:
+```bash
+cd AzureAIAvatarBlazor.AppHost
+dotnet user-secrets set "ConnectionStrings:speech" \
+  "Endpoint=https://westus2.api.cognitive.microsoft.com/;Key=YOUR_KEY;"
+```
 
-#### No Audio from Avatar
-- **Check volume**: Adjust Audio Gain in configuration
-- **Check permissions**: Allow microphone/audio in browser
-- **Check audio device**: Ensure speakers are connected and working
-- **Check Web Audio**: Some browsers may block autoplay
+### "Failed to get avatar token"
 
-#### Chat Not Responding
-- **Check OpenAI credentials**: Verify endpoint, key, and deployment name
-- **Check quota**: Ensure you haven't exceeded API rate limits
-- **Check deployment**: Verify model is deployed and accessible
-- **Check network**: Ensure connectivity to Azure OpenAI
+**Causes:**
+- Wrong Speech Service region
+- Invalid API key
+- Avatar feature not enabled
+- Network connectivity issues
 
-#### Build Errors
-- **Restore packages**: Run `dotnet restore`
-- **Check .NET version**: Ensure .NET 9 SDK is installed
-- **Clean build**: Run `dotnet clean` then `dotnet build`
-- **Check NuGet**: Clear NuGet cache if packages fail to restore
+**Solution:**
+1. Verify credentials in Azure Portal
+2. Check region matches your resource
+3. Test connection in Config page
+
+### Avatar video won't load
+
+**Causes:**
+- Browser doesn't support WebRTC
+- Firewall blocking WebRTC
+- Certificate issues (self-signed HTTPS)
+
+**Solutions:**
+- Use Chrome or Edge (best WebRTC support)
+- Check browser console (F12) for errors
+- Try in incognito/private mode
+- Disable browser extensions temporarily
+
+### Chat not responding
+
+**Causes:**
+- Invalid OpenAI credentials
+- Model not deployed
+- Rate limits exceeded
+
+**Solutions:**
+1. Verify OpenAI endpoint and key
+2. Check model deployment in Azure Portal
+3. Test connection in Config page
+4. Wait if rate limited
+
+### Port already in use
+
+**Error**: `Failed to bind to address http://127.0.0.1:5000`
+
+**Solution:**
+```bash
+# Use different port
+dotnet run --urls "http://localhost:5100;https://localhost:5101"
+```
+
+### Build errors
+
+**Solutions:**
+```bash
+# Clear and restore
+dotnet clean
+dotnet restore
+dotnet build
+
+# Clear NuGet cache if needed
+dotnet nuget locals all --clear
+```
+
+## 🎨 Customization
+
+### Modify System Prompt
+
+In AppHost user secrets:
+```bash
+dotnet user-secrets set "SystemPrompt" "You are a technical expert specializing in software development."
+```
+
+### Change Avatar
+
+In AppHost user secrets:
+```bash
+dotnet user-secrets set "Avatar:Character" "harry"
+dotnet user-secrets set "Avatar:Style" "business"
+```
+
+Available characters: `lisa`, `harry`, `jeff`, `lori`, `carla`
+
+### Extend Services
+
+Add new services in `AzureAIAvatarBlazor/Services/`:
+
+```csharp
+public interface IMyService
+{
+    Task<string> DoSomethingAsync();
+}
+
+public class MyService : IMyService
+{
+    public Task<string> DoSomethingAsync() => Task.FromResult("Done!");
+}
+```
+
+Register in `Program.cs`:
+```csharp
+builder.Services.AddScoped<IMyService, MyService>();
+```
+
+### Add Aspire Resources
+
+In `AppHost.cs`:
+```csharp
+var redis = builder.AddRedis("redis");
+var postgres = builder.AddPostgres("postgres");
+
+builder.AddProject<Projects.AzureAIAvatarBlazor>("azureaiavatarblazor")
+    .WithReference(redis)
+    .WithReference(postgres);
+```
+
+## 🔒 Security
+
+### Best Practices
+- ✅ Use User Secrets for local development
+- ✅ Use Managed Identities in production (no keys!)
+- ✅ Use Azure Key Vault for secret storage
+- ✅ Never commit secrets to source control
+- ✅ Rotate keys regularly
+- ✅ Use HTTPS in production
+
+### What's Protected
+- AppHost user secrets stored outside repository
+- `.gitignore` excludes all credential files
+- Aspire manages Azure credentials automatically
+- Managed Identity eliminates key management in production
 
 ## 📚 Additional Resources
 
-### Documentation
-- [Azure Speech Service Documentation](https://docs.microsoft.com/azure/cognitive-services/speech-service/)
-- [Azure OpenAI Service Documentation](https://learn.microsoft.com/azure/ai-services/openai/)
+### Official Documentation
+- [.NET Aspire Documentation](https://learn.microsoft.com/dotnet/aspire/)
+- [Azure Speech Service](https://docs.microsoft.com/azure/cognitive-services/speech-service/)
+- [Azure OpenAI Service](https://learn.microsoft.com/azure/ai-services/openai/)
 - [Blazor Documentation](https://learn.microsoft.com/aspnet/core/blazor/)
-- [.NET 9 Documentation](https://learn.microsoft.com/dotnet/core/whats-new/dotnet-9)
 
-### Samples and Tutorials
+### Code Samples
+- [Aspire Samples](https://github.com/dotnet/aspire-samples)
 - [Azure Speech SDK Samples](https://github.com/Azure-Samples/cognitive-services-speech-sdk)
-- [Azure OpenAI Samples](https://github.com/Azure-Samples/openai-dotnet-samples)
-- [Blazor Samples](https://github.com/dotnet/blazor-samples)
+- [Azure OpenAI .NET Samples](https://github.com/Azure-Samples/openai-dotnet-samples)
+
+### Related
+- [JavaScript Implementation](../python/README.md) - Lightweight web version
+- [Avatar SDK Documentation](https://learn.microsoft.com/azure/ai-services/speech-service/how-to-use-avatar)
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit issues or pull requests.
+See the main repository [CONTRIBUTING](../CONTRIBUTING.md) guide for details.
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT License - see [LICENSE](../LICENSE) file for details.
 
 ## 👥 Credits
 
 - **Original Idea**: Pablo Piovano ([LinkedIn](https://www.linkedin.com/in/ppiova/))
-- **Implementation**: Bruno Capuano
-- **Powered By**: Azure AI Services, .NET 9, Blazor
-
-## 🆘 Support
-
-For questions or issues:
-1. Check the [Troubleshooting](#-troubleshooting) section
-2. Review [Azure documentation](https://docs.microsoft.com/azure/)
-3. Open an issue on GitHub
-4. Contact the maintainers
+- **Implementation**: Bruno Capuano ([GitHub](https://github.com/elbruno)) ([LinkedIn](https://www.linkedin.com/in/brunocapuano/))
+- **Powered By**: Microsoft Azure AI Services & .NET Aspire
 
 ---
 
-**Built with ❤️ using .NET 9 and Azure AI**
+**Need help?** Check the [Quick Start Guide](docs/QUICKSTART.md) or [open an issue](https://github.com/elbruno/customavatarlabs/issues)
