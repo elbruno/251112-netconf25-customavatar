@@ -1,0 +1,118 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        // ==============================
+        // Python Dev Server Tasks
+        // ==============================
+        {
+            "label": "Dev Server (HTTP)",
+            "type": "shell",
+            "command": "node",
+            "args": ["server.js"],
+            "options": {
+                "cwd": "${workspaceFolder}/python/dev-server"
+            },
+            "isBackground": true,
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            }
+        },
+        {
+            "label": "Dev Server (HTTPS)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-c",
+                "PORT=5173 node server.js"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/python/dev-server"
+            },
+            "isBackground": true,
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            }
+        },
+
+        // ==============================
+        // .NET Aspire Tasks
+        // ==============================
+        {
+            "label": "Aspire: Run (dotnet run)",
+            "type": "shell",
+            "command": "dotnet",
+            "args": [
+                "run",
+                "--project",
+                "${workspaceFolder}/dotnet/AzureAIAvatarBlazor.AppHost/AzureAIAvatarBlazor.AppHost.csproj"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/dotnet/AzureAIAvatarBlazor.AppHost"
+            },
+            "isBackground": true,
+            "problemMatcher": {
+                "pattern": {
+                    "regexp": "^(.*)$",
+                    "file": 1,
+                    "location": 2,
+                    "message": 3
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "^Building\\.\\.\\.$",
+                    "endsPattern": "^.*(Now listening on|Application started).*$"
+                }
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "clear": true,
+                "echo": true
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Aspire: Build",
+            "type": "shell",
+            "command": "dotnet",
+            "args": [
+                "build",
+                "${workspaceFolder}/dotnet/AzureAIAvatarBlazor.AppHost/AzureAIAvatarBlazor.AppHost.csproj",
+                "/property:GenerateFullPaths=true",
+                "/consoleloggerparameters:NoSummary"
+            ],
+            "problemMatcher": "$msCompile",
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "Aspire: Clean",
+            "type": "shell",
+            "command": "dotnet",
+            "args": [
+                "clean",
+                "${workspaceFolder}/dotnet/AzureAIAvatarBlazor.slnx"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Aspire: Restore",
+            "type": "shell",
+            "command": "dotnet",
+            "args": [
+                "restore",
+                "${workspaceFolder}/dotnet/AzureAIAvatarBlazor.slnx"
+            ],
+            "problemMatcher": []
+        }
+    ]
+}

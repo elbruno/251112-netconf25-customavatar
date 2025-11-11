@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-Get up and running with the Azure AI Avatar Blazor application in minutes!
+Get up and running with the Azure AI Avatar Blazor application in minutes using .NET Aspire!
 
 ## 🚀 5-Minute Setup
 
@@ -14,6 +14,9 @@ dotnet --version
 
 # Check git
 git --version
+
+# Install Aspire workload
+dotnet workload install aspire
 ```
 
 If you don't have .NET 9:
@@ -25,90 +28,130 @@ If you don't have .NET 9:
 # Clone the repository
 git clone https://github.com/elbruno/customavatarlabs.git
 
-# Navigate to the .NET project
-cd customavatarlabs/dotnet/AzureAIAvatarBlazor
+# Navigate to the AppHost project (Aspire orchestrator)
+cd customavatarlabs/dotnet/AzureAIAvatarBlazor.AppHost
 ```
 
 ### Step 3: Configure Credentials
 
-Choose your preferred method:
+With Aspire, all credentials are managed by the AppHost. Choose your configuration method:
 
-#### Method A: User Secrets (Recommended)
+#### Method A: AppHost User Secrets (Recommended for Development)
 
 ```bash
-# Set up Azure Speech Service
-dotnet user-secrets set "AzureSpeech:Region" "westus2"
-dotnet user-secrets set "AzureSpeech:ApiKey" "YOUR_SPEECH_API_KEY"
+# Navigate to AppHost project (if not already there)
+cd dotnet/AzureAIAvatarBlazor.AppHost
 
-# Set up Azure OpenAI
-dotnet user-secrets set "AzureOpenAI:Endpoint" "https://YOUR_RESOURCE.openai.azure.com"
-dotnet user-secrets set "AzureOpenAI:ApiKey" "YOUR_OPENAI_API_KEY"
-dotnet user-secrets set "AzureOpenAI:DeploymentName" "gpt-4o-mini"
-dotnet user-secrets set "AzureOpenAI:SystemPrompt" "You are a helpful AI assistant."
+# Configure Azure OpenAI connection string
+dotnet user-secrets set "ConnectionStrings:openai" "Endpoint=https://YOUR_RESOURCE.openai.azure.com/;Key=YOUR_OPENAI_API_KEY;"
 
-# Optional: Configure avatar
+# Configure Azure Speech Service connection string
+dotnet user-secrets set "ConnectionStrings:speech" "Endpoint=https://westus2.api.cognitive.microsoft.com/;Key=YOUR_SPEECH_API_KEY;"
+
+# Set application defaults
 dotnet user-secrets set "Avatar:Character" "lisa"
 dotnet user-secrets set "Avatar:Style" "casual-sitting"
+dotnet user-secrets set "OpenAI:DeploymentName" "gpt-4o-mini"
+dotnet user-secrets set "SystemPrompt" "You are a helpful AI assistant."
 ```
 
 Replace:
-- `YOUR_SPEECH_API_KEY`: Your Azure Speech Service key
 - `YOUR_RESOURCE`: Your Azure OpenAI resource name
 - `YOUR_OPENAI_API_KEY`: Your Azure OpenAI key
+- `YOUR_SPEECH_API_KEY`: Your Azure Speech Service key
 - `gpt-4o-mini`: Your deployed model name
 
-#### Method B: Environment Variables (Compatible with Original .env)
+**Important**: Notice the connection string format with `Endpoint=...;Key=...;` - this is the Aspire connection string format.
 
-The app supports both formats: the new .NET style (`AzureSpeech:Region`) and the original JavaScript style (`AZURE_SPEECH_REGION`).
+#### Method B: Environment Variables (CI/CD & Production)
 
-**Windows (PowerShell)**:
 ```powershell
-# Original .env format (compatible with JavaScript version)
-$env:AZURE_SPEECH_REGION = "westus2"
-$env:AZURE_SPEECH_API_KEY = "YOUR_SPEECH_API_KEY"
-$env:AZURE_OPENAI_ENDPOINT = "https://YOUR_RESOURCE.openai.azure.com"
-$env:AZURE_OPENAI_API_KEY = "YOUR_OPENAI_API_KEY"
-$env:AZURE_OPENAI_DEPLOYMENT_NAME = "gpt-4o-mini"
-$env:SYSTEM_PROMPT = "You are a helpful AI assistant."
-$env:AVATAR_CHARACTER = "lisa"
-$env:AVATAR_STYLE = "casual-sitting"
+# Windows PowerShell
+$env:ConnectionStrings__openai = "Endpoint=https://YOUR_RESOURCE.openai.azure.com/;Key=YOUR_OPENAI_API_KEY;"
+$env:ConnectionStrings__speech = "Endpoint=https://westus2.api.cognitive.microsoft.com/;Key=YOUR_SPEECH_API_KEY;"
+$env:Avatar__Character = "lisa"
+$env:OpenAI__DeploymentName = "gpt-4o-mini"
 ```
 
 **macOS/Linux (Bash)**:
 ```bash
-# Original .env format (compatible with JavaScript version)
-export AZURE_SPEECH_REGION="westus2"
-export AZURE_SPEECH_API_KEY="YOUR_SPEECH_API_KEY"
-export AZURE_OPENAI_ENDPOINT="https://YOUR_RESOURCE.openai.azure.com"
-export AZURE_OPENAI_API_KEY="YOUR_OPENAI_API_KEY"
-export AZURE_OPENAI_DEPLOYMENT_NAME="gpt-4o-mini"
-export SYSTEM_PROMPT="You are a helpful AI assistant."
-export AVATAR_CHARACTER="lisa"
-export AVATAR_STYLE="casual-sitting"
+# Use double underscores for nested configuration
+export ConnectionStrings__openai="Endpoint=https://YOUR_RESOURCE.openai.azure.com/;Key=YOUR_OPENAI_API_KEY;"
+export ConnectionStrings__speech="Endpoint=https://westus2.api.cognitive.microsoft.com/;Key=YOUR_SPEECH_API_KEY;"
+export Avatar__Character="lisa"
+export OpenAI__DeploymentName="gpt-4o-mini"
 ```
+
+#### Method C: Azure Provisioning (Production - Automatic)
+
+For production deployments, Aspire can automatically provision Azure resources:
+
+```bash
+cd dotnet/AzureAIAvatarBlazor.AppHost
+
+# Configure Azure subscription (one-time)
+dotnet user-secrets set "Azure:SubscriptionId" "YOUR_SUBSCRIPTION_ID"
+dotnet user-secrets set "Azure:ResourceGroupPrefix" "rg-avatar"
+dotnet user-secrets set "Azure:Location" "westus2"
+
+# Deploy using Azure Developer CLI
+azd init
+azd up
+```
+
+Aspire will automatically:
+- ✅ Create Azure OpenAI resource
+- ✅ Create Azure Speech Service resource
+- ✅ Deploy GPT-4o-mini model
+- ✅ Configure all connection strings
+- ✅ Set up managed identities
 
 ### Step 4: Run the Application
 
+With Aspire, you run from the AppHost project, which orchestrates all services:
+
+#### Option A: VS Code (Recommended)
+
+1. Open the repository in VS Code
+2. Press **Ctrl+Shift+B** (or Cmd+Shift+B on macOS)
+3. Or: Press **Ctrl+Shift+P** → "Tasks: Run Task" → "Aspire: Run"
+
+#### Option B: Command Line
+
 ```bash
-# Start the application
+# From the AppHost directory
+cd dotnet/AzureAIAvatarBlazor.AppHost
 dotnet run
 ```
 
-You should see output like:
+#### Option C: Visual Studio 2022
+
+1. Open `dotnet/AzureAIAvatarBlazor.slnx`
+2. Set `AzureAIAvatarBlazor.AppHost` as startup project
+3. Press **F5** to run with debugging
+
+You'll see output similar to:
+
 ```
-info: Microsoft.Hosting.Lifetime[14]
-      Now listening on: https://localhost:5001
-info: Microsoft.Hosting.Lifetime[14]
-      Now listening on: http://localhost:5000
-info: Microsoft.Hosting.Lifetime[0]
-      Application started. Press Ctrl+C to shut down.
+Building...
+info: Aspire.Hosting[0]
+      Aspire Dashboard listening at: https://localhost:15216
+info: Aspire.Hosting[0]
+      azureaiavatarblazor listening at: https://localhost:5001
 ```
 
-### Step 5: Open in Browser
+### Step 5: Access the Application
 
-Open your browser and navigate to:
-- **HTTPS** (recommended): https://localhost:5001
-- **HTTP**: http://localhost:5000
+Two important URLs will be available:
+
+1. **Aspire Dashboard**: https://localhost:15216
+   - Monitor all services
+   - View logs and metrics
+   - Check resource status
+   - Distributed tracing
+
+2. **Blazor Application**: https://localhost:5001
+   - The main avatar chat interface
 
 ## 🎯 First Steps in the Application
 

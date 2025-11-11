@@ -50,11 +50,61 @@ public class AzureSpeechService : IAzureSpeechService
 
     public string GetRegion()
     {
-        return _configuration["AzureSpeech:Region"] ?? "westus2";
+        // Try to extract region from connection string endpoint first
+        var connectionString = _configuration["ConnectionStrings:speech"];
+        if (!string.IsNullOrEmpty(connectionString))
+        {
+            // Parse endpoint like "Endpoint=https://westus2.api.cognitive.microsoft.com/;Key=..."
+            var endpointMatch = System.Text.RegularExpressions.Regex.Match(
+                connectionString,
+                @"Endpoint=https://([^.]+)\.(?:api\.cognitive\.microsoft\.com|tts\.speech\.microsoft\.com)"
+            );
+            if (endpointMatch.Success)
+            {
+                var region = endpointMatch.Groups[1].Value;
+                _logger.LogInformation("Extracted region from connection string endpoint: {Region}", region);
+                return region;
+            }
+        }
+
+        // Fallback to explicit configuration
+        var configRegion = _configuration["AZURE_SPEECH_REGION"]
+            ?? _configuration["AzureSpeech__Region"]
+            ?? _configuration["AzureSpeech:Region"];
+
+        if (!string.IsNullOrEmpty(configRegion))
+        {
+            _logger.LogInformation("Using configured region: {Region}", configRegion);
+            return configRegion;
+        }
+
+        // Default fallback
+        _logger.LogWarning("No region configured, using default: westus2");
+        return "westus2";
     }
 
     public string GetSubscriptionKey()
     {
-        return _configuration["AzureSpeech:ApiKey"] ?? string.Empty;
+        // Extract key from ConnectionString or direct config
+        var connectionString = _configuration["ConnectionStrings:speech"];
+
+        if (!string.IsNullOrEmpty(connectionString))
+        {
+            // Parse Aspire connection string: "Endpoint=...;Key=...;"
+            var keyMatch = System.Text.RegularExpressions.Regex.Match(
+                connectionString,
+                @"Key=([^;]+)"
+            );
+            if (keyMatch.Success)
+            {
+                return keyMatch.Groups[1].Value;
+            }
+        }
+
+        // Fallback to environment variables
+        return _configuration["AZURE_SPEECH_API_KEY"]
+            ?? _configuration["AzureSpeech__ApiKey"]
+            ?? _configuration["AzureSpeech:ApiKey"]
+            ?? string.Empty;
     }
 }

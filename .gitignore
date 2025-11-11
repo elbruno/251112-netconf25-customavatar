@@ -23,7 +23,7 @@ build/
 publish/
 
 # IDE and editor files
-.vscode/
+# .vscode/ - KEEP this for sharing tasks and launch configurations
 .idea/
 *.swp
 *.swo
@@ -75,6 +75,12 @@ local.settings.json
 
 # .NET Development Settings (contains sensitive data)
 appsettings.Development.json
+appsettings.Local.json
+
+# .NET Aspire AppHost Development Settings
+dotnet/AzureAIAvatarBlazor.AppHost/appsettings.Development.json
+dotnet/AzureAIAvatarBlazor.AppHost/appsettings.Local.json
+**/.aspire/
 
 # .NET / C# Build artifacts
 bin/
