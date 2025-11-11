@@ -15,6 +15,62 @@ Browser-based Talking Avatar built with Azure Speech (STT/TTS + Avatar) and Azur
 - Two‑column layout: Avatar (left) + Conversation (right)
 - Quick “Test connection” buttons for Speech and Azure OpenAI
 
+
+## Implementations
+
+This repository includes **two implementations** of the same Azure AI Avatar demo:
+
+### 1. JavaScript/HTML Implementation (Production Ready)
+**Location**: `python/` folder (root HTML files)
+
+**Quick Start**:
+- Open `config.html` or `chat.html` directly in browser, or
+- Use the dev server in `python/dev-server/` for `.env.json` support
+
+**Best for**: Quick demos, web-based deployment, learning the Azure Speech SDK
+
+### 2. .NET 9 Blazor with Aspire (Modern Cloud-Native)
+**Location**: `dotnet/` folder
+
+**Quick Start**:
+```bash
+# Prerequisites
+dotnet workload install aspire
+
+# Configure (one-time)
+cd dotnet/AzureAIAvatarBlazor.AppHost
+dotnet user-secrets set "ConnectionStrings:openai" "Endpoint=https://your-resource.openai.azure.com/;Key=your-key;"
+dotnet user-secrets set "ConnectionStrings:speech" "Endpoint=https://westus2.api.cognitive.microsoft.com/;Key=your-key;"
+
+# Run (starts both Aspire Dashboard and Blazor app)
+dotnet run
+# OR press Ctrl+Shift+B in VS Code
+```
+
+**Access**:
+- Aspire Dashboard: https://localhost:15216 (metrics, logs, tracing)
+- Blazor App: https://localhost:5001 (main application)
+
+**Best for**: 
+- Production deployments with automatic Azure provisioning (`azd up`)
+- Enterprise applications requiring observability and telemetry
+- Teams using .NET and Visual Studio
+- Learning .NET Aspire orchestration
+
+**Key Features**:
+- ✅ No `appsettings.json` files - all config via Aspire AppHost
+- ✅ Dependency injection with Aspire-managed Azure clients
+- ✅ Built-in OpenTelemetry (logs, metrics, traces)
+- ✅ One-command deployment to Azure with `azd up`
+- ✅ VS Code tasks for easy development (Ctrl+Shift+B)
+
+**Documentation**:
+- [Quick Start Guide](dotnet/docs/QUICKSTART.md)
+- [Architecture](dotnet/docs/ARCHITECTURE.md)
+- [Deployment](dotnet/docs/DEPLOYMENT.md)
+- [Migration Summary](IMPLEMENTATION-COMPLETE.md)
+
+---
 ## Quick start
 Option A — Open from disk (file://)
 1) Open `config.html` or `chat.html` in your browser.

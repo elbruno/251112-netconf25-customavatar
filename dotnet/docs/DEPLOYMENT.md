@@ -6,14 +6,143 @@ This guide covers deploying the Azure AI Avatar Blazor application to various en
 
 Before deploying, ensure you have:
 - [ ] Azure subscription with active credits
-- [ ] Azure CLI installed (`az --version`)
 - [ ] .NET 9 SDK installed (`dotnet --version`)
+- [ ] Aspire workload installed (`dotnet workload install aspire`)
+- [ ] Azure Developer CLI installed (for Aspire deployment)
 - [ ] Git installed
-- [ ] Azure resources created (Speech Service, OpenAI, optional Search)
 
 ## Deployment Options
 
-### Option 1: Azure App Service (Recommended)
+### Option 1: Aspire Deployment with Azure Developer CLI (Recommended)
+
+The easiest and most automated way to deploy is using Azure Developer CLI (azd), which leverages Aspire's built-in provisioning.
+
+#### Step 1: Install Azure Developer CLI
+
+```bash
+# Windows (winget)
+winget install microsoft.azd
+
+# macOS (Homebrew)
+brew tap azure/azd && brew install azd
+
+# Linux
+curl -fsSL https://aka.ms/install-azd.sh | bash
+```
+
+#### Step 2: Initialize Aspire Project
+
+```bash
+# Navigate to AppHost directory
+cd dotnet/AzureAIAvatarBlazor.AppHost
+
+# Initialize azd (one-time)
+azd init
+
+# When prompted:
+# - Environment name: "avatar-demo-prod" (or your choice)
+# - Azure location: "westus2" (or your preferred region)
+```
+
+#### Step 3: Configure Azure Subscription
+
+```bash
+# Login to Azure
+azd auth login
+
+# Set target subscription (if you have multiple)
+azd config set defaults.subscription "YOUR_SUBSCRIPTION_ID"
+```
+
+#### Step 4: Deploy to Azure
+
+```bash
+# Deploy everything (provision + deploy)
+azd up
+
+# This will:
+# ✅ Create resource group
+# ✅ Provision Azure OpenAI + deploy model
+# ✅ Provision Azure Speech Service
+# ✅ Create Azure Container Apps environment
+# ✅ Deploy Blazor app as container
+# ✅ Configure managed identities
+# ✅ Set up networking and DNS
+```
+
+**Expected output**:
+
+```
+Provisioning Azure resources (azd provision)
+  ✓ Provisioned resource group (rg-avatar-demo-prod)
+  ✓ Provisioned Azure OpenAI (oai-avatar-demo)
+  ✓ Deployed model gpt-4o-mini to Azure OpenAI
+  ✓ Provisioned Speech Service (speech-avatar-demo)
+  ✓ Provisioned Container Apps environment
+  ✓ Configured managed identity
+
+Deploying services (azd deploy)
+  ✓ Built container image
+  ✓ Pushed to Azure Container Registry
+  ✓ Deployed to Azure Container Apps
+
+SUCCESS: Your application is deployed!
+  Endpoint: https://azureaiavatarblazor.{random}.azurecontainerapps.io
+```
+
+#### Step 5: Verify Deployment
+
+```bash
+# Open the deployed app in browser
+azd show
+
+# View logs
+azd logs
+
+# Monitor the deployment
+azd monitor
+```
+
+#### Step 6: Update and Redeploy
+
+```bash
+# After making code changes
+azd deploy
+
+# Or re-provision and deploy
+azd up
+```
+
+#### Step 7: Cleanup
+
+```bash
+# Delete all Azure resources
+azd down
+
+# Confirm when prompted
+```
+
+### Advanced: Customize Aspire Deployment
+
+You can customize the deployment by editing the generated `infra/` files or by setting environment variables:
+
+```bash
+# Set custom avatar character
+azd env set Avatar__Character "lisa"
+
+# Set custom deployment name
+azd env set OpenAI__DeploymentName "gpt-4o"
+
+# Set system prompt
+azd env set SystemPrompt "You are a helpful AI assistant."
+
+# Deploy with custom settings
+azd up
+```
+
+### Option 2: Azure App Service (Manual)
+
+For manual deployment without Aspire automation:
 
 Azure App Service provides a fully managed platform for hosting web applications.
 
