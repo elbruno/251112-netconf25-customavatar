@@ -4,7 +4,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UserSecretsId>f2851c1d-ae2d-45d5-b962-dcd794eff3e3</UserSecretsId>
@@ -12,13 +12,13 @@
 
   <ItemGroup>
     <!-- UPDATED: Latest stable version -->
-    <PackageReference Include="Aspire.Hosting.AppHost" Version="9.5.2" />
+    <PackageReference Include="Aspire.Hosting.AppHost" Version="13.0.0" />
     
     <!-- NEW: Azure Cognitive Services (includes OpenAI + Speech) -->
-    <PackageReference Include="Aspire.Hosting.Azure.CognitiveServices" Version="9.5.2" />
+    <PackageReference Include="Aspire.Hosting.Azure.CognitiveServices" Version="13.0.0" />
     
     <!-- NEW: For Azure Search support -->
-    <PackageReference Include="Aspire.Hosting.Azure.Search" Version="9.5.2" />
+    <PackageReference Include="Aspire.Hosting.Azure.Search" Version="13.0.0" />
   </ItemGroup>
 
   <ItemGroup>
