@@ -84,7 +84,7 @@ public class SttTtsConfig
 public class AvatarDisplayConfig
 {
     public string Character { get; set; } = "lisa";
-    public string Style { get; set; } = "casual-sitting";
+    public string Style { get; set; } = string.Empty;
     public bool IsCustomAvatar { get; set; }
     public bool UseBuiltInVoice { get; set; }
     public bool EnableSubtitles { get; set; }
