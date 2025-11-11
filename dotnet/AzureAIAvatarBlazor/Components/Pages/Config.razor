@@ -1,8 +1,11 @@
 @page "/config"
 @using AzureAIAvatarBlazor.Models
 @using AzureAIAvatarBlazor.Services
+@using System.Text.Json
+@using Microsoft.AspNetCore.Components.Forms
 @inject IConfigurationService ConfigService
 @inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
 @rendermode InteractiveServer
 
 <PageTitle>Configuration - Azure AI Avatar</PageTitle>
@@ -14,10 +17,23 @@
             <button class="btn btn-primary" @onclick="SaveConfiguration">
                 <i class="bi bi-save me-1"></i>Save Configuration
             </button>
+            <button class="btn btn-outline-secondary ms-2" @onclick="ExportConfiguration">
+                <i class="bi bi-download me-1"></i>Export
+            </button>
+            <label class="btn btn-outline-secondary ms-2 mb-0">
+                <i class="bi bi-upload me-1"></i>Import
+                <InputFile OnChange="ImportConfiguration" class="d-none" accept=".json" />
+            </label>
             <a href="/chat" class="btn btn-outline-primary ms-2">
                 <i class="bi bi-arrow-left me-1"></i>Back to Chat
             </a>
         </div>
+    </div>
+
+    <div class="alert alert-warning" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <strong>Security Notice:</strong> Exported configuration files contain sensitive information including API keys, endpoints, and subscription keys. 
+        Store these files securely and never share them publicly or commit them to version control.
     </div>
 
     @if (!string.IsNullOrEmpty(statusMessage))
@@ -238,6 +254,114 @@
         catch (Exception ex)
         {
             statusMessage = $"Error saving configuration: {ex.Message}";
+            isError = true;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ExportConfiguration()
+    {
+        try
+        {
+            var jsonOptions = new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+
+            var jsonContent = JsonSerializer.Serialize(config, jsonOptions);
+            var timestamp = DateTime.Now.ToString("yyyy-MM-dd-HHmmss");
+            var filename = $"azure-avatar-config-{timestamp}.json";
+
+            await JSRuntime.InvokeVoidAsync("downloadFile", filename, jsonContent);
+
+            statusMessage = "Configuration exported successfully!";
+            isError = false;
+            StateHasChanged();
+
+            await Task.Delay(3000);
+            statusMessage = string.Empty;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            statusMessage = $"Error exporting configuration: {ex.Message}";
+            isError = true;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ImportConfiguration(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            var file = e.File;
+            if (file == null)
+            {
+                return;
+            }
+
+            // Limit file size to 1MB
+            const long maxFileSize = 1024 * 1024;
+            if (file.Size > maxFileSize)
+            {
+                statusMessage = "File is too large. Maximum size is 1MB.";
+                isError = true;
+                StateHasChanged();
+                return;
+            }
+
+            using var stream = file.OpenReadStream(maxFileSize);
+            using var reader = new StreamReader(stream);
+            var jsonContent = await reader.ReadToEndAsync();
+
+            var jsonOptions = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+
+            var importedConfig = JsonSerializer.Deserialize<AvatarConfiguration>(jsonContent, jsonOptions);
+
+            if (importedConfig == null)
+            {
+                statusMessage = "Invalid configuration file format.";
+                isError = true;
+                StateHasChanged();
+                return;
+            }
+
+            // Validate the imported configuration
+            var validationError = await ConfigService.ValidateConfigurationAsync(importedConfig);
+            if (!string.IsNullOrEmpty(validationError))
+            {
+                statusMessage = $"Configuration validation failed: {validationError}";
+                isError = true;
+                StateHasChanged();
+                return;
+            }
+
+            // Replace current configuration with imported one
+            config = importedConfig;
+            await ConfigService.SaveConfigurationAsync(config);
+
+            statusMessage = "Configuration imported and saved successfully!";
+            isError = false;
+            StateHasChanged();
+
+            await Task.Delay(3000);
+            statusMessage = string.Empty;
+            StateHasChanged();
+        }
+        catch (JsonException)
+        {
+            statusMessage = "Invalid JSON file format. Please ensure the file is a valid configuration export.";
+            isError = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            statusMessage = $"Error importing configuration: {ex.Message}";
             isError = true;
             StateHasChanged();
         }

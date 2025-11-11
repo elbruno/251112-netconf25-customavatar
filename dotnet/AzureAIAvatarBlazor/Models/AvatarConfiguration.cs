@@ -90,4 +90,6 @@ public class AvatarDisplayConfig
     public bool EnableSubtitles { get; set; }
     public bool EnableAutoReconnect { get; set; }
     public double AudioGain { get; set; } = 1.8;
+    public string UserLabel { get; set; } = "User";
+    public string AssistantLabel { get; set; } = "AI Avatar";
 }

@@ -883,3 +883,34 @@ window.stopMicrophone = async function(isInternalCall = false) {
         window.speechRecognizer = null;
     }
 };
+
+// Download file helper for configuration export
+window.downloadFile = function(filename, content) {
+    try {
+        const blob = new Blob([content], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = filename;
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        URL.revokeObjectURL(url);
+        console.log('[File] Downloaded:', filename);
+    } catch (error) {
+        console.error('[File] Error downloading file:', error);
+        throw error;
+    }
+};
+
+// Scroll chat container to bottom
+window.scrollChatToBottom = function() {
+    try {
+        const chatContainer = document.getElementById('chatContainer');
+        if (chatContainer) {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+    } catch (error) {
+        console.error('[Chat] Error scrolling to bottom:', error);
+    }
+};

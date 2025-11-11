@@ -10,6 +10,7 @@ public interface IConfigurationService
 {
     AvatarConfiguration GetConfiguration();
     Task SaveConfigurationAsync(AvatarConfiguration config);
+    Task<string?> ValidateConfigurationAsync(AvatarConfiguration config);
     Task<List<PromptProfile>> GetPromptProfilesAsync();
     Task<string> GetPromptProfileContentAsync(string fileName);
 }
@@ -141,7 +142,7 @@ public class ConfigurationService : IConfigurationService
                     ?? _configuration["AzureOpenAI__SystemPrompt"]
                     ?? _configuration["AzureOpenAI:SystemPrompt"]
                     ?? _configuration["SYSTEM_PROMPT"]
-                    ?? "You are an AI assistant that helps people find information.",
+                    ?? "You are Bruno Capuano (El Bruno). Respond in the user's language with brief answers (1-2 sentences) and a friendly, approachable tone. Convert numeric times (e.g., 08:00) to spoken format (e.g., \"eight in the morning\"). AgentCon Lima — November 8, 2025 (UPC Monterrico). Agenda (summary): 08:00 Registration; 08:15 Welcome; 08:30 Keynote — Bruno Capuano; parallel sessions throughout the day on agent development, Azure AI, Copilot Studio, and more; 12:05 Lunch; 15:45 Panel: The Future of Agents; 16:30 Photos & Closing; 16:45 Raffle. .NET Conf 2025 — November 11-13, 2025 (virtual, free). Day 1 (Nov 11): Welcome to .NET 10 & Visual Studio 2026 keynote (11:00 AM EST) featuring Scott Hanselman, Damian Edwards, David Fowler, and the .NET team; sessions on ASP.NET Core, C# 14, Blazor, Aspire, AI-powered development with GitHub Copilot, building intelligent apps, Model Context Protocol (MCP), .NET MAUI, Windows development, and more. Day 2 (Nov 12): Azure keynote with Scott Hunter and Paul Yuknewicz; sessions on building remote MCP servers, Redis with Agent Framework, Aspire deep dive, Azure App Service, testing with Microsoft.Testing.Platform, NuGet updates, containers, AI-powered testing. Community Day (Nov 13): 50+ community sessions on topics from Newtonsoft.Json migration, Xamarin.Forms to MAUI, authentication with Blazor, retro computing with C# on Commodore 64, OpenTelemetry observability, security tools, clean architecture, MCP server creation, passkeys, AI agents, and more. Student Zone on November 14, 2025 - beginner-friendly virtual event on AI, web, mobile, and game development. Watch on YouTube/Twitch, use #dotnetconf hashtag. Download .NET 10 at get.dot.net/10. Use `/prompts/agentcon-lima.md` as authoritative reference for AgentCon details; if information isn't in that source, respond in the same language: \"I don't have that information.\"",
                 PromptProfile = _configuration["PROMPT_PROFILE"]
                     ?? _configuration["AzureOpenAI__PromptProfile"]
                     ?? _configuration["AzureOpenAI:PromptProfile"],
@@ -197,7 +198,15 @@ public class ConfigurationService : IConfigurationService
                 AudioGain = double.Parse(
                     _configuration["Avatar__AudioGain"]
                     ?? _configuration["Avatar:AudioGain"]
-                    ?? "1.8")
+                    ?? "1.8"),
+                UserLabel = _configuration["Avatar__UserLabel"]
+                    ?? _configuration["Avatar:UserLabel"]
+                    ?? _configuration["USER_LABEL"]
+                    ?? "User",
+                AssistantLabel = _configuration["Avatar__AssistantLabel"]
+                    ?? _configuration["Avatar:AssistantLabel"]
+                    ?? _configuration["ASSISTANT_LABEL"]
+                    ?? "AI Avatar"
             }
         };
 
@@ -275,6 +284,106 @@ public class ConfigurationService : IConfigurationService
             config.Avatar.Character,
             config.Avatar.UseBuiltInVoice,
             config.AzureSpeech.EnablePrivateEndpoint);
+    }
+
+    public async Task<string?> ValidateConfigurationAsync(AvatarConfiguration config)
+    {
+        await Task.CompletedTask;
+
+        // Validate Azure Speech configuration
+        if (config.AzureSpeech == null)
+        {
+            return "Azure Speech configuration is missing.";
+        }
+
+        if (string.IsNullOrWhiteSpace(config.AzureSpeech.Region))
+        {
+            return "Azure Speech region is required.";
+        }
+
+        // Validate region format (lowercase letters and numbers only)
+        if (!System.Text.RegularExpressions.Regex.IsMatch(config.AzureSpeech.Region, @"^[a-z0-9]+$"))
+        {
+            return "Azure Speech region format is invalid. Use lowercase format like 'westus2' or 'eastus'.";
+        }
+
+        if (string.IsNullOrWhiteSpace(config.AzureSpeech.ApiKey))
+        {
+            return "Azure Speech API key is required.";
+        }
+
+        // Validate Azure OpenAI configuration
+        if (config.AzureOpenAI == null)
+        {
+            return "Azure OpenAI configuration is missing.";
+        }
+
+        if (string.IsNullOrWhiteSpace(config.AzureOpenAI.Endpoint))
+        {
+            return "Azure OpenAI endpoint is required.";
+        }
+
+        // Validate endpoint URL format
+        if (!Uri.TryCreate(config.AzureOpenAI.Endpoint, UriKind.Absolute, out var uri) ||
+            (uri.Scheme != "https" && uri.Scheme != "http"))
+        {
+            return "Azure OpenAI endpoint must be a valid HTTPS URL.";
+        }
+
+        if (string.IsNullOrWhiteSpace(config.AzureOpenAI.ApiKey))
+        {
+            return "Azure OpenAI API key is required.";
+        }
+
+        if (string.IsNullOrWhiteSpace(config.AzureOpenAI.DeploymentName))
+        {
+            return "Azure OpenAI deployment name is required.";
+        }
+
+        // Validate Avatar configuration
+        if (config.Avatar == null)
+        {
+            return "Avatar configuration is missing.";
+        }
+
+        if (string.IsNullOrWhiteSpace(config.Avatar.Character))
+        {
+            return "Avatar character is required.";
+        }
+
+        // Validate audio gain range
+        if (config.Avatar.AudioGain < 0.1 || config.Avatar.AudioGain > 5.0)
+        {
+            return "Audio gain must be between 0.1 and 5.0.";
+        }
+
+        // Validate STT/TTS configuration
+        if (config.SttTts == null)
+        {
+            return "STT/TTS configuration is missing.";
+        }
+
+        if (string.IsNullOrWhiteSpace(config.SttTts.SttLocales))
+        {
+            return "STT locales are required.";
+        }
+
+        if (string.IsNullOrWhiteSpace(config.SttTts.TtsVoice))
+        {
+            return "TTS voice is required.";
+        }
+
+        // Validate private endpoint if enabled
+        if (config.AzureSpeech.EnablePrivateEndpoint && !string.IsNullOrWhiteSpace(config.AzureSpeech.PrivateEndpoint))
+        {
+            if (!Uri.TryCreate(config.AzureSpeech.PrivateEndpoint, UriKind.Absolute, out var privateUri) ||
+                (privateUri.Scheme != "https" && privateUri.Scheme != "http"))
+            {
+                return "Private endpoint must be a valid HTTPS URL.";
+            }
+        }
+
+        return null; // No errors
     }
 
     public async Task<List<PromptProfile>> GetPromptProfilesAsync()
