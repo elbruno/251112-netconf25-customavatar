@@ -1,4 +1,3 @@
-using Azure;
 using Azure.AI.OpenAI;
 using System.Runtime.CompilerServices;
 
@@ -16,11 +15,17 @@ public interface IAzureOpenAIService
 
 public class AzureOpenAIService : IAzureOpenAIService
 {
+    private readonly AzureOpenAIClient _client; // Injected by Aspire
     private readonly IConfiguration _configuration;
     private readonly ILogger<AzureOpenAIService> _logger;
 
-    public AzureOpenAIService(IConfiguration configuration, ILogger<AzureOpenAIService> logger)
+    // Aspire automatically injects the client
+    public AzureOpenAIService(
+        AzureOpenAIClient client, // <-- Injected by AddAzureOpenAIClient
+        IConfiguration configuration,
+        ILogger<AzureOpenAIService> logger)
     {
+        _client = client;
         _configuration = configuration;
         _logger = logger;
     }
@@ -29,13 +34,15 @@ public class AzureOpenAIService : IAzureOpenAIService
         List<Models.ChatMessage> messages,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var endpoint = _configuration["AzureOpenAI:Endpoint"] ?? throw new InvalidOperationException("Azure OpenAI endpoint not configured");
-        var apiKey = _configuration["AzureOpenAI:ApiKey"] ?? throw new InvalidOperationException("Azure OpenAI API key not configured");
-        var deploymentName = _configuration["AzureOpenAI:DeploymentName"] ?? throw new InvalidOperationException("Azure OpenAI deployment name not configured");
+        // Get deployment name from environment (injected by AppHost)
+        var deploymentName = _configuration["OpenAI__DeploymentName"] 
+            ?? _configuration["AZURE_OPENAI_DEPLOYMENT_NAME"] 
+            ?? _configuration["AzureOpenAI:DeploymentName"]
+            ?? "gpt-4o-mini";
 
-        var credential = new AzureKeyCredential(apiKey);
-        var azureClient = new AzureOpenAIClient(new Uri(endpoint), credential);
-        var chatClient = azureClient.GetChatClient(deploymentName);
+        _logger.LogInformation("Starting chat completion with deployment: {Deployment}", deploymentName);
+
+        var chatClient = _client.GetChatClient(deploymentName);
 
         // Convert our ChatMessage model to OpenAI SDK ChatMessage
         var chatMessages = new List<OpenAI.Chat.ChatMessage>();

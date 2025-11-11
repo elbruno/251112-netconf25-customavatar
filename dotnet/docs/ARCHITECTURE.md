@@ -60,6 +60,82 @@
 └──────────────┘  └─────────────┘  └────────────────┘
 ```
 
+## Aspire Orchestration Layer
+
+### Overview
+
+.NET Aspire acts as the orchestration layer, managing:
+- **Resource provisioning**: Automatic creation of Azure AI resources
+- **Configuration injection**: Connection strings and environment variables
+- **Service discovery**: Automatic endpoint resolution
+- **Telemetry**: Unified logging, metrics, and tracing via OpenTelemetry
+
+### Architecture Diagram (with Aspire)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    .NET Aspire AppHost                           │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │  Resource Definitions                                       │ │
+│  │  • Azure OpenAI (with deployment)                          │ │
+│  │  • Azure Speech Service                                    │ │
+│  │  • Azure Cognitive Search (optional)                       │ │
+│  └─────────────┬──────────────────────────────────────────────┘ │
+│                │ Connection Strings + Env Vars                  │
+└────────────────┼────────────────────────────────────────────────┘
+                 │
+        ┌────────┼────────┐
+        ▼                 ▼
+┌─────────────────┐  ┌─────────────────────────────────┐
+│  Aspire         │  │   Azure Resources (Publish)     │
+│  Dashboard      │  │   • OpenAI + Deployment         │
+│  (Dev Only)     │  │   • Speech Service              │
+│  localhost:15216│  │   • Cognitive Search            │
+└─────────────────┘  └─────────────────────────────────┘
+        │
+        │ Telemetry (OTLP)
+        ▼
+┌─────────────────────────────────────────────────────────────────┐
+│               AzureAIAvatarBlazor Application                    │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │  Aspire-Managed Clients                                    │ │
+│  │  • AzureOpenAIClient (injected via DI)                    │ │
+│  │  • Speech credentials (from ConnectionStrings)            │ │
+│  └────────────────────────────────────────────────────────────┘ │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │  Application Services                                      │ │
+│  │  • AzureOpenAIService (uses injected client)              │ │
+│  │  • AzureSpeechService (reads connection strings)          │ │
+│  │  • ConfigurationService (env vars only)                   │ │
+│  └────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Configuration Flow
+
+**Development Mode** (local):
+1. Developer sets AppHost user secrets
+2. AppHost reads secrets, creates connection strings
+3. AppHost injects connection strings into Blazor app as environment variables
+4. Blazor app services read from `IConfiguration` (backed by env vars)
+5. Aspire client libraries auto-configure from connection strings
+
+**Publish Mode** (production):
+1. `azd up` or `dotnet publish` triggers Azure provisioning
+2. Aspire creates Azure resources (OpenAI, Speech, Search)
+3. Aspire deploys model to OpenAI resource
+4. Aspire configures managed identities
+5. Blazor app uses managed identity authentication (no keys needed!)
+
+### Benefits
+
+- ✅ **No secrets in code**: All credentials managed externally
+- ✅ **Single source of truth**: AppHost is the configuration authority
+- ✅ **Environment parity**: Dev and prod use same config model
+- ✅ **Automatic provisioning**: No manual Azure Portal setup
+- ✅ **Built-in telemetry**: OpenTelemetry out of the box
+- ✅ **Service discovery**: Endpoints resolved automatically
+
 ## Component Details
 
 ### 1. Presentation Layer
@@ -76,30 +152,53 @@
 ### 2. Service Layer
 
 #### AzureOpenAIService
-**Purpose**: Manage Azure OpenAI chat completions
+**Purpose**: Manage Azure OpenAI chat completions using Aspire-managed client
 
 **Key Methods**:
 - `GetChatCompletionStreamAsync()`: Stream chat responses
 
 **Dependencies**:
-- Azure.AI.OpenAI SDK
-- IConfiguration
+- `AzureOpenAIClient` (injected by Aspire via DI)
+- IConfiguration (for deployment name)
+
+**Implementation**:
+```csharp
+public AzureOpenAIService(
+    AzureOpenAIClient client, // Aspire-managed
+    IConfiguration configuration,
+    ILogger<AzureOpenAIService> logger)
+{
+    _client = client;
+    // No manual credential management needed
+}
+```
 
 **Flow**:
 ```
-User Message → Service → Azure OpenAI API → Stream Response → UI
+User Message → Service → Injected Client → Azure OpenAI API → Stream Response → UI
 ```
 
 #### AzureSpeechService
-**Purpose**: Provide Speech Service credentials
+**Purpose**: Provide Speech Service credentials parsed from Aspire connection strings
 
 **Key Methods**:
 - `ValidateConnectionAsync()`: Test credentials
 - `GetRegion()`: Retrieve region
-- `GetSubscriptionKey()`: Retrieve API key
+- `GetSubscriptionKey()`: Parse key from connection string
 
 **Dependencies**:
-- IConfiguration
+- IConfiguration (reads `ConnectionStrings:speech`)
+
+**Implementation**:
+```csharp
+public string GetSubscriptionKey()
+{
+    var connectionString = _configuration["ConnectionStrings:speech"];
+    // Parse: "Endpoint=...;Key=abc123;"
+    var keyMatch = Regex.Match(connectionString, @"Key=([^;]+)");
+    return keyMatch.Success ? keyMatch.Groups[1].Value : string.Empty;
+}
+```
 
 #### ConfigurationService
 **Purpose**: Manage application configuration
