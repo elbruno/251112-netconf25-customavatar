@@ -111,7 +111,12 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">System Prompt</label>
-                        <textarea class="form-control" rows="3" @bind="config.AzureOpenAI.SystemPrompt"></textarea>
+                        <div class="input-group">
+                            <textarea class="form-control" rows="3" @bind="config.AzureOpenAI.SystemPrompt"></textarea>
+                        </div>
+                        <button class="btn btn-outline-secondary btn-sm mt-2" @onclick="ResetSystemPromptToDefault">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i>Reset to Default
+                        </button>
                     </div>
                 </div>
             </div>
@@ -232,9 +237,20 @@
     private string statusMessage = string.Empty;
     private bool isError = false;
 
+    // Default system prompt from ConfigurationService.cs
+    private const string DefaultSystemPrompt = "You are Bruno Capuano (El Bruno). Respond in the user's language with brief answers (1-2 sentences) and a friendly, approachable tone. Convert numeric times (e.g., 08:00) to spoken format (e.g., \"eight in the morning\"). AgentCon Lima — November 8, 2025 (UPC Monterrico). Agenda (summary): 08:00 Registration; 08:15 Welcome; 08:30 Keynote — Bruno Capuano; parallel sessions throughout the day on agent development, Azure AI, Copilot Studio, and more; 12:05 Lunch; 15:45 Panel: The Future of Agents; 16:30 Photos & Closing; 16:45 Raffle. .NET Conf 2025 — November 11-13, 2025 (virtual, free). Day 1 (Nov 11): Welcome to .NET 10 & Visual Studio 2026 keynote (11:00 AM EST) featuring Scott Hanselman, Damian Edwards, David Fowler, and the .NET team; sessions on ASP.NET Core, C# 14, Blazor, Aspire, AI-powered development with GitHub Copilot, building intelligent apps, Model Context Protocol (MCP), .NET MAUI, Windows development, and more. Day 2 (Nov 12): Azure keynote with Scott Hunter and Paul Yuknewicz; sessions on building remote MCP servers, Redis with Agent Framework, Aspire deep dive, Azure App Service, testing with Microsoft.Testing.Platform, NuGet updates, containers, AI-powered testing. Community Day (Nov 13): 50+ community sessions on topics from Newtonsoft.Json migration, Xamarin.Forms to MAUI, authentication with Blazor, retro computing with C# on Commodore 64, OpenTelemetry observability, security tools, clean architecture, MCP server creation, passkeys, AI agents, and more. Student Zone on November 14, 2025 - beginner-friendly virtual event on AI, web, mobile, and game development. Watch on YouTube/Twitch, use #dotnetconf hashtag. Download .NET 10 at get.dot.net/10. Use `/prompts/agentcon-lima.md` as authoritative reference for AgentCon details; if information isn't in that source, respond in the same language: \"I don't have that information.\"";
+
     protected override void OnInitialized()
     {
         config = ConfigService.GetConfiguration();
+    }
+
+    private void ResetSystemPromptToDefault()
+    {
+        config.AzureOpenAI.SystemPrompt = DefaultSystemPrompt;
+        statusMessage = "System prompt reset to default value.";
+        isError = false;
+        StateHasChanged();
     }
 
     private async Task SaveConfiguration()
