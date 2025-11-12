@@ -90,6 +90,32 @@
     display: none;
 }
 
+.nav-footer {
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nav-footer .nav-item {
+    padding-bottom: 1rem;
+}
+
+.nav-footer .nav-link {
+    color: rgba(255, 255, 255, 0.7) !important;
+    font-size: 0.85rem;
+}
+
+.nav-footer .nav-link:hover {
+    color: white !important;
+    background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.bi-github {
+    width: 1.25rem;
+    height: 1.25rem;
+    display: inline-block;
+}
+
 .navbar-toggler:checked ~ .nav-scrollable {
     display: block;
 }
@@ -101,7 +127,8 @@
 
     .nav-scrollable {
         /* Never collapse the sidebar for wide screens */
-        display: block;
+        display: flex !important;
+        flex-direction: column;
 
         /* Allow sidebar to scroll for tall menus */
         height: calc(100vh - 3.5rem);

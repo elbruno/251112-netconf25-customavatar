@@ -92,6 +92,11 @@ html, body {
     transition: all 0.3s ease;
 }
 
+.btn-modern.btn-sm {
+    padding: 8px 20px;
+    font-size: 0.875rem;
+}
+
 .btn-modern:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(91, 45, 144, 0.4);
@@ -104,6 +109,12 @@ html, body {
 
 .btn-modern-success:hover {
     box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+}
+
+/* Icon-only button styling */
+.btn.btn-sm:not(.btn-modern) {
+    min-width: 40px;
+    padding: 8px 12px;
 }
 
 /* Video container styles */

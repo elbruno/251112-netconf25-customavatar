@@ -13,7 +13,7 @@
 <PageTitle>Chat - Azure AI Avatar</PageTitle>
 
 <div class="container-fluid mt-3" style="position: relative; z-index: 10;">
-    <div class="d-flex flex-wrap gap-2 mb-3 align-items-center glass-card p-3">
+    <div class="d-flex flex-wrap gap-2 mb-3 align-items-center glass-card p-2">
         @* Mode Indicator Badge *@
         @if (config != null)
         {
@@ -29,35 +29,30 @@
                 "Agent-LLM" => "Agent: LLM",
                 _ => "Direct LLM"
             };
-            <span class="badge @modeBadgeClass me-2">
+            <span class="badge @modeBadgeClass px-3 py-2">
                 <i class="bi bi-cpu me-1"></i>@modeDisplayText
             </span>
         }
         
-        <button class="btn btn-modern" @onclick="StartAvatarSession"
-            disabled="@(isSessionActive || isSessionStarting)">
-            <i class="bi bi-play-circle me-1"></i>Open Avatar Session
+        <button class="btn btn-modern btn-sm px-3" @onclick="StartAvatarSession"
+            disabled="@(isSessionActive || isSessionStarting)" title="Open Avatar Session">
+            <i class="bi bi-play-circle me-1"></i>Open Session
         </button>
-        <button class="btn btn-modern btn-modern-success" @onclick="ToggleMicrophone" 
-            disabled="@(!isSessionActive)">
-            <i class="bi @(isMicrophoneActive ? "bi-mic-mute" : "bi-mic") me-1"></i>@(isMicrophoneActive ? "Stop            Microphone" : "Start Microphone")
+        <button class="btn btn-modern btn-modern-success btn-sm px-3" @onclick="ToggleMicrophone" 
+            disabled="@(!isSessionActive)" title="@(isMicrophoneActive ? "Stop Microphone" : "Start Microphone")">
+            <i class="bi @(isMicrophoneActive ? "bi-mic-mute" : "bi-mic") me-1"></i>@(isMicrophoneActive ? "Stop Mic" : "Start Mic")
         </button>
-        <button class="btn btn-outline-secondary" @onclick="StopSpeaking" 
-            disabled="@(!isSpeaking)">
-            <i class="bi bi-stop-fill me-1"></i>Stop Speaking
+        <button class="btn btn-outline-secondary btn-sm" @onclick="StopSpeaking" 
+            disabled="@(!isSpeaking)" title="Stop Speaking">
+            <i class="bi bi-stop-fill"></i>
         </button>
-        <button class="btn btn-outline-danger" @onclick="ClearChatHistory">
-            <i class="bi bi-trash me-1"></i>Clear Chat History
+        <button class="btn btn-outline-danger btn-sm" @onclick="ClearChatHistory" title="Clear Chat History">
+            <i class="bi bi-trash"></i>
         </button>
-        <button class="btn btn-outline-primary" @onclick="StopSession" 
-            disabled="@(!isSessionActive)">
-            <i class="bi bi-x-circle me-1"></i>Close Avatar Session
+        <button class="btn btn-outline-primary btn-sm" @onclick="StopSession" 
+            disabled="@(!isSessionActive)" title="Close Avatar Session">
+            <i class="bi bi-x-circle"></i>
         </button>
-        <div class="ms-auto">
-            <span class="badge bg-info text-dark fs-6">
-                <i class="bi bi-cpu me-1"></i>Mode: @GetCurrentMode()
-            </span>
-        </div>
     </div>
 
     <div class="row g-3">
