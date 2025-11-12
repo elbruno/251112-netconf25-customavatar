@@ -8,16 +8,6 @@ using System.Runtime.CompilerServices;
 
 namespace AzureAIAvatarBlazor.Services;
 
-/// <summary>
-/// Service for interacting with Azure AI Agents (Agent Framework)
-/// </summary>
-public interface IAzureAIAgentService
-{
-    IAsyncEnumerable<string> GetChatCompletionStreamAsync(
-        List<Models.ChatMessage> messages,
-        CancellationToken cancellationToken = default);
-}
-
 public class AzureAIAgentService : IAzureAIAgentService
 {
     private readonly IConfiguration _configuration;

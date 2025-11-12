@@ -3,16 +3,6 @@ using System.Runtime.CompilerServices;
 
 namespace AzureAIAvatarBlazor.Services;
 
-/// <summary>
-/// Service for interacting with Azure OpenAI
-/// </summary>
-public interface IAzureOpenAIService
-{
-    IAsyncEnumerable<string> GetChatCompletionStreamAsync(
-        List<Models.ChatMessage> messages,
-        CancellationToken cancellationToken = default);
-}
-
 public class AzureOpenAIService : IAzureOpenAIService
 {
     private readonly AzureOpenAIClient _client; // Injected by Aspire
