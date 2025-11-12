@@ -3,17 +3,22 @@ html, body {
 }
 
 a, .btn-link {
-    color: #006bb7;
+    color: #5B2D90;
 }
 
 .btn-primary {
     color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
+    background: linear-gradient(135deg, #5B2D90 0%, #7B3DB0 100%);
+    border: none;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #4B2A8D 0%, #6B3DA0 100%);
+    transform: translateY(-2px);
 }
 
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem rgba(91, 45, 144, 0.5);
 }
 
 .content {
@@ -99,9 +104,10 @@ h1:focus {
 }
 
 .user-bubble {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #5B2D90 0%, #7B3DB0 100%);
     color: white;
     border-bottom-right-radius: 0.25rem;
+    box-shadow: 0 2px 8px rgba(91, 45, 144, 0.3);
 }
 
 .assistant-bubble {

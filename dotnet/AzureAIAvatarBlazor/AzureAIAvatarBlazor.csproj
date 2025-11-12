@@ -21,7 +21,7 @@
     <PackageReference Include="Azure.Identity" Version="1.17.0" />
     
     <!-- KEEP: Speech SDK (no Aspire component yet, use manual registration) -->
-    <PackageReference Include="Microsoft.CognitiveServices.Speech" Version="1.46.0" />
+    <PackageReference Include="Microsoft.CognitiveServices.Speech" Version="1.47.0" />
     
     <!-- UPDATED: Latest Search SDK -->
     <PackageReference Include="Azure.Search.Documents" Version="11.7.0" />
