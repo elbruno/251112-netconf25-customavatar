@@ -19,7 +19,7 @@ The AI Avatar Agent provides a complete conversational experience:
 
 ## The .NET Implementation
 
-This repository includes **two complete implementations** of the same application. This guide focuses on the **.NET 9 Blazor implementation** with .NET Aspire orchestration, which is designed for enterprise and production scenarios.
+This repository includes **two complete implementations** of the same application. This guide focuses on the **.NET 10 Blazor implementation** with .NET Aspire orchestration, which is designed for enterprise and production scenarios.
 
 ### Why Choose the .NET Implementation?
 
@@ -88,7 +88,7 @@ Here's what happens when you have a conversation with the AI Avatar:
           │ SignalR                │ WebRTC Stream
           │                        │
 ┌─────────▼────────────────────────┼──────────────────────────────┐
-│                 .NET 9 BLAZOR SERVER                             │
+│                 .NET 10 BLAZOR SERVER                            │
 │                                  │                               │
 │  ┌───────────────────────────────┼─────────────────────────┐   │
 │  │           APPLICATION SERVICES│                         │   │
@@ -144,7 +144,7 @@ Let's walk through a typical conversation:
 
 Before you begin, ensure you have:
 
-1. **[.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)** installed
+1. **[.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)** installed
 2. **.NET Aspire workload**: Run `dotnet workload install aspire`
 3. **Azure Subscription** - [Create a free account](https://azure.microsoft.com/free/)
 4. **Azure OpenAI access** - [Request access](https://aka.ms/oai/access)
@@ -242,12 +242,13 @@ We welcome contributions! Check out:
 
 This project is built with:
 
-- **[.NET 9](https://dotnet.microsoft.com/)** - Application framework
+- **[.NET 10](https://dotnet.microsoft.com/)** - Application framework
 - **[.NET Aspire](https://learn.microsoft.com/dotnet/aspire/)** - Cloud-native orchestration
 - **[Azure OpenAI](https://azure.microsoft.com/products/ai-services/openai-service)** - GPT models
 - **[Azure AI Foundry](https://ai.azure.com)** - Pre-built AI agents
 - **[Microsoft Agent Framework](https://learn.microsoft.com/en-us/agent-framework/)** - Agent orchestration
 - **[Azure Speech Service](https://azure.microsoft.com/products/ai-services/ai-speech)** - Voice and avatar
+- **[Azure MCP Server](https://aka.ms/azmcp/ga)** - Model Context Protocol integration
 - **[Blazor](https://dotnet.microsoft.com/apps/aspnet/web-apps/blazor)** - Interactive web UI
 
 **Created by**:

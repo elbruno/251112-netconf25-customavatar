@@ -1,10 +1,10 @@
-# Azure AI Avatar - .NET 9 Blazor with Aspire
+# Azure AI Avatar - .NET 10 Blazor with Aspire
 
 A modern, cloud-native Blazor application powered by .NET Aspire that demonstrates Azure AI capabilities including Speech Services (STT/TTS with Talking Avatar) and Azure OpenAI for intelligent conversations.
 
 ## 🎯 Overview
 
-This is the **.NET 9 Blazor implementation** of the Azure AI Avatar demo, featuring:
+This is the **.NET 10 Blazor implementation** of the Azure AI Avatar demo, featuring:
 
 - **Cloud-Native Architecture** with .NET Aspire orchestration
 - **Enterprise-Grade Features** including OpenTelemetry, health checks, and resilience patterns
@@ -77,7 +77,7 @@ This application supports **three different modes** for AI conversations, each w
 
 ### Required Software
 
-1. **[.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)** or later
+1. **[.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)** or later
 2. **.NET Aspire Workload**:
 
    ```bash
@@ -265,7 +265,7 @@ TTS_VOICE=en-US-AvaMultilingualNeural
 
 ### Framework & Runtime
 
-- **.NET 9** - Latest .NET framework with performance improvements
+- **.NET 10** - Latest .NET framework with performance improvements
 - **Blazor Server** - Server-side rendering with SignalR real-time communication
 - **.NET Aspire 9.5** - Cloud-native orchestration and observability
 
@@ -554,6 +554,7 @@ builder.AddProject<Projects.AzureAIAvatarBlazor>("azureaiavatarblazor")
 - [Microsoft Agent Framework](https://learn.microsoft.com/en-us/agent-framework/)
 - [Azure AI Foundry Agent Types](https://learn.microsoft.com/en-us/agent-framework/user-guide/agents/agent-types/azure-ai-foundry-agent?pivots=programming-language-csharp)
 - [Azure AI Foundry Portal](https://ai.azure.com)
+- [Azure MCP Server](https://aka.ms/azmcp/ga) - Model Context Protocol for Azure
 - [Blazor Documentation](https://learn.microsoft.com/aspnet/core/blazor/)
 
 ### Code Samples
