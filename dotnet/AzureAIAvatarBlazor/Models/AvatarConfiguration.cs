@@ -54,6 +54,23 @@ public class AzureOpenAIConfig
     public string? PromptProfile { get; set; }
     public bool EnforcePromptProfile { get; set; }
     public Dictionary<string, string> PromptVariables { get; set; } = new();
+
+    /// <summary>
+    /// Configuration mode: LLM, Agent-LLM, or Agent-AIFoundry
+    /// </summary>
+    public string Mode { get; set; } = "LLM";
+
+    /// <summary>
+    /// Azure AI Foundry Agent ID (required when Mode is Agent-AIFoundry)
+    /// </summary>
+    public string? AgentId { get; set; }
+
+    /// <summary>
+    /// Azure AI Foundry Project Endpoint (required when Mode is Agent-AIFoundry)
+    /// Format: https://your-project.api.azureml.ms
+    /// This is different from the Azure OpenAI Endpoint used for LLM and Agent-LLM modes
+    /// </summary>
+    public string? AIFoundryEndpoint { get; set; }
 }
 
 /// <summary>

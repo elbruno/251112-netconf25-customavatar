@@ -92,33 +92,72 @@
         <div class="col-12 col-lg-6">
             <div class="card shadow-sm h-100">
                 <div class="card-header">
-                    <i class="bi bi-cpu me-2"></i>Azure OpenAI
+                    <i class="bi bi-cpu me-2"></i>Azure OpenAI / Agent Configuration
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
-                        <label class="form-label">Endpoint</label>
-                        <input type="text" class="form-control" @bind="config.AzureOpenAI.Endpoint"
-                            placeholder="https://your-resource.openai.azure.com">
+                        <label class="form-label">Mode</label>
+                        <select class="form-select" @bind="config.AzureOpenAI.Mode">
+                            <option value="LLM">LLM (Direct OpenAI)</option>
+                            <option value="Agent-LLM">Agent-LLM (Agent Framework with OpenAI)</option>
+                            <option value="Agent-AIFoundry">Agent-AIFoundry (Azure AI Foundry Agent)</option>
+                        </select>
+                        <div class="form-text">Choose how the AI responds to user queries</div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">API Key</label>
-                        <input type="password" class="form-control" @bind="config.AzureOpenAI.ApiKey"
-                            placeholder="Enter your OpenAI API key">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Deployment Name</label>
-                        <input type="text" class="form-control" @bind="config.AzureOpenAI.DeploymentName"
-                            placeholder="gpt-4o-mini">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">System Prompt</label>
-                        <div class="input-group">
-                            <textarea class="form-control" rows="3" @bind="config.AzureOpenAI.SystemPrompt"></textarea>
+
+                    @if (config.AzureOpenAI.Mode == "Agent-AIFoundry")
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Agent ID</label>
+                            <input type="text" class="form-control" @bind="config.AzureOpenAI.AgentId"
+                                placeholder="Enter your Azure AI Foundry Agent ID">
+                            <div class="form-text">The ID of your pre-configured Azure AI Foundry agent</div>
                         </div>
-                        <button class="btn btn-outline-secondary btn-sm mt-2" @onclick="ResetSystemPromptToDefault">
-                            <i class="bi bi-arrow-counterclockwise me-1"></i>Reset to Default
-                        </button>
-                    </div>
+                        <div class="mb-3">
+                            <label class="form-label">Azure AI Foundry Project Endpoint</label>
+                            <input type="text" class="form-control" @bind="config.AzureOpenAI.AIFoundryEndpoint"
+                                placeholder="https://your-project.api.azureml.ms">
+                            <div class="form-text">Azure AI Foundry project endpoint (different from Azure OpenAI endpoint)
+                            </div>
+                        </div>
+                    }
+
+                    @if (config.AzureOpenAI.Mode == "LLM" || config.AzureOpenAI.Mode == "Agent-LLM")
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Azure OpenAI Endpoint</label>
+                            <input type="text" class="form-control" @bind="config.AzureOpenAI.Endpoint"
+                                placeholder="https://your-resource.openai.azure.com">
+                            <div class="form-text">Azure OpenAI resource endpoint</div>
+                        </div>
+                    }
+
+                    @if (config.AzureOpenAI.Mode == "LLM" || config.AzureOpenAI.Mode == "Agent-LLM")
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">API Key</label>
+                            <input type="password" class="form-control" @bind="config.AzureOpenAI.ApiKey"
+                                placeholder="Enter your OpenAI API key">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Deployment Name</label>
+                            <input type="text" class="form-control" @bind="config.AzureOpenAI.DeploymentName"
+                                placeholder="gpt-4o-mini">
+                        </div>
+                    }
+
+                    @if (config.AzureOpenAI.Mode == "LLM" || config.AzureOpenAI.Mode == "Agent-LLM")
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">System Prompt / Instructions</label>
+                            <div class="input-group">
+                                <textarea class="form-control" rows="3" @bind="config.AzureOpenAI.SystemPrompt"></textarea>
+                            </div>
+                            <button class="btn btn-outline-secondary btn-sm mt-2" @onclick="ResetSystemPromptToDefault">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i>Reset to Default
+                            </button>
+                        </div>
+                    }
                 </div>
             </div>
         </div>

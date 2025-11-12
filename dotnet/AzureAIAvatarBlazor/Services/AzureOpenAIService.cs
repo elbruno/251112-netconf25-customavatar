@@ -19,9 +19,8 @@ public class AzureOpenAIService : IAzureOpenAIService
     private readonly IConfiguration _configuration;
     private readonly ILogger<AzureOpenAIService> _logger;
 
-    // Aspire automatically injects the client
     public AzureOpenAIService(
-        AzureOpenAIClient client, // <-- Injected by AddAzureOpenAIClient
+        AzureOpenAIClient client, 
         IConfiguration configuration,
         ILogger<AzureOpenAIService> logger)
     {

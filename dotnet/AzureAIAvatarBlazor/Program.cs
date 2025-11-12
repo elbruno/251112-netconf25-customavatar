@@ -26,7 +26,10 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 // Register application services
+// Register both OpenAI service and Agent service
+// The Chat.razor will use the appropriate one based on configuration
 builder.Services.AddScoped<IAzureOpenAIService, AzureOpenAIService>();
+builder.Services.AddScoped<IAzureAIAgentService, AzureAIAgentService>();
 builder.Services.AddScoped<IAzureSpeechService, AzureSpeechService>();
 builder.Services.AddScoped<IConfigurationService, ConfigurationService>();
 

@@ -4,6 +4,7 @@
 @using System.Text.Json
 @using Microsoft.JSInterop
 @inject IAzureOpenAIService OpenAIService
+@inject IAzureAIAgentService AgentService
 @inject IConfigurationService ConfigService
 @inject IJSRuntime JSRuntime
 @implements IAsyncDisposable
@@ -12,7 +13,27 @@
 <PageTitle>Chat - Azure AI Avatar</PageTitle>
 
 <div class="container-fluid mt-3">
-    <div class="d-flex flex-wrap gap-2 mb-3">
+    <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
+        @* Mode Indicator Badge *@
+        @if (config != null)
+        {
+            var modeBadgeClass = config.AzureOpenAI.Mode switch
+            {
+                "Agent-AIFoundry" => "bg-info",
+                "Agent-LLM" => "bg-success",
+                _ => "bg-primary"
+            };
+            var modeDisplayText = config.AzureOpenAI.Mode switch
+            {
+                "Agent-AIFoundry" => "Agent: AI Foundry",
+                "Agent-LLM" => "Agent: LLM",
+                _ => "Direct LLM"
+            };
+            <span class="badge @modeBadgeClass me-2">
+                <i class="bi bi-cpu me-1"></i>@modeDisplayText
+            </span>
+        }
+        
         <button class="btn btn-primary" @onclick="StartAvatarSession"
             disabled="@(isSessionActive || isSessionStarting)">
             <i class="bi bi-play-circle me-1"></i>Open Avatar Session
@@ -32,6 +53,11 @@
             disabled="@(!isSessionActive)">
             <i class="bi bi-x-circle me-1"></i>Close Avatar Session
         </button>
+        <div class="ms-auto">
+            <span class="badge bg-info text-dark fs-6">
+                <i class="bi bi-cpu me-1"></i>Mode: @GetCurrentMode()
+            </span>
+        </div>
     </div>
 
     <div class="row g-3">
@@ -170,6 +196,12 @@
             "assistant" => config.Avatar.AssistantLabel ?? "AI Avatar",
             _ => role
         };
+    }
+
+    private string GetCurrentMode()
+    {
+        if (config == null) return "LLM";
+        return config.AzureOpenAI.Mode ?? "LLM";
     }
 
     private async Task ScrollToBottom()
@@ -428,9 +460,28 @@
 
             var assistantResponse = new System.Text.StringBuilder();
 
-            await foreach (var chunk in OpenAIService.GetChatCompletionStreamAsync(messagesForAPI))
+            // Use the appropriate service based on mode
+            var mode = config?.AzureOpenAI.Mode ?? "LLM";
+
+            if (mode == "LLM")
             {
-                assistantResponse.Append(chunk);
+                Console.WriteLine("Using LLM mode (standard OpenAI service)");
+                await foreach (var chunk in OpenAIService.GetChatCompletionStreamAsync(messagesForAPI))
+                {
+                    assistantResponse.Append(chunk);
+                }
+            }
+            else if (mode == "Agent-LLM" || mode == "Agent-AIFoundry")
+            {
+                Console.WriteLine($"Using {mode} mode (Agent Framework)");
+                await foreach (var chunk in AgentService.GetChatCompletionStreamAsync(messagesForAPI))
+                {
+                    assistantResponse.Append(chunk);
+                }
+            }
+            else
+            {
+                throw new InvalidOperationException($"Unsupported mode: {mode}");
             }
 
             var fullResponse = assistantResponse.ToString();
