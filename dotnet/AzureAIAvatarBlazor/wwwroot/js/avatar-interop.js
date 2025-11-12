@@ -542,6 +542,19 @@ async function setupWebRTC(iceServerUrl, username, password, config) {
     avatarConfig.customized = isCustom;
     console.log('[Avatar] Customized flag set to:', avatarConfig.customized);
 
+    // Configure background (image takes precedence over color)
+    if (config.avatar.backgroundImage && config.avatar.backgroundImage.trim() !== '') {
+        avatarConfig.backgroundImage = config.avatar.backgroundImage;
+        console.log('[Avatar] Using background image:', config.avatar.backgroundImage);
+    } else if (config.avatar.backgroundColor && config.avatar.backgroundColor !== '') {
+        avatarConfig.backgroundColor = config.avatar.backgroundColor;
+        console.log('[Avatar] Using background color:', config.avatar.backgroundColor);
+    } else {
+        // Default to white background
+        avatarConfig.backgroundColor = '#FFFFFFFF';
+        console.log('[Avatar] Using default background color: #FFFFFFFF');
+    }
+
     const videoFormat = new SpeechSDK.AvatarVideoFormat();
     videoFormat.bitrate = 2000000;
     console.log('[Avatar] Video format configured - bitrate:', videoFormat.bitrate);

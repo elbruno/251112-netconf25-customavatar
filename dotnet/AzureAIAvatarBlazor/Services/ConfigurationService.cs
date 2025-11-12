@@ -212,7 +212,14 @@ public class ConfigurationService : IConfigurationService
                 AssistantLabel = _configuration["Avatar__AssistantLabel"]
                     ?? _configuration["Avatar:AssistantLabel"]
                     ?? _configuration["ASSISTANT_LABEL"]
-                    ?? "AI Avatar"
+                    ?? "AI Avatar",
+                BackgroundColor = _configuration["Avatar__BackgroundColor"]
+                    ?? _configuration["Avatar:BackgroundColor"]
+                    ?? _configuration["AVATAR_BACKGROUND_COLOR"]
+                    ?? "#FFFFFFFF",
+                BackgroundImage = _configuration["Avatar__BackgroundImage"]
+                    ?? _configuration["Avatar:BackgroundImage"]
+                    ?? _configuration["AVATAR_BACKGROUND_IMAGE"]
             }
         };
 

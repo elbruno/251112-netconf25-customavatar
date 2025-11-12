@@ -109,4 +109,6 @@ public class AvatarDisplayConfig
     public double AudioGain { get; set; } = 1.8;
     public string UserLabel { get; set; } = "User";
     public string AssistantLabel { get; set; } = "AI Avatar";
+    public string? BackgroundColor { get; set; } = "#FFFFFFFF";
+    public string? BackgroundImage { get; set; }
 }

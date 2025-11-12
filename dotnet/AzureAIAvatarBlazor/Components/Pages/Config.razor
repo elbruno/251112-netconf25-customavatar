@@ -142,7 +142,7 @@
                         <div class="mb-3">
                             <label class="form-label">Deployment Name</label>
                             <input type="text" class="form-control" @bind="config.AzureOpenAI.DeploymentName"
-                                placeholder="gpt-4o-mini">
+                                placeholder="gpt-5-mini">
                         </div>
                     }
 
@@ -269,6 +269,40 @@
                             @bind="config.Avatar.AudioGain">
                         <div class="form-text">Adjust volume amplification (0.1x - 5.0x)</div>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">Background Configuration</label>
+                        <select class="form-select mb-2" @bind="backgroundType">
+                            <option value="color">Solid Color</option>
+                            <option value="transparent">Transparent</option>
+                            <option value="image">Custom Image</option>
+                        </select>
+                        @if (backgroundType == "color")
+                        {
+                            <div class="input-group">
+                                <span class="input-group-text">Color</span>
+                                <input type="text" class="form-control" @bind="config.Avatar.BackgroundColor"
+                                    placeholder="#FFFFFFFF" pattern="#[0-9A-Fa-f]{8}">
+                                <input type="color" class="form-control form-control-color" value="@GetColorHex()"
+                                    @onchange="OnColorChanged">
+                            </div>
+                            <div class="form-text">RGBA format: #RRGGBBAA (e.g., #FFFFFFFF for white, #FF0000FF for red)
+                            </div>
+                        }
+                        else if (backgroundType == "transparent")
+                        {
+                            <div class="alert alert-info mb-0">
+                                <i class="bi bi-info-circle me-2"></i>
+                                Transparent background will be applied. Note: Requires webm video format with vp9 codec for
+                                full transparency support.
+                            </div>
+                        }
+                        else if (backgroundType == "image")
+                        {
+                            <input type="text" class="form-control" @bind="config.Avatar.BackgroundImage"
+                                placeholder="https://example.com/image.jpg or /images/dark_sub_bg.png">
+                            <div class="form-text">Enter HTTPS URL or local path (e.g., /images/dark_sub_bg.png)</div>
+                        }
+                    </div>
                 </div>
             </div>
         </div>
@@ -279,6 +313,7 @@
     private AvatarConfiguration config = new();
     private string statusMessage = string.Empty;
     private bool isError = false;
+    private string backgroundType = "color";
 
     // Default system prompt from ConfigurationService.cs
     private const string DefaultSystemPrompt = "You are Bruno Capuano (El Bruno). Respond in the user's language with brief answers (1-2 sentences) and a friendly, approachable tone. Convert numeric times (e.g., 08:00) to spoken format (e.g., \"eight in the morning\"). AgentCon Lima — November 8, 2025 (UPC Monterrico). Agenda (summary): 08:00 Registration; 08:15 Welcome; 08:30 Keynote — Bruno Capuano; parallel sessions throughout the day on agent development, Azure AI, Copilot Studio, and more; 12:05 Lunch; 15:45 Panel: The Future of Agents; 16:30 Photos & Closing; 16:45 Raffle. .NET Conf 2025 — November 11-13, 2025 (virtual, free). Day 1 (Nov 11): Welcome to .NET 10 & Visual Studio 2026 keynote (11:00 AM EST) featuring Scott Hanselman, Damian Edwards, David Fowler, and the .NET team; sessions on ASP.NET Core, C# 14, Blazor, Aspire, AI-powered development with GitHub Copilot, building intelligent apps, Model Context Protocol (MCP), .NET MAUI, Windows development, and more. Day 2 (Nov 12): Azure keynote with Scott Hunter and Paul Yuknewicz; sessions on building remote MCP servers, Redis with Agent Framework, Aspire deep dive, Azure App Service, testing with Microsoft.Testing.Platform, NuGet updates, containers, AI-powered testing. Community Day (Nov 13): 50+ community sessions on topics from Newtonsoft.Json migration, Xamarin.Forms to MAUI, authentication with Blazor, retro computing with C# on Commodore 64, OpenTelemetry observability, security tools, clean architecture, MCP server creation, passkeys, AI agents, and more. Student Zone on November 14, 2025 - beginner-friendly virtual event on AI, web, mobile, and game development. Watch on YouTube/Twitch, use #dotnetconf hashtag. Download .NET 10 at get.dot.net/10. Use `/prompts/agentcon-lima.md` as authoritative reference for AgentCon details; if information isn't in that source, respond in the same language: \"I don't have that information.\"";
@@ -286,6 +321,48 @@
     protected override void OnInitialized()
     {
         config = ConfigService.GetConfiguration();
+        DetermineBackgroundType();
+    }
+
+    private void DetermineBackgroundType()
+    {
+        if (!string.IsNullOrWhiteSpace(config.Avatar.BackgroundImage))
+        {
+            backgroundType = "image";
+        }
+        else if (config.Avatar.BackgroundColor?.ToLowerInvariant() == "transparent" ||
+        config.Avatar.BackgroundColor?.ToLowerInvariant() == "#00000000")
+        {
+            backgroundType = "transparent";
+            config.Avatar.BackgroundColor = "transparent";
+        }
+        else
+        {
+            backgroundType = "color";
+        }
+    }
+
+    private string GetColorHex()
+    {
+        // Extract RGB from RGBA format #RRGGBBAA -> #RRGGBB for color picker
+        if (string.IsNullOrWhiteSpace(config.Avatar.BackgroundColor))
+            return "#FFFFFF";
+
+        var color = config.Avatar.BackgroundColor;
+        if (color.Length >= 7)
+            return color.Substring(0, 7);
+
+        return color;
+    }
+
+    private void OnColorChanged(ChangeEventArgs e)
+    {
+        var hexColor = e.Value?.ToString() ?? "#FFFFFF";
+        // Convert #RRGGBB to #RRGGBBFF (add full opacity)
+        if (hexColor.Length == 7)
+        {
+            config.Avatar.BackgroundColor = hexColor + "FF";
+        }
     }
 
     private void ResetSystemPromptToDefault()
@@ -300,6 +377,23 @@
     {
         try
         {
+            // Apply background configuration based on selected type
+            if (backgroundType == "transparent")
+            {
+                config.Avatar.BackgroundColor = "transparent";
+                config.Avatar.BackgroundImage = null;
+            }
+            else if (backgroundType == "color")
+            {
+                config.Avatar.BackgroundImage = null;
+                // Keep the BackgroundColor as set by user
+            }
+            else if (backgroundType == "image")
+            {
+                config.Avatar.BackgroundColor = null;
+                // Keep the BackgroundImage as set by user
+            }
+
             await ConfigService.SaveConfigurationAsync(config);
             statusMessage = "Configuration saved successfully!";
             isError = false;
