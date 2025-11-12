@@ -87,17 +87,17 @@ public class AzureAIAgentService : IAzureAIAgentService
             throw new InvalidOperationException("AgentId is required for Agent-AIFoundry mode.");
         }
 
-        if (string.IsNullOrEmpty(config.AzureOpenAI.Endpoint))
+        if (string.IsNullOrEmpty(config.AzureOpenAI.AIFoundryEndpoint))
         {
             throw new InvalidOperationException("Azure AI Foundry endpoint is required for Agent-AIFoundry mode.");
         }
 
         _logger.LogInformation("Using Azure AI Foundry Agent ID: {AgentId}", config.AzureOpenAI.AgentId);
-        _logger.LogInformation("Using Endpoint: {Endpoint}", config.AzureOpenAI.Endpoint);
+        _logger.LogInformation("Using AI Foundry Endpoint: {Endpoint}", config.AzureOpenAI.AIFoundryEndpoint);
 
         // Create the persistent agent client using Azure credentials
         var credential = new DefaultAzureCredential();
-        var persistentAgentClient = new PersistentAgentsClient(config.AzureOpenAI.Endpoint, credential);
+        var persistentAgentClient = new PersistentAgentsClient(config.AzureOpenAI.AIFoundryEndpoint, credential);
 
         // Get the existing agent by ID
         var agent = await persistentAgentClient.GetAIAgentAsync(config.AzureOpenAI.AgentId);
@@ -158,8 +158,8 @@ public class AzureAIAgentService : IAzureAIAgentService
         }
 
         _logger.LogInformation("Sending message to agent: {Preview}",
-            lastUserMessage.Content.Length > 100 
-                ? lastUserMessage.Content.Substring(0, 100) + "..." 
+            lastUserMessage.Content.Length > 100
+                ? lastUserMessage.Content.Substring(0, 100) + "..."
                 : lastUserMessage.Content);
 
         var totalChunks = 0;
@@ -168,10 +168,10 @@ public class AzureAIAgentService : IAzureAIAgentService
         // Use the agent's RunAsync method
         // The Agent Framework doesn't currently support streaming in the same way as the OpenAI SDK
         var response = await agent.RunAsync(lastUserMessage.Content, cancellationToken: cancellationToken);
-        
+
         // The response.Text contains the full response
         var text = response.Text ?? string.Empty;
-        
+
         if (!string.IsNullOrEmpty(text))
         {
             totalChunks = 1;

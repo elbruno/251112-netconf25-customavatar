@@ -113,23 +113,24 @@
                                 placeholder="Enter your Azure AI Foundry Agent ID">
                             <div class="form-text">The ID of your pre-configured Azure AI Foundry agent</div>
                         </div>
+                        <div class="mb-3">
+                            <label class="form-label">Azure AI Foundry Project Endpoint</label>
+                            <input type="text" class="form-control" @bind="config.AzureOpenAI.AIFoundryEndpoint"
+                                placeholder="https://your-project.api.azureml.ms">
+                            <div class="form-text">Azure AI Foundry project endpoint (different from Azure OpenAI endpoint)
+                            </div>
+                        </div>
                     }
 
-                    <div class="mb-3">
-                        <label class="form-label">Endpoint</label>
-                        <input type="text" class="form-control" @bind="config.AzureOpenAI.Endpoint"
-                            placeholder="@(config.AzureOpenAI.Mode == "Agent-AIFoundry" ? "https://your-project.api.azureml.ms" : "https://your-resource.openai.azure.com")">
-                        <div class="form-text">
-                            @if (config.AzureOpenAI.Mode == "Agent-AIFoundry")
-                            {
-                                <text>Azure AI Foundry project endpoint</text>
-                            }
-                            else
-                            {
-                                <text>Azure OpenAI resource endpoint</text>
-                            }
+                    @if (config.AzureOpenAI.Mode == "LLM" || config.AzureOpenAI.Mode == "Agent-LLM")
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Azure OpenAI Endpoint</label>
+                            <input type="text" class="form-control" @bind="config.AzureOpenAI.Endpoint"
+                                placeholder="https://your-resource.openai.azure.com">
+                            <div class="form-text">Azure OpenAI resource endpoint</div>
                         </div>
-                    </div>
+                    }
 
                     @if (config.AzureOpenAI.Mode == "LLM" || config.AzureOpenAI.Mode == "Agent-LLM")
                     {

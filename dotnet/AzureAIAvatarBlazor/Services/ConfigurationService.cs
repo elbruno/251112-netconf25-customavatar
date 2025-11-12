@@ -164,7 +164,10 @@ public class ConfigurationService : IConfigurationService
                     ?? "LLM",
                 AgentId = _configuration["AGENT_ID"]
                     ?? _configuration["AzureOpenAI__AgentId"]
-                    ?? _configuration["AzureOpenAI:AgentId"]
+                    ?? _configuration["AzureOpenAI:AgentId"],
+                AIFoundryEndpoint = _configuration["AZURE_AI_FOUNDRY_ENDPOINT"]
+                    ?? _configuration["AzureOpenAI__AIFoundryEndpoint"]
+                    ?? _configuration["AzureOpenAI:AIFoundryEndpoint"]
             },
             SttTts = new SttTtsConfig
             {
@@ -411,10 +414,16 @@ public class ConfigurationService : IConfigurationService
                 return "Azure AI Foundry endpoint is required for Agent-AIFoundry mode.";
             }
 
-            if (!Uri.TryCreate(config.AzureOpenAI.Endpoint, UriKind.Absolute, out var uri) ||
+            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.AIFoundryEndpoint))
+            {
+                _logger.LogWarning("Validation failed: Azure AI Foundry endpoint is required for Agent-AIFoundry mode");
+                return "Azure AI Foundry endpoint is required for Agent-AIFoundry mode.";
+            }
+
+            if (!Uri.TryCreate(config.AzureOpenAI.AIFoundryEndpoint, UriKind.Absolute, out var uri) ||
                 (uri.Scheme != "https" && uri.Scheme != "http"))
             {
-                _logger.LogWarning("Validation failed: Invalid Azure AI Foundry endpoint URL: {Endpoint}", config.AzureOpenAI.Endpoint);
+                _logger.LogWarning("Validation failed: Invalid Azure AI Foundry endpoint URL: {Endpoint}", config.AzureOpenAI.AIFoundryEndpoint);
                 return "Azure AI Foundry endpoint must be a valid HTTPS URL.";
             }
 
