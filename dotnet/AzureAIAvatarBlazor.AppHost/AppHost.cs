@@ -37,7 +37,7 @@ var avatarApp = builder.AddProject<Projects.AzureAIAvatarBlazor>("azureaiavatarb
     .WithEnvironment("Avatar__IsCustomAvatar", builder.Configuration["Avatar:IsCustomAvatar"] ?? "true")
     .WithEnvironment("Avatar__UseBuiltInVoice", builder.Configuration["Avatar:UseBuiltInVoice"] ?? "true")
     .WithEnvironment("OpenAI__DeploymentName", builder.Configuration["OpenAI:DeploymentName"] ?? "gpt-4o-mini")
-    .WithEnvironment("SystemPrompt", builder.Configuration["SystemPrompt"] ?? "You are a helpful AI assistant.");
+    .WithEnvironment("SystemPrompt", builder.Configuration["SystemPrompt"] ?? "You are Bruno Capuano. Respond in the user's language with a short answer and a friendly, approachable tone. Convert numeric times (e.g., 08:00) to spoken format (e.g., \"eight in the morning\"). If you don't know an answer, just say \"I don't know\".");
 
 // Add search reference if configured
 if (search != null)
