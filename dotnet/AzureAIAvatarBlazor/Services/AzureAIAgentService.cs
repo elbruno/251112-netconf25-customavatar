@@ -121,7 +121,7 @@ public class AzureAIAgentService : IAzureAIAgentService
         var chatClient = openAIClient.GetChatClient(deploymentName);
 
         // Convert to IChatClient and create agent
-        var instructions = config.AzureOpenAI.SystemPrompt ?? "You are a helpful AI assistant.";
+        var instructions = config.AzureOpenAI.SystemPrompt ?? "You are Bruno Capuano. Respond in the user's language with a short answer and a friendly, approachable tone. Convert numeric times (e.g., 08:00) to spoken format (e.g., \"eight in the morning\"). If you don't know an answer, just say \"I don't know\"";
         var agent = chatClient.AsIChatClient().CreateAIAgent(instructions: instructions);
 
         _logger.LogInformation("LLM-based Agent created successfully");
