@@ -32,6 +32,42 @@ The .NET version is ideal if you need:
 ✅ **Developer productivity** with real-time monitoring via Aspire Dashboard  
 ✅ **Type safety and performance** that comes with compiled .NET code
 
+## 🤖 Three Operational Modes
+
+The .NET application supports **three different modes** for AI conversations, each designed for specific use cases:
+
+### Mode 1: Chat with LLM (Default)
+
+**Direct integration with Azure OpenAI**
+
+- Uses standard Azure OpenAI chat completion API
+- Simple request/response pattern with streaming support
+- Best for: Quick demos, simple conversations, direct LLM access
+- Configuration: Requires Azure OpenAI endpoint, API key, and deployment name
+
+### Mode 2: Chat with Agent-LLM
+
+**Microsoft Agent Framework with Azure OpenAI**
+
+- Uses [Microsoft Agent Framework](https://learn.microsoft.com/en-us/agent-framework/) with standard LLM
+- Enables agent-based workflows and orchestration patterns
+- Supports tool calling, memory, and advanced agent behaviors
+- Best for: Complex workflows, multi-step reasoning, tool integration
+- Configuration: Same as Mode 1 + Agent Framework settings
+
+### Mode 3: Chat with Azure AI Foundry Agent
+
+**Pre-built agents from Azure AI Foundry**
+
+- Connects to agents already created in [Azure AI Foundry](https://ai.azure.com)
+- Uses Microsoft Agent Framework with pre-configured agent endpoints
+- Supports grounding, RAG (Retrieval Augmented Generation), and custom tools
+- Best for: Production scenarios, enterprise agents, grounded responses
+- Configuration: Requires AI Foundry project ID, agent ID, and managed identity/key
+- Learn more: [Azure AI Foundry Agent Types](https://learn.microsoft.com/en-us/agent-framework/user-guide/agents/agent-types/azure-ai-foundry-agent?pivots=programming-language-csharp)
+
+> **💡 Tip**: Switch between modes in the Configuration page (`/config`) under "Azure OpenAI / Agent Configuration" → "Mode" dropdown
+
 ## How Does It Work?
 
 ### The Big Picture
@@ -262,9 +298,9 @@ Since the Azure Speech SDK's avatar feature requires browser APIs (WebRTC), we u
 
 ### Azure Services Integration
 
-The application integrates with three key Azure services:
+The application integrates with Azure services differently depending on the operational mode:
 
-#### 1. Azure OpenAI Service
+#### 1. Azure OpenAI Service (Modes 1 & 2)
 
 **Purpose**: Provides intelligent conversation capabilities
 
@@ -277,10 +313,9 @@ The application integrates with three key Azure services:
 **How we use it**:
 
 ```csharp
+// Mode 1: Direct LLM
 // Aspire injects AzureOpenAIClient automatically
 var client = serviceProvider.GetRequiredService<AzureOpenAIClient>();
-
-// Get the chat client for your deployment
 var chatClient = client.GetChatClient("gpt-4o-mini");
 
 // Stream responses
@@ -288,6 +323,31 @@ await foreach (var update in chatClient.CompleteChatStreamingAsync(messages))
 {
     // Update UI in real-time
 }
+
+// Mode 2: Agent-LLM
+// Uses Microsoft Agent Framework with Azure OpenAI
+var agent = await AIAgent.CreateAsync(chatClient, options);
+var response = await agent.InvokeAsync(userMessage);
+```
+
+#### 1b. Azure AI Foundry (Mode 3)
+
+**Purpose**: Connects to pre-built enterprise agents
+
+**What it does**:
+
+- Uses agents created in Azure AI Foundry portal
+- Supports RAG (Retrieval Augmented Generation)
+- Includes grounding with custom data sources
+- Enables tool calling and function execution
+
+**How we use it**:
+
+```csharp
+// Mode 3: Agent-AIFoundry
+var projectClient = new AIProjectClient(connectionString, credential);
+var agent = await projectClient.GetAgentAsync(agentId);
+var response = await agent.InvokeAsync(userMessage);
 ```
 
 #### 2. Azure Speech Service
@@ -331,18 +391,23 @@ For local development, all configuration is managed through **User Secrets**:
 ```bash
 cd AzureAIAvatarBlazor.AppHost
 
-# Azure OpenAI
-dotnet user-secrets set "ConnectionStrings:openai" \
-  "Endpoint=https://YOUR_RESOURCE.openai.azure.com/;Key=YOUR_KEY;"
-
-# Azure Speech Service
+# Required for all modes - Azure Speech Service
 dotnet user-secrets set "ConnectionStrings:speech" \
   "Endpoint=https://westus2.api.cognitive.microsoft.com/;Key=YOUR_KEY;"
-
-# Application Settings
 dotnet user-secrets set "Avatar:Character" "lisa"
+
+# For Mode 1 (LLM) or Mode 2 (Agent-LLM)
+dotnet user-secrets set "ConnectionStrings:openai" \
+  "Endpoint=https://YOUR_RESOURCE.openai.azure.com/;Key=YOUR_KEY;"
 dotnet user-secrets set "OpenAI:DeploymentName" "gpt-4o-mini"
+dotnet user-secrets set "Agent:Mode" "LLM"  # or "Agent-LLM"
 dotnet user-secrets set "SystemPrompt" "You are a helpful AI assistant."
+
+# For Mode 3 (Azure AI Foundry Agent) - instead of above
+# dotnet user-secrets set "ConnectionStrings:aifoundry" \
+#   "Endpoint=https://YOUR_PROJECT.api.azureml.ms/;Key=YOUR_KEY;"
+# dotnet user-secrets set "Agent:Mode" "Agent-AIFoundry"
+# dotnet user-secrets set "Agent:AgentId" "YOUR_AGENT_ID"
 ```
 
 **Why User Secrets?**
@@ -407,12 +472,26 @@ dotnet workload install aspire
 
 # 3. Configure your Azure credentials
 cd AzureAIAvatarBlazor.AppHost
-dotnet user-secrets set "ConnectionStrings:openai" \
-  "Endpoint=https://YOUR_RESOURCE.openai.azure.com/;Key=YOUR_KEY;"
+
+# Required for all modes
 dotnet user-secrets set "ConnectionStrings:speech" \
   "Endpoint=https://westus2.api.cognitive.microsoft.com/;Key=YOUR_KEY;"
 dotnet user-secrets set "Avatar:Character" "lisa"
+
+# For Mode 1 (LLM) - Default mode
+dotnet user-secrets set "ConnectionStrings:openai" \
+  "Endpoint=https://YOUR_RESOURCE.openai.azure.com/;Key=YOUR_KEY;"
 dotnet user-secrets set "OpenAI:DeploymentName" "gpt-4o-mini"
+dotnet user-secrets set "Agent:Mode" "LLM"
+
+# For Mode 2 (Agent-LLM) - uncomment and use instead
+# dotnet user-secrets set "Agent:Mode" "Agent-LLM"
+
+# For Mode 3 (Agent-AIFoundry) - uncomment and use instead
+# dotnet user-secrets set "ConnectionStrings:aifoundry" \
+#   "Endpoint=https://YOUR_PROJECT.api.azureml.ms/;Key=YOUR_KEY;"
+# dotnet user-secrets set "Agent:Mode" "Agent-AIFoundry"
+# dotnet user-secrets set "Agent:AgentId" "YOUR_AGENT_ID"
 
 # 4. Run the application
 dotnet run
