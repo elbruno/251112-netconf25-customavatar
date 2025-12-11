@@ -24,7 +24,7 @@
                     SignalR/WebSocket
                          │
 ┌────────────────────────▼────────────────────────────────────────┐
-│                   Blazor Server (.NET 9)                         │
+│                   Blazor Server (.NET 10)                        │
 ├──────────────────────────────────────────────────────────────────┤
 │  ┌─────────────────────────────────────────────────────────┐    │
 │  │                    Presentation Layer                    │    │
@@ -336,17 +336,40 @@ public class ChatMessage
 
 ## Technology Stack Details
 
-### Backend (.NET 9)
-- **Runtime**: .NET 9.0
-- **Framework**: ASP.NET Core 9.0
+### Backend (.NET 10)
+- **Runtime**: .NET 10.0
+- **Framework**: ASP.NET Core 10.0
 - **UI**: Blazor Server (Interactive Server Render Mode)
 - **Communication**: SignalR over WebSocket
 
 ### NuGet Packages
-- `Azure.AI.OpenAI` (2.1.0)
-- `Microsoft.CognitiveServices.Speech` (1.41.1)
+
+**Aspire Packages:**
+- `Aspire.Azure.AI.OpenAI` (13.0.2-preview.1.25603.5)
+- `Aspire.Hosting.AppHost` (13.0.2)
+- `Aspire.Hosting.Azure.CognitiveServices` (13.0.2)
+- `Aspire.Hosting.Azure.Search` (13.0.2)
+
+**Azure SDK:**
+- `Azure.Identity` (1.17.1)
+- `Microsoft.CognitiveServices.Speech` (1.47.0)
 - `Azure.Search.Documents` (11.7.0)
-- `Microsoft.Extensions.Configuration.UserSecrets` (9.0.10)
+
+**Agent Framework (Preview):**
+- `Azure.AI.Agents.Persistent` (1.2.0-beta.7)
+- `Microsoft.Agents.AI` (1.0.0-preview.251028.1)
+- `Microsoft.Agents.AI.AzureAI` (1.0.0-preview.251028.1)
+
+**OpenTelemetry:**
+- `OpenTelemetry.Exporter.OpenTelemetryProtocol` (1.14.0)
+- `OpenTelemetry.Extensions.Hosting` (1.14.0)
+- `OpenTelemetry.Instrumentation.AspNetCore` (1.14.0)
+- `OpenTelemetry.Instrumentation.Http` (1.14.0)
+- `OpenTelemetry.Instrumentation.Runtime` (1.14.0)
+
+**Microsoft.Extensions:**
+- `Microsoft.Extensions.Http.Resilience` (10.1.0)
+- `Microsoft.Extensions.ServiceDiscovery` (10.1.0)
 
 ### Frontend
 - **UI Framework**: Bootstrap 5.3.3

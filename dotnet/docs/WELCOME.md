@@ -19,7 +19,7 @@ The AI Avatar Agent provides a complete conversational experience:
 
 ## The .NET Implementation
 
-This repository includes **two complete implementations** of the same application. This guide focuses on the **.NET 10 Blazor implementation** with .NET Aspire orchestration, which is designed for enterprise and production scenarios.
+This repository includes **two complete implementations** of the same application. This guide focuses on the **.NET 10 Blazor implementation** with .NET Aspire 13.0 orchestration, which is designed for enterprise and production scenarios.
 
 ### Why Choose the .NET Implementation?
 
