@@ -13,12 +13,7 @@ public class AvatarConfiguration
     /// <summary>
     /// Azure OpenAI configuration
     /// </summary>
-    public AzureOpenAIConfig AzureOpenAI { get; set; } = new();
-
-    /// <summary>
-    /// Azure Cognitive Search configuration (optional, for On Your Data)
-    /// </summary>
-    public AzureCognitiveSearchConfig? AzureCognitiveSearch { get; set; }
+    public AzureOpenAI AzureOpenAI { get; set; } = new();
 
     /// <summary>
     /// STT/TTS configuration

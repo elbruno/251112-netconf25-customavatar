@@ -21,7 +21,6 @@ public class ConfigurationService
     }
 
     public event EventHandler<AvatarConfiguration?>? ConfigurationChanged;
-
     private bool DetermineIfCustomAvatar(IConfiguration config)
     {
         // Check if explicitly set
@@ -94,7 +93,7 @@ public class ConfigurationService
                     ? enablePrivateEndpointValue
                     : false,
             },
-            AzureOpenAI = new AzureOpenAIConfig
+            AzureOpenAI = new AzureOpenAI
             {
                 Mode = _configuration["AGENT_MODE"]
                     ?? _configuration["AzureOpenAI__Mode"]
@@ -110,24 +109,24 @@ public class ConfigurationService
                         ?? _configuration["AzureOpenAI__AgentLLM__Endpoint"]
                         ?? _configuration["AzureOpenAI:AgentLLM:Endpoint"]
                         ?? _configuration["AzureOpenAI__Endpoint"]
-                        ?? _configuration["AzureOpenAI:Endpoint"]
+                        ?? _configuration["AzureOpenAI:AgentLLMConfig:Endpoint"]
                         ?? string.Empty,
                     ApiKey = _configuration["AZURE_OPENAI_API_KEY"]
                         ?? _configuration["AzureOpenAI__AgentLLM__ApiKey"]
                         ?? _configuration["AzureOpenAI:AgentLLM:ApiKey"]
                         ?? _configuration["AzureOpenAI__ApiKey"]
-                        ?? _configuration["AzureOpenAI:ApiKey"]
+                        ?? _configuration["AzureOpenAI:AgentLLMConfig:ApiKey"]
                         ?? string.Empty,
                     DeploymentName = _configuration["OpenAI__DeploymentName"]
                         ?? _configuration["AZURE_OPENAI_DEPLOYMENT_NAME"]
                         ?? _configuration["AzureOpenAI__DeploymentName"]
-                        ?? _configuration["AzureOpenAI:DeploymentName"]
+                        ?? _configuration["AzureOpenAI:AgentLLMConfig:DeploymentName"]
                         ?? string.Empty,
                     SystemPrompt = _configuration["SystemPrompt"]
                         ?? _configuration["AzureOpenAI__AgentLLM__SystemPrompt"]
                         ?? _configuration["AzureOpenAI:AgentLLM:SystemPrompt"]
                         ?? _configuration["AzureOpenAI__SystemPrompt"]
-                        ?? _configuration["AzureOpenAI:SystemPrompt"]
+                        ?? _configuration["AzureOpenAI:AgentLLMConfig:SystemPrompt"]
                         ?? _configuration["SYSTEM_PROMPT"]
                         ?? "You are Bruno Capuano (El Bruno). Respond in the user's language with brief answers (1-2 sentences) and a friendly, approachable tone.",
                 },
@@ -135,24 +134,23 @@ public class ConfigurationService
                 {
                     AgentId = _configuration["AGENT_ID"]
                         ?? _configuration["AzureOpenAI__AgentId"]
-                        ?? _configuration["AzureOpenAI:AgentId"]
+                        ?? _configuration["AzureOpenAI:AgentAIFoundryConfig:AgentId"]
                         ?? string.Empty,
                     AIFoundryEndpoint = _configuration["AZURE_AI_FOUNDRY_ENDPOINT"]
                         ?? _configuration["AzureOpenAI__AIFoundryEndpoint"]
-                        ?? _configuration["AzureOpenAI:AIFoundryEndpoint"]
+                        ?? _configuration["AzureOpenAI:AgentAIFoundryConfig:AIFoundryEndpoint"]
                         ?? string.Empty
                 },
                 AgentMicrosoftFoundry = new AgentMicrosoftFoundryConfig
                 {
                     MicrosoftFoundryEndpoint = _configuration["AZURE_MICROSOFTFOUNDRY_ENDPOINT"]
                         ?? _configuration["AzureOpenAI__MicrosoftFoundryEndpoint"]
-                        ?? _configuration["AzureOpenAI:MicrosoftFoundryEndpoint"]
+                        ?? _configuration["AzureOpenAI:AgentMicrosoftFoundryConfig:MicrosoftFoundryEndpoint"]
                         ?? string.Empty,
                     MicrosoftFoundryAgentName = _configuration["MICROSOFTFOUNDRY_AGENT_NAME"]
                         ?? _configuration["AzureOpenAI__MicrosoftFoundryAgentName"]
-                        ?? _configuration["AzureOpenAI:MicrosoftFoundryAgentName"]
-                        ?? string.Empty
-                }
+                        ?? _configuration["AzureOpenAI:AgentMicrosoftFoundryConfig:MicrosoftFoundryAgentName"]
+                        ?? string.Empty                }
             },
             SttTts = new SttTtsConfig
             {
@@ -255,32 +253,6 @@ public class ConfigurationService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Error loading predefined questions from configuration");
-        }
-
-        // Check if Cognitive Search is configured
-        var searchEndpoint = _configuration["AZURE_COGNITIVE_SEARCH_ENDPOINT"]
-            ?? _configuration["AzureCognitiveSearch__Endpoint"]
-            ?? _configuration["AzureCognitiveSearch:Endpoint"];
-
-        if (!string.IsNullOrEmpty(searchEndpoint))
-        {
-            config.AzureCognitiveSearch = new AzureCognitiveSearchConfig
-            {
-                Endpoint = searchEndpoint,
-                ApiKey = _configuration["AZURE_COGNITIVE_SEARCH_API_KEY"]
-                    ?? _configuration["AzureCognitiveSearch__ApiKey"]
-                    ?? _configuration["AzureCognitiveSearch:ApiKey"]
-                    ?? string.Empty,
-                IndexName = _configuration["AZURE_COGNITIVE_SEARCH_INDEX_NAME"]
-                    ?? _configuration["AzureCognitiveSearch__IndexName"]
-                    ?? _configuration["AzureCognitiveSearch:IndexName"]
-                    ?? string.Empty,
-                Enabled = bool.Parse(
-                    _configuration["AZURE_COGNITIVE_SEARCH_ENABLED"]
-                    ?? _configuration["AzureCognitiveSearch__Enabled"]
-                    ?? _configuration["AzureCognitiveSearch:Enabled"]
-                    ?? "false")
-            };
         }
 
         _cachedConfig = config;
