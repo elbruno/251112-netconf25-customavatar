@@ -54,13 +54,25 @@ public class AzureAIAgentService : IAzureAIAgentService
             {
                 _agent = CreateLLMBasedAgent(config);
             }
+            else if (mode == "Agent-MicrosoftFoundry")
+            {
+                // Microsoft Foundry integration is intentionally left unimplemented.
+                _logger.LogWarning("Agent mode 'Agent-MicrosoftFoundry' selected but not implemented");
+                throw new NotImplementedException("Agent-MicrosoftFoundry mode is not implemented. This mode requires Microsoft Foundry integration which is not available in this build.");
+            }
+            else if (mode == "LLM")
+            {
+                // LLM mode does not use AIAgent wrapper
+                _logger.LogInformation("LLM mode selected - no AIAgent will be created");
+                throw new InvalidOperationException("LLM mode does not create an AI Agent instance through the Agent Framework.");
+            }
             else
             {
-                throw new InvalidOperationException($"Agent mode '{mode}' is not supported. Use 'Agent-LLM' or 'Agent-AIFoundry'.");
+                throw new InvalidOperationException($"Agent mode '{mode}' is not supported. Use 'Agent-LLM', 'Agent-AIFoundry', 'Agent-MicrosoftFoundry' or 'LLM'.");
             }
 
             _logger.LogInformation("AI Agent initialized successfully");
-            return _agent;
+            return _agent!;
         }
         finally
         {
@@ -110,7 +122,7 @@ public class AzureAIAgentService : IAzureAIAgentService
             throw new InvalidOperationException("Azure OpenAI API Key is required for Agent-LLM mode.");
         }
 
-        var deploymentName = config.AzureOpenAI.DeploymentName ?? "gpt-5.1-chat";
+        var deploymentName = string.IsNullOrWhiteSpace(config.AzureOpenAI.DeploymentName) ? "gpt-5.1-chat" : config.AzureOpenAI.DeploymentName;
 
         _logger.LogInformation("Using Endpoint: {Endpoint}", config.AzureOpenAI.Endpoint);
         _logger.LogInformation("Using Deployment: {Deployment}", deploymentName);
@@ -121,7 +133,7 @@ public class AzureAIAgentService : IAzureAIAgentService
         var chatClient = openAIClient.GetChatClient(deploymentName);
 
         // Convert to IChatClient and create agent
-        var instructions = config.AzureOpenAI.SystemPrompt ?? "You are Bruno Capuano. Respond in the user's language with a short answer and a friendly, approachable tone. Convert numeric times (e.g., 08:00) to spoken format (e.g., \"eight in the morning\"). If you don't know an answer, just say \"I don't know\"";
+        var instructions = config.AzureOpenAI.SystemPrompt ?? "You are Bruno Capuano. Respond in the user's language with a short answer and a friendly, approachable tone. If you don't know an answer, just say 'I don't know'.";
         var agent = chatClient.AsIChatClient().CreateAIAgent(instructions: instructions);
 
         _logger.LogInformation("LLM-based Agent created successfully");
@@ -171,5 +183,12 @@ public class AzureAIAgentService : IAzureAIAgentService
 
         _logger.LogInformation("Agent response completed: {Chunks} chunks, {Characters} total characters",
             totalChunks, totalCharacters);
+    }
+
+    public Task ResetAgentAsync()
+    {
+        _logger.LogInformation("Resetting cached agent instance");
+        _agent = null;
+        return Task.CompletedTask;
     }
 }

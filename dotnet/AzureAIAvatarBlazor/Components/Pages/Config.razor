@@ -66,12 +66,12 @@
 					<div class="mb-3">
 						<label class="form-label">API Key</label>
 						<input type="password" class="form-control" @bind="config.AzureSpeech.ApiKey"
-							   placeholder="Enter your Speech API key">
+							placeholder="Enter your Speech API key">
 						<div class="form-text">Your API key is stored securely.</div>
 					</div>
 					<div class="form-check mb-3">
 						<input type="checkbox" class="form-check-input" id="enablePrivateEndpoint"
-							   @bind="config.AzureSpeech.EnablePrivateEndpoint">
+							@bind="config.AzureSpeech.EnablePrivateEndpoint">
 						<label class="form-check-label" for="enablePrivateEndpoint">
 							Enable Private Endpoint
 						</label>
@@ -81,7 +81,7 @@
 						<div class="mb-3">
 							<label class="form-label">Private Endpoint URL</label>
 							<input type="text" class="form-control" @bind="config.AzureSpeech.PrivateEndpoint"
-								   placeholder="https://your-endpoint.cognitiveservices.azure.com/">
+								placeholder="https://your-endpoint.cognitiveservices.azure.com/">
 						</div>
 					}
 				</div>
@@ -96,69 +96,91 @@
 				</div>
 				<div class="card-body">
 					<div class="mb-3">
-						<label class="form-label">Mode</label>
-						<select class="form-select" @bind="config.AzureOpenAI.Mode">
-							<option value="LLM">LLM (Direct OpenAI)</option>
-							<option value="Agent-LLM">Agent-LLM (Agent Framework with OpenAI)</option>
-							<option value="Agent-AIFoundry">Agent-AIFoundry (Azure AI Foundry Agent)</option>
-						</select>
-						<div class="form-text">Choose how the AI responds to user queries</div>
+						<label class="form-label">Mode (select one)</label>
+						<div class="list-group">
+							<label class="list-group-item">
+								<input class="form-check-input me-2" type="radio" name="mode" value="LLM" @onchange='() => SelectMode("LLM")' checked='@(config.AzureOpenAI.Mode == "LLM")' />
+								<strong>LLM</strong> - Direct OpenAI
+							</label>
+							<label class="list-group-item">
+								<input class="form-check-input me-2" type="radio" name="mode" value="Agent-LLM" @onchange='() => SelectMode("Agent-LLM")' checked='@(config.AzureOpenAI.Mode == "Agent-LLM")' />
+								<strong>Agent-LLM</strong> - Agent Framework with OpenAI
+							</label>
+							<label class="list-group-item">
+								<input class="form-check-input me-2" type="radio" name="mode" value="Agent-AIFoundry" @onchange='() => SelectMode("Agent-AIFoundry")' checked='@(config.AzureOpenAI.Mode == "Agent-AIFoundry")' />
+								<strong>Agent-AIFoundry</strong> - Azure AI Foundry Agent
+							</label>
+							<label class="list-group-item">
+								<input class="form-check-input me-2" type="radio" name="mode" value="Agent-MicrosoftFoundry" @onchange='() => SelectMode("Agent-MicrosoftFoundry")' checked='@(config.AzureOpenAI.Mode == "Agent-MicrosoftFoundry")' />
+								<strong>Agent-MicrosoftFoundry</strong> - Microsoft Foundry Agent (not implemented)
+							</label>
+						</div>
 					</div>
 
-					@if (config.AzureOpenAI.Mode == "Agent-AIFoundry")
-					{
+					<!-- LLM fields -->
+					<div class="mb-3">
+						<label class="form-label">Azure OpenAI Endpoint</label>
+						<input type="text" class="form-control" @bind="config.AzureOpenAI.Endpoint"
+							placeholder="https://your-resource.openai.azure.com">
+						<div class="form-text">Azure OpenAI resource endpoint (used for LLM and Agent-LLM)</div>
+					</div>
+
+					<div class="mb-3">
+						<label class="form-label">API Key</label>
+						<input type="password" class="form-control" @bind="config.AzureOpenAI.ApiKey"
+							placeholder="Enter your OpenAI API key">
+					</div>
+					<div class="mb-3">
+						<label class="form-label">Deployment Name</label>
+						<input type="text" class="form-control" @bind="config.AzureOpenAI.DeploymentName"
+							placeholder="gpt-5.1-chat">
+					</div>
+
+					<div class="mb-3">
+						<label class="form-label">System Prompt / Instructions</label>
+						<div class="input-group">
+							<textarea class="form-control" rows="3" @bind="config.AzureOpenAI.SystemPrompt"></textarea>
+						</div>
+						<button class="btn btn-outline-secondary btn-sm mt-2" @onclick="ResetSystemPromptToDefault">
+							<i class="bi bi-arrow-counterclockwise me-1"></i>Reset to Default
+						</button>
+					</div>
+
+					<!-- Agent-AIFoundry fields -->
+					<div class="border rounded p-3 mb-3" style="background:#f8f9fa;">
+						<h6>Agent-AIFoundry Configuration</h6>
 						<div class="mb-3">
 							<label class="form-label">Agent ID</label>
 							<input type="text" class="form-control" @bind="config.AzureOpenAI.AgentId"
-								   placeholder="Enter your Azure AI Foundry Agent ID">
+								placeholder="Enter your Azure AI Foundry Agent ID">
 							<div class="form-text">The ID of your pre-configured Azure AI Foundry agent</div>
 						</div>
 						<div class="mb-3">
 							<label class="form-label">Azure AI Foundry Project Endpoint</label>
 							<input type="text" class="form-control" @bind="config.AzureOpenAI.AIFoundryEndpoint"
-								   placeholder="https://your-project.api.azureml.ms">
+								placeholder="https://your-project.api.azureml.ms">
 							<div class="form-text">
 								Azure AI Foundry project endpoint (different from Azure OpenAI endpoint)
 							</div>
 						</div>
-					}
+					</div>
 
-					@if (config.AzureOpenAI.Mode == "LLM" || config.AzureOpenAI.Mode == "Agent-LLM")
-					{
+					<!-- Agent-MicrosoftFoundry fields -->
+					<div class="border rounded p-3 mb-3" style="background:#fff7f0;">
+						<h6>Agent-MicrosoftFoundry Configuration (Not Implemented)</h6>
 						<div class="mb-3">
-							<label class="form-label">Azure OpenAI Endpoint</label>
-							<input type="text" class="form-control" @bind="config.AzureOpenAI.Endpoint"
-								   placeholder="https://your-resource.openai.azure.com">
-							<div class="form-text">Azure OpenAI resource endpoint</div>
-						</div>
-					}
-
-					@if (config.AzureOpenAI.Mode == "LLM" || config.AzureOpenAI.Mode == "Agent-LLM")
-					{
-						<div class="mb-3">
-							<label class="form-label">API Key</label>
-							<input type="password" class="form-control" @bind="config.AzureOpenAI.ApiKey"
-								   placeholder="Enter your OpenAI API key">
+							<label class="form-label">Project Endpoint</label>
+							<input type="text" class="form-control" @bind="config.AzureOpenAI.MicrosoftFoundryEndpoint"
+								placeholder="https://your-foundry-endpoint">
+							<div class="form-text">Microsoft Foundry project endpoint</div>
 						</div>
 						<div class="mb-3">
-							<label class="form-label">Deployment Name</label>
-							<input type="text" class="form-control" @bind="config.AzureOpenAI.DeploymentName"
-								   placeholder="gpt-5.1-chat">
+							<label class="form-label">Agent Name</label>
+							<input type="text" class="form-control" @bind="config.AzureOpenAI.MicrosoftFoundryAgentName"
+								placeholder="Agent name in Microsoft Foundry">
+							<div class="form-text">Agent name used within Microsoft Foundry</div>
 						</div>
-					}
-
-					@if (config.AzureOpenAI.Mode == "LLM" || config.AzureOpenAI.Mode == "Agent-LLM")
-					{
-						<div class="mb-3">
-							<label class="form-label">System Prompt / Instructions</label>
-							<div class="input-group">
-								<textarea class="form-control" rows="3" @bind="config.AzureOpenAI.SystemPrompt"></textarea>
-							</div>
-							<button class="btn btn-outline-secondary btn-sm mt-2" @onclick="ResetSystemPromptToDefault">
-								<i class="bi bi-arrow-counterclockwise me-1"></i>Reset to Default
-							</button>
-						</div>
-					}
+					</div>
 				</div>
 			</div>
 		</div>
@@ -173,7 +195,7 @@
 					<div class="mb-3">
 						<label class="form-label">STT Locales</label>
 						<input type="text" class="form-control" @bind="config.SttTts.SttLocales"
-							   placeholder="en-US,es-ES,fr-FR">
+							placeholder="en-US,es-ES,fr-FR">
 						<div class="form-text">Comma-separated list of locale codes</div>
 					</div>
 					<div class="mb-3">
@@ -195,11 +217,11 @@
 					<div class="mb-3">
 						<label class="form-label">Custom Voice Endpoint ID (Optional)</label>
 						<input type="text" class="form-control" @bind="config.SttTts.CustomVoiceEndpointId"
-							   placeholder="Leave empty for standard voices">
+							placeholder="Leave empty for standard voices">
 					</div>
 					<div class="form-check">
 						<input type="checkbox" class="form-check-input" id="continuousConversation"
-							   @bind="config.SttTts.ContinuousConversation">
+							@bind="config.SttTts.ContinuousConversation">
 						<label class="form-check-label" for="continuousConversation">
 							Continuous Conversation
 						</label>
@@ -240,28 +262,28 @@
 					</div>
 					<div class="form-check mb-2">
 						<input type="checkbox" class="form-check-input" id="customAvatar"
-							   @bind="config.Avatar.IsCustomAvatar">
+							@bind="config.Avatar.IsCustomAvatar">
 						<label class="form-check-label" for="customAvatar">
 							Custom Avatar
 						</label>
 					</div>
 					<div class="form-check mb-2">
 						<input type="checkbox" class="form-check-input" id="useBuiltInVoice"
-							   @bind="config.Avatar.UseBuiltInVoice">
+							@bind="config.Avatar.UseBuiltInVoice">
 						<label class="form-check-label" for="useBuiltInVoice">
 							Use Built-In Voice
 						</label>
 					</div>
 					<div class="form-check mb-2">
 						<input type="checkbox" class="form-check-input" id="enableSubtitles"
-							   @bind="config.Avatar.EnableSubtitles">
+							@bind="config.Avatar.EnableSubtitles">
 						<label class="form-check-label" for="enableSubtitles">
 							Enable Subtitles
 						</label>
 					</div>
 					<div class="form-check mb-3">
 						<input type="checkbox" class="form-check-input" id="enableAutoReconnect"
-							   @bind="config.Avatar.EnableAutoReconnect">
+							@bind="config.Avatar.EnableAutoReconnect">
 						<label class="form-check-label" for="enableAutoReconnect">
 							Enable Auto Reconnect
 						</label>
@@ -269,7 +291,7 @@
 					<div class="mb-3">
 						<label class="form-label">Audio Gain: @config.Avatar.AudioGain.ToString("F1")</label>
 						<input type="range" class="form-range" min="0.1" max="5.0" step="0.1"
-							   @bind="config.Avatar.AudioGain">
+							@bind="config.Avatar.AudioGain">
 						<div class="form-text">Adjust volume amplification (0.1x - 5.0x)</div>
 					</div>
 				</div>
@@ -443,7 +465,7 @@
 		catch (Exception ex)
 		{
 			statusMessage = $"Error exporting configuration: {ex.Message}";
-			isError = true;
+		 isError = true;
 			StateHasChanged();
 		}
 	}
@@ -544,5 +566,11 @@
         }
 
         StateHasChanged();
+	}
+
+	private void SelectMode(string mode)
+	{
+		config.AzureOpenAI.Mode = mode;
+		StateHasChanged();
 	}
 }
