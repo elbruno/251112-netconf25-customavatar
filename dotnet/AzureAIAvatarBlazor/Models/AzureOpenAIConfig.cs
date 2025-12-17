@@ -13,23 +13,3 @@ public class AzureOpenAIConfig
 
     public string TenantId { get; set; } = string.Empty;
 }
-
-public class AgentLLMConfig
-{
-    public string Endpoint { get; set; } = string.Empty;
-    public string ApiKey { get; set; } = string.Empty;
-    public string DeploymentName { get; set; } = string.Empty;
-    public string SystemPrompt { get; set; } = "You are an AI assistant that helps people find information.";
-}
-
-public class AgentAIFoundryConfig
-{
-    public string AIFoundryEndpoint { get; set; } = string.Empty;
-    public string AgentId { get; set; } = string.Empty;
-}
-
-public class AgentMicrosoftFoundryConfig
-{
-    public string MicrosoftFoundryEndpoint { get; set; } = string.Empty;
-    public string MicrosoftFoundryAgentName { get; set; } = string.Empty;
-}

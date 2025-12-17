@@ -22,29 +22,6 @@ public class ConfigurationService
 
     public event EventHandler<AvatarConfiguration?>? ConfigurationChanged;
 
-    private bool DetermineEnablePrivateEndpoint(IConfiguration config)
-    {
-        // Check if explicitly set in configuration  
-        var explicitSetting = config["AZURE_SPEECH_ENABLE_PRIVATE_ENDPOINT"]
-            ?? config["AzureSpeech__EnablePrivateEndpoint"]
-            ?? config["AzureSpeech:EnablePrivateEndpoint"];
-
-        _logger.LogInformation("DEBUG: EnablePrivateEndpoint explicit setting: '{Value}'", explicitSetting ?? "null");
-
-        if (!string.IsNullOrEmpty(explicitSetting))
-        {
-            var enabled = bool.TryParse(explicitSetting, out var result) && result;
-            _logger.LogInformation("Using explicit EnablePrivateEndpoint setting: {Enabled}", enabled);
-            return enabled;
-        }
-
-        // For avatars, ALWAYS default to false
-        // The standard regional endpoint works correctly for avatars
-        // Private endpoints must be explicitly enabled
-        _logger.LogInformation("No explicit private endpoint setting - defaulting to FALSE (standard regional endpoint)");
-        return false;
-    }
-
     private bool DetermineIfCustomAvatar(IConfiguration config)
     {
         // Check if explicitly set
