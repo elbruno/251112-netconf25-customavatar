@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace AzureAIAvatarBlazor.Services;
 
-public class ConfigurationService : IConfigurationService
+public class ConfigurationService
 {
     private readonly IConfiguration _configuration;
     private readonly IWebHostEnvironment _environment;
@@ -139,7 +139,7 @@ public class ConfigurationService : IConfigurationService
                     ?? _configuration["AzureOpenAI__SystemPrompt"]
                     ?? _configuration["AzureOpenAI:SystemPrompt"]
                     ?? _configuration["SYSTEM_PROMPT"]
-                    ?? "You are Bruno Capuano (El Bruno). Respond in the user's language with brief answers (1-2 sentences) and a friendly, approachable tone. Convert numeric times (e.g., 08:00) to spoken format (e.g., \"eight in the morning\"). AgentCon Lima — November 8, 2025 (UPC Monterrico). Agenda (summary): 08:00 Registration; 08:15 Welcome; 08:30 Keynote — Bruno Capuano; parallel sessions throughout the day on agent development, Azure AI, Copilot Studio, and more; 12:05 Lunch; 15:45 Panel: The Future of Agents; 16:30 Photos & Closing; 16:45 Raffle. .NET Conf 2025 — November 11-13, 2025 (virtual, free). Day 1 (Nov 11): Welcome to .NET 10 & Visual Studio 2026 keynote (11:00 AM EST) featuring Scott Hanselman, Damian Edwards, David Fowler, and the .NET team; sessions on ASP.NET Core, C# 14, Blazor, Aspire, AI-powered development with GitHub Copilot, building intelligent apps, Model Context Protocol (MCP), .NET MAUI, Windows development, and more. Day 2 (Nov 12): Azure keynote with Scott Hunter and Paul Yuknewicz; sessions on building remote MCP servers, Redis with Agent Framework, Aspire deep dive, Azure App Service, testing with Microsoft.Testing.Platform, NuGet updates, containers, AI-powered testing. Community Day (Nov 13): 50+ community sessions on topics from Newtonsoft.Json migration, Xamarin.Forms to MAUI, authentication with Blazor, retro computing with C# on Commodore 64, OpenTelemetry observability, security tools, clean architecture, MCP server creation, passkeys, AI agents, and more. Student Zone on November 14, 2025 - beginner-friendly virtual event on AI, web, mobile, and game development. Watch on YouTube/Twitch, use #dotnetconf hashtag. Download .NET 10 at get.dot.net/10. Use `/prompts/agentcon-lima.md` as authoritative reference for AgentCon details; if information isn't in that source, respond in the same language: \"I don't have that information.\"",
+                    ?? "You are Bruno Capuano (El Bruno). Respond in the user's language with brief answers (1-2 sentences) and a friendly, approachable tone. ",
                 PromptProfile = _configuration["PROMPT_PROFILE"]
                     ?? _configuration["AzureOpenAI__PromptProfile"]
                     ?? _configuration["AzureOpenAI:PromptProfile"],
@@ -157,7 +157,14 @@ public class ConfigurationService : IConfigurationService
                     ?? _configuration["AzureOpenAI:AgentId"],
                 AIFoundryEndpoint = _configuration["AZURE_AI_FOUNDRY_ENDPOINT"]
                     ?? _configuration["AzureOpenAI__AIFoundryEndpoint"]
-                    ?? _configuration["AzureOpenAI:AIFoundryEndpoint"]
+                    ?? _configuration["AzureOpenAI:AIFoundryEndpoint"],
+                // Microsoft Foundry configuration (optional)
+                MicrosoftFoundryEndpoint = _configuration["AZURE_MICROSOFTFOUNDRY_ENDPOINT"]
+                    ?? _configuration["AzureOpenAI__MicrosoftFoundryEndpoint"]
+                    ?? _configuration["AzureOpenAI:MicrosoftFoundryEndpoint"],
+                MicrosoftFoundryAgentName = _configuration["MICROSOFTFOUNDRY_AGENT_NAME"]
+                    ?? _configuration["AzureOpenAI__MicrosoftFoundryAgentName"]
+                    ?? _configuration["AzureOpenAI:MicrosoftFoundryAgentName"]
             },
             SttTts = new SttTtsConfig
             {
@@ -477,6 +484,27 @@ public class ConfigurationService : IConfigurationService
             {
                 _logger.LogWarning("Validation failed: Agent ID is required for Agent-AIFoundry mode");
                 return "Agent ID is required for Agent-AIFoundry mode.";
+            }
+        }
+        else if (mode == "Agent-MicrosoftFoundry")
+        {
+            // Microsoft Foundry mode validation
+            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.MicrosoftFoundryEndpoint))
+            {
+                _logger.LogWarning("Validation failed: Microsoft Foundry endpoint is required for Agent-MicrosoftFoundry mode");
+                return "Microsoft Foundry project endpoint is required for Agent-MicrosoftFoundry mode.";
+            }
+
+            if (!Uri.TryCreate(config.AzureOpenAI.MicrosoftFoundryEndpoint, UriKind.Absolute, out var mfUri) || (mfUri.Scheme != "https" && mfUri.Scheme != "http"))
+            {
+                _logger.LogWarning("Validation failed: Invalid Microsoft Foundry endpoint URL: {Endpoint}", config.AzureOpenAI.MicrosoftFoundryEndpoint);
+                return "Microsoft Foundry endpoint must be a valid HTTPS URL.";
+            }
+
+            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.MicrosoftFoundryAgentName))
+            {
+                _logger.LogWarning("Validation failed: Microsoft Foundry agent name is required for Agent-MicrosoftFoundry mode");
+                return "Microsoft Foundry agent name is required for Agent-MicrosoftFoundry mode.";
             }
         }
         else

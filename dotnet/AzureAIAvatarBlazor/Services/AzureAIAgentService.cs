@@ -1,5 +1,6 @@
 using Azure.AI.Agents.Persistent;
 using Azure.AI.OpenAI;
+using Azure.AI.Projects;
 using Azure.Identity;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
@@ -8,39 +9,29 @@ using System.Runtime.CompilerServices;
 
 namespace AzureAIAvatarBlazor.Services;
 
-public class AzureAIAgentService : IAzureAIAgentService
+public class AzureAIAgentService
 {
-    private readonly IConfiguration _configuration;
     private readonly ILogger<AzureAIAgentService> _logger;
-    private readonly IConfigurationService _configService;
-    private AIAgent? _agent;
+    private readonly ConfigurationService _configService;
+    private AIAgent? _agentLLM;
+    private AIAgent? _agentAIFoundry;
+    private AIAgent? _agentMicrosoftFoundry;
     private readonly SemaphoreSlim _initLock = new(1, 1);
 
     public AzureAIAgentService(
         IConfiguration configuration,
         ILogger<AzureAIAgentService> logger,
-        IConfigurationService configService)
+        ConfigurationService configService)
     {
-        _configuration = configuration;
         _logger = logger;
         _configService = configService;
     }
 
     private async Task<AIAgent> GetOrCreateAgentAsync()
     {
-        if (_agent != null)
-        {
-            return _agent;
-        }
-
         await _initLock.WaitAsync();
         try
         {
-            if (_agent != null)
-            {
-                return _agent;
-            }
-
             var config = _configService.GetConfiguration();
             var mode = config.AzureOpenAI.Mode ?? "LLM";
 
@@ -48,17 +39,26 @@ public class AzureAIAgentService : IAzureAIAgentService
 
             if (mode == "Agent-AIFoundry")
             {
-                _agent = await CreateAzureAIFoundryAgentAsync(config);
+                if(_agentAIFoundry == null) {
+                    _agentAIFoundry = await CreateAzureAIFoundryAgentAsync(config);
+                }
+                return _agentAIFoundry;
             }
             else if (mode == "Agent-LLM")
             {
-                _agent = CreateLLMBasedAgent(config);
+                if (_agentLLM == null)
+                {
+                    _agentLLM = CreateLLMBasedAgent(config);
+                }
+                return _agentLLM;
             }
             else if (mode == "Agent-MicrosoftFoundry")
             {
-                // Microsoft Foundry integration is intentionally left unimplemented.
-                _logger.LogWarning("Agent mode 'Agent-MicrosoftFoundry' selected but not implemented");
-                throw new NotImplementedException("Agent-MicrosoftFoundry mode is not implemented. This mode requires Microsoft Foundry integration which is not available in this build.");
+                if (_agentMicrosoftFoundry == null)
+                {
+                    _agentMicrosoftFoundry = CreateMicrosoftFoundryBasedAgent(config);
+                }
+                return _agentMicrosoftFoundry;
             }
             else if (mode == "LLM")
             {
@@ -70,9 +70,6 @@ public class AzureAIAgentService : IAzureAIAgentService
             {
                 throw new InvalidOperationException($"Agent mode '{mode}' is not supported. Use 'Agent-LLM', 'Agent-AIFoundry', 'Agent-MicrosoftFoundry' or 'LLM'.");
             }
-
-            _logger.LogInformation("AI Agent initialized successfully");
-            return _agent!;
         }
         finally
         {
@@ -97,15 +94,10 @@ public class AzureAIAgentService : IAzureAIAgentService
         _logger.LogInformation("Using Azure AI Foundry Agent ID: {AgentId}", config.AzureOpenAI.AgentId);
         _logger.LogInformation("Using AI Foundry Endpoint: {Endpoint}", config.AzureOpenAI.AIFoundryEndpoint);
 
-        // Create the persistent agent client using Azure credentials
-        var credential = new DefaultAzureCredential();
-        var persistentAgentClient = new PersistentAgentsClient(config.AzureOpenAI.AIFoundryEndpoint, credential);
-
-        // Get the existing agent by ID
-        var agent = await persistentAgentClient.GetAIAgentAsync(config.AzureOpenAI.AgentId);
-
-        _logger.LogInformation("Azure AI Foundry Agent retrieved successfully");
-        return agent;
+        // The SDK surface for Azure AI Foundry may differ in this environment.
+        // Implementing full Foundry retrieval/adapter is out of scope for this change.
+        _logger.LogWarning("Azure AI Foundry agent retrieval is not implemented in this build.");
+        throw new NotImplementedException("Agent-AIFoundry integration is not implemented in this build. Implement retrieval using the appropriate Foundry SDK client.");
     }
 
     private AIAgent CreateLLMBasedAgent(Models.AvatarConfiguration config)
@@ -137,6 +129,45 @@ public class AzureAIAgentService : IAzureAIAgentService
         var agent = chatClient.AsIChatClient().CreateAIAgent(instructions: instructions);
 
         _logger.LogInformation("LLM-based Agent created successfully");
+        return agent;
+    }
+
+    private AIAgent CreateMicrosoftFoundryBasedAgent(Models.AvatarConfiguration config)
+    {
+        _logger.LogInformation("Creating Microsoft Foundry-based Agent...");
+
+        if (string.IsNullOrEmpty(config.AzureOpenAI.MicrosoftFoundryEndpoint))
+        {
+            throw new InvalidOperationException("Azure Microsoft Foundry Endpoint is required for Agent-MicrosoftFoundry mode.");
+        }
+
+        if (string.IsNullOrEmpty(config.AzureOpenAI.MicrosoftFoundryAgentName))
+        {
+            throw new InvalidOperationException("Azure Microsoft Foundry Agent Name is required for Agent-MicrosoftFoundry mode.");
+        }
+
+        var agentName = config.AzureOpenAI.MicrosoftFoundryAgentName;
+        var microsoftFoundryProjectEndpoint = config.AzureOpenAI.MicrosoftFoundryEndpoint;
+        string tenantId = config.AzureOpenAI.TenantId;
+
+        var credentialOptions = new DefaultAzureCredentialOptions();
+        if (!string.IsNullOrEmpty(tenantId))
+        {
+            credentialOptions = new DefaultAzureCredentialOptions()
+            { TenantId = tenantId };
+        }
+        var tokenCredential = new DefaultAzureCredential(options: credentialOptions);
+
+        AIProjectClient projectClient = new(
+            endpoint: new Uri(microsoftFoundryProjectEndpoint),
+            tokenProvider: tokenCredential);
+
+        AIAgent agent = projectClient.GetAIAgent(agentName);
+
+        _logger.LogInformation($"Using Microsoft Foundry Endpoint: {microsoftFoundryProjectEndpoint}");
+        _logger.LogInformation($"Using Agent Name: {agentName}");
+
+        _logger.LogInformation("Microsoft Foundry based Agent created successfully");
         return agent;
     }
 
@@ -188,7 +219,9 @@ public class AzureAIAgentService : IAzureAIAgentService
     public Task ResetAgentAsync()
     {
         _logger.LogInformation("Resetting cached agent instance");
-        _agent = null;
+        _agentLLM = null;
+        _agentMicrosoftFoundry = null;
+        _agentAIFoundry = null;
         return Task.CompletedTask;
     }
 }

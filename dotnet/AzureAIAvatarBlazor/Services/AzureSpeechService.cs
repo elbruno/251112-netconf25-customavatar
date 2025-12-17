@@ -1,6 +1,6 @@
 namespace AzureAIAvatarBlazor.Services;
 
-public class AzureSpeechService : IAzureSpeechService
+public class AzureSpeechService
 {
     private readonly IConfiguration _configuration;
     private readonly ILogger<AzureSpeechService> _logger;

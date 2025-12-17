@@ -8,6 +8,7 @@ public class AzureOpenAIConfig
     public string Endpoint { get; set; } = string.Empty;
     public string ApiKey { get; set; } = string.Empty;
     public string DeploymentName { get; set; } = string.Empty;
+    public string TenantId { get; set; } = string.Empty;
     public string SystemPrompt { get; set; } = "You are an AI assistant that helps people find information.";
     public string? PromptProfile { get; set; }
     public bool EnforcePromptProfile { get; set; }

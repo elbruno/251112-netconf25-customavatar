@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace AzureAIAvatarBlazor.Services;
 
-public class AzureOpenAIService : IAzureOpenAIService
+public class AzureOpenAIService
 {
     private readonly AzureOpenAIClient _client; // Injected by Aspire
     private readonly IConfiguration _configuration;
