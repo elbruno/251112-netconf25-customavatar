@@ -1,43 +1,35 @@
 namespace AzureAIAvatarBlazor.Models;
 
 /// <summary>
-/// Azure OpenAI configuration
+/// Azure OpenAI configuration organized by mode sections
 /// </summary>
 public class AzureOpenAIConfig
+{
+    public string Mode { get; set; } = "Agent-LLM";
+
+    public AgentLLMConfig AgentLLM { get; set; } = new();
+    public AgentAIFoundryConfig AgentAIFoundry { get; set; } = new();
+    public AgentMicrosoftFoundryConfig AgentMicrosoftFoundry { get; set; } = new();
+
+    public string TenantId { get; set; } = string.Empty;
+}
+
+public class AgentLLMConfig
 {
     public string Endpoint { get; set; } = string.Empty;
     public string ApiKey { get; set; } = string.Empty;
     public string DeploymentName { get; set; } = string.Empty;
-    public string TenantId { get; set; } = string.Empty;
     public string SystemPrompt { get; set; } = "You are an AI assistant that helps people find information.";
-    public string? PromptProfile { get; set; }
-    public bool EnforcePromptProfile { get; set; }
-    public Dictionary<string, string> PromptVariables { get; set; } = new();
+}
 
-    /// <summary>
-    /// Configuration mode: LLM, Agent-LLM, Agent-AIFoundry, Agent-MicrosoftFoundry
-    /// </summary>
-    public string Mode { get; set; } = "LLM";
+public class AgentAIFoundryConfig
+{
+    public string AIFoundryEndpoint { get; set; } = string.Empty;
+    public string AgentId { get; set; } = string.Empty;
+}
 
-    /// <summary>
-    /// Azure AI Foundry Agent ID (required when Mode is Agent-AIFoundry)
-    /// </summary>
-    public string? AgentId { get; set; }
-
-    /// <summary>
-    /// Azure AI Foundry Project Endpoint (required when Mode is Agent-AIFoundry)
-    /// Format: https://your-project.api.azureml.ms
-    /// This is different from the Azure OpenAI Endpoint used for LLM and Agent-LLM modes
-    /// </summary>
-    public string? AIFoundryEndpoint { get; set; }
-
-    /// <summary>
-    /// Microsoft Foundry (hypothetical) project endpoint for Agent-MicrosoftFoundry mode
-    /// </summary>
-    public string? MicrosoftFoundryEndpoint { get; set; }
-
-    /// <summary>
-    /// Agent name to use with Microsoft Foundry (Agent-MicrosoftFoundry)
-    /// </summary>
-    public string? MicrosoftFoundryAgentName { get; set; }
+public class AgentMicrosoftFoundryConfig
+{
+    public string MicrosoftFoundryEndpoint { get; set; } = string.Empty;
+    public string MicrosoftFoundryAgentName { get; set; } = string.Empty;
 }

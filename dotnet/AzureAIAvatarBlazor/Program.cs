@@ -10,7 +10,7 @@ builder.AddServiceDefaults();
 // ==============================
 
 // Azure OpenAI Client (automatically configured from AppHost)
-builder.AddAzureOpenAIClient("openai");
+builder.AddAzureOpenAIClient("microsoftfoundrycnnstring");
 
 // Note: Speech Service doesn't have Aspire component yet
 // Configuration is injected via environment variables from AppHost

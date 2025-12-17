@@ -104,8 +104,7 @@ public class ConfigurationService
                     ?? _configuration["AzureSpeech__Region"]
                     ?? _configuration["AzureSpeech:Region"]
                     ?? "westus2",
-                ApiKey = ExtractKeyFromConnectionString("speech")
-                    ?? _configuration["AZURE_SPEECH_API_KEY"]
+                ApiKey = _configuration["AZURE_SPEECH_API_KEY"]
                     ?? _configuration["AzureSpeech__ApiKey"]
                     ?? _configuration["AzureSpeech:ApiKey"]
                     ?? string.Empty,
@@ -120,51 +119,63 @@ public class ConfigurationService
             },
             AzureOpenAI = new AzureOpenAIConfig
             {
-                Endpoint = ExtractEndpointFromConnectionString("openai")
-                    ?? _configuration["AZURE_OPENAI_ENDPOINT"]
-                    ?? _configuration["AzureOpenAI__Endpoint"]
-                    ?? _configuration["AzureOpenAI:Endpoint"]
-                    ?? string.Empty,
-                ApiKey = ExtractKeyFromConnectionString("openai")
-                    ?? _configuration["AZURE_OPENAI_API_KEY"]
-                    ?? _configuration["AzureOpenAI__ApiKey"]
-                    ?? _configuration["AzureOpenAI:ApiKey"]
-                    ?? string.Empty,
-                DeploymentName = _configuration["OpenAI__DeploymentName"]
-                    ?? _configuration["AZURE_OPENAI_DEPLOYMENT_NAME"]
-                    ?? _configuration["AzureOpenAI__DeploymentName"]
-                    ?? _configuration["AzureOpenAI:DeploymentName"]
-                    ?? string.Empty,
-                SystemPrompt = _configuration["SystemPrompt"]
-                    ?? _configuration["AzureOpenAI__SystemPrompt"]
-                    ?? _configuration["AzureOpenAI:SystemPrompt"]
-                    ?? _configuration["SYSTEM_PROMPT"]
-                    ?? "You are Bruno Capuano (El Bruno). Respond in the user's language with brief answers (1-2 sentences) and a friendly, approachable tone. ",
-                PromptProfile = _configuration["PROMPT_PROFILE"]
-                    ?? _configuration["AzureOpenAI__PromptProfile"]
-                    ?? _configuration["AzureOpenAI:PromptProfile"],
-                EnforcePromptProfile = bool.Parse(
-                    _configuration["PROMPT_ENFORCE_PROFILE"]
-                    ?? _configuration["AzureOpenAI__EnforcePromptProfile"]
-                    ?? _configuration["AzureOpenAI:EnforcePromptProfile"]
-                    ?? "false"),
                 Mode = _configuration["AGENT_MODE"]
                     ?? _configuration["AzureOpenAI__Mode"]
                     ?? _configuration["AzureOpenAI:Mode"]
-                    ?? "LLM",
-                AgentId = _configuration["AGENT_ID"]
-                    ?? _configuration["AzureOpenAI__AgentId"]
-                    ?? _configuration["AzureOpenAI:AgentId"],
-                AIFoundryEndpoint = _configuration["AZURE_AI_FOUNDRY_ENDPOINT"]
-                    ?? _configuration["AzureOpenAI__AIFoundryEndpoint"]
-                    ?? _configuration["AzureOpenAI:AIFoundryEndpoint"],
-                // Microsoft Foundry configuration (optional)
-                MicrosoftFoundryEndpoint = _configuration["AZURE_MICROSOFTFOUNDRY_ENDPOINT"]
-                    ?? _configuration["AzureOpenAI__MicrosoftFoundryEndpoint"]
-                    ?? _configuration["AzureOpenAI:MicrosoftFoundryEndpoint"],
-                MicrosoftFoundryAgentName = _configuration["MICROSOFTFOUNDRY_AGENT_NAME"]
-                    ?? _configuration["AzureOpenAI__MicrosoftFoundryAgentName"]
-                    ?? _configuration["AzureOpenAI:MicrosoftFoundryAgentName"]
+                    ?? "Agent-LLM",
+                TenantId = _configuration["AZURE_TENANT_ID"]
+                    ?? _configuration["AzureOpenAI__TenantId"]
+                    ?? _configuration["AzureOpenAI:TenantId"]
+                    ?? string.Empty,
+                AgentLLM = new AgentLLMConfig
+                {
+                    Endpoint = _configuration["AZURE_OPENAI_ENDPOINT"]
+                        ?? _configuration["AzureOpenAI__AgentLLM__Endpoint"]
+                        ?? _configuration["AzureOpenAI:AgentLLM:Endpoint"]
+                        ?? _configuration["AzureOpenAI__Endpoint"]
+                        ?? _configuration["AzureOpenAI:Endpoint"]
+                        ?? string.Empty,
+                    ApiKey = _configuration["AZURE_OPENAI_API_KEY"]
+                        ?? _configuration["AzureOpenAI__AgentLLM__ApiKey"]
+                        ?? _configuration["AzureOpenAI:AgentLLM:ApiKey"]
+                        ?? _configuration["AzureOpenAI__ApiKey"]
+                        ?? _configuration["AzureOpenAI:ApiKey"]
+                        ?? string.Empty,
+                    DeploymentName = _configuration["OpenAI__DeploymentName"]
+                        ?? _configuration["AZURE_OPENAI_DEPLOYMENT_NAME"]
+                        ?? _configuration["AzureOpenAI__DeploymentName"]
+                        ?? _configuration["AzureOpenAI:DeploymentName"]
+                        ?? string.Empty,
+                    SystemPrompt = _configuration["SystemPrompt"]
+                        ?? _configuration["AzureOpenAI__AgentLLM__SystemPrompt"]
+                        ?? _configuration["AzureOpenAI:AgentLLM:SystemPrompt"]
+                        ?? _configuration["AzureOpenAI__SystemPrompt"]
+                        ?? _configuration["AzureOpenAI:SystemPrompt"]
+                        ?? _configuration["SYSTEM_PROMPT"]
+                        ?? "You are Bruno Capuano (El Bruno). Respond in the user's language with brief answers (1-2 sentences) and a friendly, approachable tone.",
+                },
+                AgentAIFoundry = new AgentAIFoundryConfig
+                {
+                    AgentId = _configuration["AGENT_ID"]
+                        ?? _configuration["AzureOpenAI__AgentId"]
+                        ?? _configuration["AzureOpenAI:AgentId"]
+                        ?? string.Empty,
+                    AIFoundryEndpoint = _configuration["AZURE_AI_FOUNDRY_ENDPOINT"]
+                        ?? _configuration["AzureOpenAI__AIFoundryEndpoint"]
+                        ?? _configuration["AzureOpenAI:AIFoundryEndpoint"]
+                        ?? string.Empty
+                },
+                AgentMicrosoftFoundry = new AgentMicrosoftFoundryConfig
+                {
+                    MicrosoftFoundryEndpoint = _configuration["AZURE_MICROSOFTFOUNDRY_ENDPOINT"]
+                        ?? _configuration["AzureOpenAI__MicrosoftFoundryEndpoint"]
+                        ?? _configuration["AzureOpenAI:MicrosoftFoundryEndpoint"]
+                        ?? string.Empty,
+                    MicrosoftFoundryAgentName = _configuration["MICROSOFTFOUNDRY_AGENT_NAME"]
+                        ?? _configuration["AzureOpenAI__MicrosoftFoundryAgentName"]
+                        ?? _configuration["AzureOpenAI:MicrosoftFoundryAgentName"]
+                        ?? string.Empty
+                }
             },
             SttTts = new SttTtsConfig
             {
@@ -270,8 +281,7 @@ public class ConfigurationService
         }
 
         // Check if Cognitive Search is configured
-        var searchEndpoint = ExtractEndpointFromConnectionString("search")
-            ?? _configuration["AZURE_COGNITIVE_SEARCH_ENDPOINT"]
+        var searchEndpoint = _configuration["AZURE_COGNITIVE_SEARCH_ENDPOINT"]
             ?? _configuration["AzureCognitiveSearch__Endpoint"]
             ?? _configuration["AzureCognitiveSearch:Endpoint"];
 
@@ -280,8 +290,7 @@ public class ConfigurationService
             config.AzureCognitiveSearch = new AzureCognitiveSearchConfig
             {
                 Endpoint = searchEndpoint,
-                ApiKey = ExtractKeyFromConnectionString("search")
-                    ?? _configuration["AZURE_COGNITIVE_SEARCH_API_KEY"]
+                ApiKey = _configuration["AZURE_COGNITIVE_SEARCH_API_KEY"]
                     ?? _configuration["AzureCognitiveSearch__ApiKey"]
                     ?? _configuration["AzureCognitiveSearch:ApiKey"]
                     ?? string.Empty,
@@ -299,32 +308,6 @@ public class ConfigurationService
 
         _cachedConfig = config;
         return config;
-    }
-
-    // Helper: Extract endpoint from Aspire connection string
-    private string? ExtractEndpointFromConnectionString(string name)
-    {
-        var connectionString = _configuration[$"ConnectionStrings:{name}"];
-        if (string.IsNullOrEmpty(connectionString)) return null;
-
-        var match = System.Text.RegularExpressions.Regex.Match(
-            connectionString,
-            @"Endpoint=([^;]+)"
-        );
-        return match.Success ? match.Groups[1].Value : null;
-    }
-
-    // Helper: Extract key from Aspire connection string
-    private string? ExtractKeyFromConnectionString(string name)
-    {
-        var connectionString = _configuration[$"ConnectionStrings:{name}"];
-        if (string.IsNullOrEmpty(connectionString)) return null;
-
-        var match = System.Text.RegularExpressions.Regex.Match(
-            connectionString,
-            @"Key=([^;]+)"
-        );
-        return match.Success ? match.Groups[1].Value : null;
     }
 
     public async Task SaveConfigurationAsync(AvatarConfiguration config)
@@ -398,89 +381,55 @@ public class ConfigurationService
             return "Azure OpenAI configuration is missing.";
         }
 
-        var mode = config.AzureOpenAI.Mode ?? "LLM";
+        var mode = config.AzureOpenAI.Mode ?? "Agent-LLM";
 
         // Validate based on mode
-        if (mode == "LLM")
+        if (mode == "Agent-LLM")
         {
             // Standard LLM validation
-            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.Endpoint))
+            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentLLM.Endpoint))
             {
                 _logger.LogWarning("Validation failed: Azure OpenAI endpoint is missing");
                 return "Azure OpenAI endpoint is required.";
             }
 
             // Validate endpoint URL format
-            if (!Uri.TryCreate(config.AzureOpenAI.Endpoint, UriKind.Absolute, out var uri) ||
+            if (!Uri.TryCreate(config.AzureOpenAI.AgentLLM.Endpoint, UriKind.Absolute, out var uri) ||
                 (uri.Scheme != "https" && uri.Scheme != "http"))
             {
-                _logger.LogWarning("Validation failed: Invalid Azure OpenAI endpoint URL: {Endpoint}", config.AzureOpenAI.Endpoint);
+                _logger.LogWarning("Validation failed: Invalid Azure OpenAI endpoint URL: {Endpoint}", config.AzureOpenAI.AgentLLM.Endpoint);
                 return "Azure OpenAI endpoint must be a valid HTTPS URL.";
             }
 
-            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.ApiKey))
+            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentLLM.ApiKey))
             {
                 _logger.LogWarning("Validation failed: Azure OpenAI API key is missing");
                 return "Azure OpenAI API key is required.";
             }
 
-            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.DeploymentName))
+            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentLLM.DeploymentName))
             {
                 _logger.LogWarning("Validation failed: Azure OpenAI deployment name is missing");
                 return "Azure OpenAI deployment name is required.";
             }
         }
-        else if (mode == "Agent-LLM")
-        {
-            // Agent-LLM mode validation
-            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.Endpoint))
-            {
-                _logger.LogWarning("Validation failed: Azure OpenAI endpoint is required for Agent-LLM mode");
-                return "Azure OpenAI endpoint is required for Agent-LLM mode.";
-            }
-
-            if (!Uri.TryCreate(config.AzureOpenAI.Endpoint, UriKind.Absolute, out var uri) ||
-                (uri.Scheme != "https" && uri.Scheme != "http"))
-            {
-                _logger.LogWarning("Validation failed: Invalid Azure OpenAI endpoint URL: {Endpoint}", config.AzureOpenAI.Endpoint);
-                return "Azure OpenAI endpoint must be a valid HTTPS URL.";
-            }
-
-            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.ApiKey))
-            {
-                _logger.LogWarning("Validation failed: Azure OpenAI API key is required for Agent-LLM mode");
-                return "Azure OpenAI API key is required for Agent-LLM mode.";
-            }
-
-            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.DeploymentName))
-            {
-                _logger.LogWarning("Validation failed: Azure OpenAI deployment name is required for Agent-LLM mode");
-                return "Azure OpenAI deployment name is required for Agent-LLM mode.";
-            }
-        }
         else if (mode == "Agent-AIFoundry")
         {
             // Agent-AIFoundry mode validation
-            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.Endpoint))
+            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentAIFoundry.AIFoundryEndpoint))
             {
                 _logger.LogWarning("Validation failed: Azure AI Foundry endpoint is required for Agent-AIFoundry mode");
                 return "Azure AI Foundry endpoint is required for Agent-AIFoundry mode.";
             }
 
-            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.AIFoundryEndpoint))
-            {
-                _logger.LogWarning("Validation failed: Azure AI Foundry endpoint is required for Agent-AIFoundry mode");
-                return "Azure AI Foundry endpoint is required for Agent-AIFoundry mode.";
-            }
-
-            if (!Uri.TryCreate(config.AzureOpenAI.AIFoundryEndpoint, UriKind.Absolute, out var uri) ||
+            if (!Uri.TryCreate(config.AzureOpenAI.AgentAIFoundry.AIFoundryEndpoint, UriKind.Absolute, out var uri) ||
                 (uri.Scheme != "https" && uri.Scheme != "http"))
             {
-                _logger.LogWarning("Validation failed: Invalid Azure AI Foundry endpoint URL: {Endpoint}", config.AzureOpenAI.AIFoundryEndpoint);
+                _logger.LogWarning("Validation failed: Invalid Azure AI Foundry endpoint URL: {Endpoint}", config.AzureOpenAI.AgentAIFoundry.AIFoundryEndpoint);
                 return "Azure AI Foundry endpoint must be a valid HTTPS URL.";
             }
 
-            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentId))
+            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentAIFoundry.AgentId))
             {
                 _logger.LogWarning("Validation failed: Agent ID is required for Agent-AIFoundry mode");
                 return "Agent ID is required for Agent-AIFoundry mode.";
@@ -489,19 +438,19 @@ public class ConfigurationService
         else if (mode == "Agent-MicrosoftFoundry")
         {
             // Microsoft Foundry mode validation
-            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.MicrosoftFoundryEndpoint))
+            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryEndpoint))
             {
                 _logger.LogWarning("Validation failed: Microsoft Foundry endpoint is required for Agent-MicrosoftFoundry mode");
-                return "Microsoft Foundry project endpoint is required for Agent-MicrosoftFoundry mode.";
+                return "Microsoft Foundry endpoint is required for Agent-MicrosoftFoundry mode.";
             }
 
-            if (!Uri.TryCreate(config.AzureOpenAI.MicrosoftFoundryEndpoint, UriKind.Absolute, out var mfUri) || (mfUri.Scheme != "https" && mfUri.Scheme != "http"))
+            if (!Uri.TryCreate(config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryEndpoint, UriKind.Absolute, out var mfUri) || (mfUri.Scheme != "https" && mfUri.Scheme != "http"))
             {
-                _logger.LogWarning("Validation failed: Invalid Microsoft Foundry endpoint URL: {Endpoint}", config.AzureOpenAI.MicrosoftFoundryEndpoint);
+                _logger.LogWarning("Validation failed: Invalid Microsoft Foundry endpoint URL: {Endpoint}", config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryEndpoint);
                 return "Microsoft Foundry endpoint must be a valid HTTPS URL.";
             }
 
-            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.MicrosoftFoundryAgentName))
+            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryAgentName))
             {
                 _logger.LogWarning("Validation failed: Microsoft Foundry agent name is required for Agent-MicrosoftFoundry mode");
                 return "Microsoft Foundry agent name is required for Agent-MicrosoftFoundry mode.";
@@ -510,7 +459,7 @@ public class ConfigurationService
         else
         {
             _logger.LogWarning("Validation failed: Invalid mode: {Mode}", mode);
-            return $"Invalid mode '{mode}'. Supported modes are: LLM, Agent-LLM, Agent-AIFoundry.";
+            return $"Invalid mode '{mode}'. Supported modes are: Agent-LLM, Agent-AIFoundry, Agent-MicrosoftFoundry.";
         }
 
         // Validate Avatar configuration
@@ -568,67 +517,7 @@ public class ConfigurationService
             }
         }
 
-        _logger.LogInformation("Configuration validation successful");
-        return null; // No errors
-    }
-
-    public async Task<List<PromptProfile>> GetPromptProfilesAsync()
-    {
-        try
-        {
-            _logger.LogInformation("Loading prompt profiles from index.json...");
-            var promptsPath = Path.Combine(_environment.ContentRootPath, "..", "..", "prompts", "index.json");
-
-            if (!File.Exists(promptsPath))
-            {
-                _logger.LogWarning("Prompt profiles file not found at {Path}", promptsPath);
-                return new List<PromptProfile>();
-            }
-
-            var json = await File.ReadAllTextAsync(promptsPath);
-            var container = JsonSerializer.Deserialize<PromptProfilesContainer>(json, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
-
-            var profiles = container?.Profiles ?? new List<PromptProfile>();
-            _logger.LogInformation("Loaded {Count} prompt profiles", profiles.Count);
-            if (profiles.Count > 0)
-            {
-                _logger.LogInformation("Available profiles: {Profiles}",
-                    string.Join(", ", profiles.Select(p => p.Id)));
-            }
-
-            return profiles;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error loading prompt profiles from index.json");
-            return new List<PromptProfile>();
-        }
-    }
-
-    public async Task<string> GetPromptProfileContentAsync(string fileName)
-    {
-        try
-        {
-            _logger.LogInformation("Loading prompt profile content: {FileName}", fileName);
-            var promptPath = Path.Combine(_environment.ContentRootPath, "..", "..", "prompts", fileName);
-
-            if (!File.Exists(promptPath))
-            {
-                _logger.LogWarning("Prompt file not found at {Path}", promptPath);
-                return string.Empty;
-            }
-
-            var content = await File.ReadAllTextAsync(promptPath);
-            _logger.LogInformation("Loaded prompt profile content ({Length} characters)", content.Length);
-            return content;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error loading prompt profile content: {FileName}", fileName);
-            return string.Empty;
-        }
+        _logger.LogInformation("Configuration validation passed");
+        return null;
     }
 }

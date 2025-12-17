@@ -100,10 +100,6 @@
 						<label class="form-label">Mode (select one)</label>
 						<div class="list-group">
 							<label class="list-group-item">
-								<input class="form-check-input me-2" type="radio" name="mode" value="LLM" @onchange='() => SelectMode("LLM")' checked='@(config.AzureOpenAI.Mode == "LLM")' />
-								<strong>LLM</strong> - Direct OpenAI
-							</label>
-							<label class="list-group-item">
 								<input class="form-check-input me-2" type="radio" name="mode" value="Agent-LLM" @onchange='() => SelectMode("Agent-LLM")' checked='@(config.AzureOpenAI.Mode == "Agent-LLM")' />
 								<strong>Agent-LLM</strong> - Agent Framework with OpenAI
 							</label>
@@ -118,29 +114,29 @@
 						</div>
 					</div>
 
-					<!-- LLM fields -->
+					<!-- Agent-LLM fields -->
 					<div class="mb-3">
 						<label class="form-label">Azure OpenAI Endpoint</label>
-						<input type="text" class="form-control" @bind="config.AzureOpenAI.Endpoint"
+						<input type="text" class="form-control" @bind="config.AzureOpenAI.AgentLLM.Endpoint"
 							placeholder="https://your-resource.openai.azure.com">
-						<div class="form-text">Azure OpenAI resource endpoint (used for LLM and Agent-LLM)</div>
+						<div class="form-text">Azure OpenAI resource endpoint (used for Agent-LLM)</div>
 					</div>
 
 					<div class="mb-3">
 						<label class="form-label">API Key</label>
-						<input type="password" class="form-control" @bind="config.AzureOpenAI.ApiKey"
+						<input type="password" class="form-control" @bind="config.AzureOpenAI.AgentLLM.ApiKey"
 							placeholder="Enter your OpenAI API key">
 					</div>
 					<div class="mb-3">
 						<label class="form-label">Deployment Name</label>
-						<input type="text" class="form-control" @bind="config.AzureOpenAI.DeploymentName"
+						<input type="text" class="form-control" @bind="config.AzureOpenAI.AgentLLM.DeploymentName"
 							placeholder="gpt-5.1-chat">
 					</div>
 
 					<div class="mb-3">
 						<label class="form-label">System Prompt / Instructions</label>
 						<div class="input-group">
-							<textarea class="form-control" rows="3" @bind="config.AzureOpenAI.SystemPrompt"></textarea>
+							<textarea class="form-control" rows="3" @bind="config.AzureOpenAI.AgentLLM.SystemPrompt"></textarea>
 						</div>
 						<button class="btn btn-outline-secondary btn-sm mt-2" @onclick="ResetSystemPromptToDefault">
 							<i class="bi bi-arrow-counterclockwise me-1"></i>Reset to Default
@@ -152,13 +148,13 @@
 						<h6>Agent-AIFoundry Configuration</h6>
 						<div class="mb-3">
 							<label class="form-label">Agent ID</label>
-							<input type="text" class="form-control" @bind="config.AzureOpenAI.AgentId"
+							<input type="text" class="form-control" @bind="config.AzureOpenAI.AgentAIFoundry.AgentId"
 								placeholder="Enter your Azure AI Foundry Agent ID">
 							<div class="form-text">The ID of your pre-configured Azure AI Foundry agent</div>
 						</div>
 						<div class="mb-3">
 							<label class="form-label">Azure AI Foundry Project Endpoint</label>
-							<input type="text" class="form-control" @bind="config.AzureOpenAI.AIFoundryEndpoint"
+							<input type="text" class="form-control" @bind="config.AzureOpenAI.AgentAIFoundry.AIFoundryEndpoint"
 								placeholder="https://your-project.api.azureml.ms">
 							<div class="form-text">
 								Azure AI Foundry project endpoint (different from Azure OpenAI endpoint)
@@ -171,13 +167,13 @@
 						<h6>Agent-MicrosoftFoundry Configuration (Not Implemented)</h6>
 						<div class="mb-3">
 							<label class="form-label">Project Endpoint</label>
-							<input type="text" class="form-control" @bind="config.AzureOpenAI.MicrosoftFoundryEndpoint"
+							<input type="text" class="form-control" @bind="config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryEndpoint"
 								placeholder="https://your-foundry-endpoint">
 							<div class="form-text">Microsoft Foundry project endpoint</div>
 						</div>
 						<div class="mb-3">
 							<label class="form-label">Agent Name</label>
-							<input type="text" class="form-control" @bind="config.AzureOpenAI.MicrosoftFoundryAgentName"
+							<input type="text" class="form-control" @bind="config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryAgentName"
 								placeholder="Agent name in Microsoft Foundry">
 							<div class="form-text">Agent name used within Microsoft Foundry</div>
 						</div>
@@ -357,16 +353,13 @@
 	{
 		config = ConfigService.GetConfiguration();
 
-		// Subscribe to configuration changes so the page auto-updates when config is saved elsewhere
 		ConfigService.ConfigurationChanged += OnConfigurationChanged;
 
-		// Ensure list initialized
 		if (config.PredefinedQuestions == null)
 		{
 			config.PredefinedQuestions = new List<PredefinedQuestion>();
 		}
 
-		// Ensure at least one editable block appears
 		if (config.PredefinedQuestions.Count == 0)
 		{
 			config.PredefinedQuestions.Add(new PredefinedQuestion());
@@ -388,7 +381,6 @@
 		if (index < 0 || index >= config.PredefinedQuestions.Count) return;
 		config.PredefinedQuestions.RemoveAt(index);
 
-		// Ensure at least one block remains to edit
 		if (config.PredefinedQuestions.Count == 0)
 		{
 			config.PredefinedQuestions.Add(new PredefinedQuestion());
@@ -399,7 +391,7 @@
 
 	private void ResetSystemPromptToDefault()
 	{
-		config.AzureOpenAI.SystemPrompt = DefaultSystemPrompt;
+		config.AzureOpenAI.AgentLLM.SystemPrompt = DefaultSystemPrompt;
 		statusMessage = "System prompt reset to default value.";
 		isError = false;
 		StateHasChanged();
@@ -407,7 +399,6 @@
 
 	private void OnConfigurationChanged(object? sender, AvatarConfiguration? newConfig)
 	{
-		// Ensure UI updates on the Blazor renderer thread
 		InvokeAsync(() =>
 		{
 			if (newConfig != null)
@@ -435,7 +426,6 @@
 	{
 		try
 		{
-			// Filter out empty questions and enforce max 5
 			config.PredefinedQuestions = (config.PredefinedQuestions ?? new List<PredefinedQuestion>())
 				.Where(p => !string.IsNullOrWhiteSpace(p.Question))
 				.Take(5)
@@ -455,7 +445,6 @@
 			isError = false;
 			StateHasChanged();
 
-			// Clear message after 3 seconds
 			await Task.Delay(3000);
 			statusMessage = string.Empty;
 			StateHasChanged();
@@ -485,7 +474,7 @@
 			await JSRuntime.InvokeVoidAsync("downloadFile", filename, jsonContent);
 
 			statusMessage = "Configuration exported successfully!";
-			isError = false;
+		 isError = false;
 			StateHasChanged();
 
 			await Task.Delay(3000);
@@ -496,7 +485,7 @@
 		{
 			statusMessage = $"Error exporting configuration: {ex.Message}";
 		 isError = true;
-			StateHasChanged();
+		 StateHasChanged();
 		}
 	}
 
@@ -510,7 +499,6 @@
 				return;
 			}
 
-			// Limit file size to 1MB
 			const long maxFileSize = 1024 * 1024;
 			if (file.Size > maxFileSize)
 			{
@@ -540,7 +528,6 @@
 				return;
 			}
 
-			// Validate the imported configuration
 			var validationError = await ConfigService.ValidateConfigurationAsync(importedConfig);
 			if (!string.IsNullOrEmpty(validationError))
 			{
@@ -550,7 +537,6 @@
 				return;
 			}
 
-			// Replace current configuration with imported one
 			config = importedConfig;
 			await ConfigService.SaveConfigurationAsync(config);
 
@@ -578,7 +564,6 @@
 
 	private void AddDefaultQuestions()
 	{
-		// Replace the list with the presets (clear existing)
 		config.PredefinedQuestions = new List<PredefinedQuestion>();
 
 		var presets = new List<PredefinedQuestion>
@@ -603,4 +588,3 @@
 		StateHasChanged();
 	}
 }
-// end of file

@@ -30,7 +30,7 @@
                 "Agent-AIFoundry" => "Agent: AI Foundry",
                 "Agent-LLM" => "Agent: LLM",
                 "Agent-MicrosoftFoundry" => "Agent: Microsoft Foundry",
-                _ => "Direct LLM"
+                _ => "Agent"
             };
             <span class="badge @modeBadgeClass px-3 py-2">
                 <i class="bi bi-cpu me-1"></i>@modeDisplayText
@@ -40,10 +40,9 @@
         <div class="ms-2">
             <label class="form-label mb-0">Mode</label>
             <select class="form-select form-select-sm" @onchange="ModeChanged" value="@(config?.AzureOpenAI?.Mode)">
-                <option value="LLM">@($"LLM - {(string.IsNullOrWhiteSpace(config?.AzureOpenAI?.DeploymentName) ? "gpt-5.1-chat" : config.AzureOpenAI.DeploymentName)}")</option>
-                <option value="Agent-LLM">@($"Agent-LLM - {(string.IsNullOrWhiteSpace(config?.AzureOpenAI?.DeploymentName) ? "gpt-5.1-chat" : config.AzureOpenAI.DeploymentName)}")</option>
-                <option value="Agent-AIFoundry">@($"Agent-AIFoundry - {(string.IsNullOrWhiteSpace(config?.AzureOpenAI?.AgentId) ? "(no agent id)" : config.AzureOpenAI.AgentId)}")</option>
-                <option value="Agent-MicrosoftFoundry">@($"Agent-MicrosoftFoundry - {(string.IsNullOrWhiteSpace(config?.AzureOpenAI?.MicrosoftFoundryAgentName) ? "(no agent name)" : config.AzureOpenAI.MicrosoftFoundryAgentName)}")</option>
+                <option value="Agent-LLM">@($"Agent-LLM - {(string.IsNullOrWhiteSpace(config?.AzureOpenAI?.AgentLLM?.DeploymentName) ? "gpt-5.1-chat" : config.AzureOpenAI.AgentLLM.DeploymentName)}")</option>
+                <option value="Agent-AIFoundry">@($"Agent-AIFoundry - {(string.IsNullOrWhiteSpace(config?.AzureOpenAI?.AgentAIFoundry?.AgentId) ? "(no agent id)" : config.AzureOpenAI.AgentAIFoundry.AgentId)}")</option>
+                <option value="Agent-MicrosoftFoundry">@($"Agent-MicrosoftFoundry - {(string.IsNullOrWhiteSpace(config?.AzureOpenAI?.AgentMicrosoftFoundry?.MicrosoftFoundryAgentName) ? "(no agent name)" : config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryAgentName)}")</option>
             </select>
 
             <div class="form-text mt-1">@GetModeInfo()</div>
@@ -146,7 +145,6 @@
                                         </button>
                                     }
                                 }
-                                // If no valid questions, render nothing (no hardcoded fallbacks)
                             }
                         </div>
                         <div class="input-group">
@@ -187,17 +185,17 @@
             Console.WriteLine("[Init] Configuration loaded successfully");
             Console.WriteLine($"[Init] Avatar Character: {config?.Avatar?.Character ?? "null"}");
             Console.WriteLine($"[Init] Azure Speech Region: {config?.AzureSpeech?.Region ?? "null"}");
-            Console.WriteLine($"[Init] Azure OpenAI Endpoint: {config?.AzureOpenAI?.Endpoint ?? "null"}");
+            Console.WriteLine($"[Init] Azure OpenAI Endpoint: {config?.AzureOpenAI?.AgentLLM?.Endpoint ?? "null"}");
 
             // Add system message (not displayed in UI, but used for API calls)
-            if (!string.IsNullOrEmpty(config.AzureOpenAI.SystemPrompt))
+            if (!string.IsNullOrEmpty(config.AzureOpenAI.AgentLLM.SystemPrompt))
             {
                 chatMessages.Add(new ChatMessage
                 {
                     Role = "system",
-                    Content = config.AzureOpenAI.SystemPrompt
+                    Content = config.AzureOpenAI.AgentLLM.SystemPrompt
                 });
-                Console.WriteLine($"[Init] System prompt added ({config.AzureOpenAI.SystemPrompt.Length} characters)");
+                Console.WriteLine($"[Init] System prompt added ({config.AzureOpenAI.AgentLLM.SystemPrompt.Length} characters)");
             }
         }
         catch (Exception ex)
@@ -222,20 +220,19 @@
 
     private string GetCurrentMode()
     {
-        if (config == null) return "LLM";
-        return config.AzureOpenAI.Mode ?? "LLM";
+        if (config == null) return "Agent-LLM";
+        return config.AzureOpenAI.Mode ?? "Agent-LLM";
     }
 
     private string GetModeInfo()
     {
         if (config == null) return string.Empty;
-        var mode = config.AzureOpenAI.Mode ?? "LLM";
+        var mode = config.AzureOpenAI.Mode ?? "Agent-LLM";
         return mode switch
         {
-            "LLM" => $"LLM - {(string.IsNullOrWhiteSpace(config.AzureOpenAI.DeploymentName) ? "gpt-5.1-chat" : config.AzureOpenAI.DeploymentName)}",
-            "Agent-LLM" => $"Agent-LLM - {(string.IsNullOrWhiteSpace(config.AzureOpenAI.DeploymentName) ? "gpt-5.1-chat" : config.AzureOpenAI.DeploymentName)}",
-            "Agent-AIFoundry" => $"Agent-AIFoundry - {(string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentId) ? "(no agent id)" : config.AzureOpenAI.AgentId)}",
-            "Agent-MicrosoftFoundry" => $"Agent-MicrosoftFoundry - {(string.IsNullOrWhiteSpace(config.AzureOpenAI.MicrosoftFoundryAgentName) ? "(no agent name)" : config.AzureOpenAI.MicrosoftFoundryAgentName)}",
+            "Agent-LLM" => $"Agent-LLM - {(string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentLLM.DeploymentName) ? "gpt-5.1-chat" : config.AzureOpenAI.AgentLLM.DeploymentName)}",
+            "Agent-AIFoundry" => $"Agent-AIFoundry - {(string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentAIFoundry.AgentId) ? "(no agent id)" : config.AzureOpenAI.AgentAIFoundry.AgentId)}",
+            "Agent-MicrosoftFoundry" => $"Agent-MicrosoftFoundry - {(string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryAgentName) ? "(no agent name)" : config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryAgentName)}",
             _ => mode
         };
     }
@@ -244,7 +241,7 @@
     {
         try
         {
-            var newMode = e.Value?.ToString() ?? "LLM";
+            var newMode = e.Value?.ToString() ?? "Agent-LLM";
             Console.WriteLine($"Mode changed to: {newMode}");
 
             if (config == null)
