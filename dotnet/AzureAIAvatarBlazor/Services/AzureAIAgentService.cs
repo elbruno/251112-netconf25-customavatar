@@ -110,7 +110,7 @@ public class AzureAIAgentService : IAzureAIAgentService
             throw new InvalidOperationException("Azure OpenAI API Key is required for Agent-LLM mode.");
         }
 
-        var deploymentName = config.AzureOpenAI.DeploymentName ?? "gpt-4o-mini";
+        var deploymentName = config.AzureOpenAI.DeploymentName ?? "gpt-5.1-chat";
 
         _logger.LogInformation("Using Endpoint: {Endpoint}", config.AzureOpenAI.Endpoint);
         _logger.LogInformation("Using Deployment: {Deployment}", deploymentName);

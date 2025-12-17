@@ -27,7 +27,7 @@ public class AzureOpenAIService : IAzureOpenAIService
         var deploymentName = _configuration["OpenAI__DeploymentName"]
             ?? _configuration["AZURE_OPENAI_DEPLOYMENT_NAME"]
             ?? _configuration["AzureOpenAI:DeploymentName"]
-            ?? "gpt-4o-mini";
+            ?? "gpt-5.1-chat";
 
         _logger.LogInformation("Starting chat completion stream with deployment: {Deployment}", deploymentName);
         _logger.LogInformation("Message count: {Count}, Last message role: {Role}",
