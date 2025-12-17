@@ -1,22 +1,19 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
 	<PropertyGroup>
-		<TargetFramework>net9.0</TargetFramework>
+		<TargetFramework>net10.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UserSecretsId>5f415b33-a8c4-4693-a7e0-8de94e380971</UserSecretsId>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<!-- REMOVED: Direct Azure SDK packages - now managed by Aspire -->
-		<!-- <PackageReference Include="Azure.AI.OpenAI" Version="2.1.0" /> -->
-
 		<!-- NEW: Aspire client integration packages -->
 		<PackageReference Include="Aspire.Azure.AI.OpenAI" Version="9.5.2-preview.1.25522.3" />
 
 		<!-- Agent Framework packages -->
 		<PackageReference Include="Azure.AI.Agents.Persistent" Version="1.2.0-beta.7" />
-		
+
 		<PackageReference Include="Microsoft.Agents.AI" Version="1.0.0-preview.251204.1" />
 		<PackageReference Include="Microsoft.Agents.AI.AzureAI" Version="1.0.0-preview.251204.1" />
 		<PackageReference Include="Microsoft.Agents.AI.Abstractions" Version="1.0.0-preview.251204.1" />
@@ -24,15 +21,11 @@
 		<PackageReference Include="Microsoft.Agents.AI.Hosting.OpenAI" Version="1.0.0-alpha.251204.1" />
 		<PackageReference Include="Azure.Identity" Version="1.18.0-beta.2" />
 
-
 		<!-- KEEP: Speech SDK (no Aspire component yet, use manual registration) -->
 		<PackageReference Include="Microsoft.CognitiveServices.Speech" Version="1.47.0" />
 
 		<!-- UPDATED: Latest Search SDK -->
 		<PackageReference Include="Azure.Search.Documents" Version="11.7.0" />
-
-		<!-- REMOVED: No longer need explicit user secrets (managed by AppHost) -->
-		<!-- <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="9.0.10" /> -->
 	</ItemGroup>
 
 	<ItemGroup>

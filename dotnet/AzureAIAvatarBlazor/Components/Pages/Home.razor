@@ -1,6 +1,9 @@
 @page "/"
 
-<PageTitle>Azure AI Avatar - Home</PageTitle>
+@using AzureAIAvatarBlazor.Services
+@inject ConfigurationService ConfigurationService
+
+<PageTitle>Azure Avatars - Home</PageTitle>
 
 <!-- .NET Logo -->
 <div class="dotnet-logo">
@@ -17,6 +20,17 @@
             Azure AI Avatar Demo
         </h1>
         <p class="lead" style="color: rgba(255,255,255,0.95); text-shadow: 1px 1px 4px rgba(0,0,0,0.2); font-size: 1.4rem;">Powered by .NET 9, Azure AI Foundry and Blazor</p>
+
+        <div class="mt-3">
+            <label class="form-label text-white me-2">Select Avatar:</label>
+            <select class="form-select d-inline-block w-auto" value="@selectedAvatar" @onchange="OnAvatarChanged">
+                @foreach (var a in avatars)
+                {
+                    <option value="@a.Value">@a.Key</option>
+                }
+            </select>
+            <span class="text-muted ms-3">Currently selected: <strong>@selectedAvatarDisplay</strong></span>
+        </div>
     </div>
 
     <div class="row g-4 mb-5">
@@ -91,3 +105,40 @@
         </ul>
     </div>
 </div>
+
+@code {
+    // Two default avatars from the standard set plus the custom Bruno avatar
+    private readonly Dictionary<string, string> avatars = new()
+    {
+        { "Lisa (default)", "lisa" },
+        { "Harry (default)", "harry" },
+        { "Bruno (custom)", "bruno-avatar-03" }
+    };
+
+    private string selectedAvatar = string.Empty;
+    private string selectedAvatarDisplay = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        var cfg = ConfigurationService.GetConfiguration();
+        selectedAvatar = cfg.Avatar?.Character ?? "lisa";
+        selectedAvatarDisplay = selectedAvatar;
+    }
+
+    private async Task OnAvatarChanged(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString() ?? string.Empty;
+        selectedAvatar = value;
+        selectedAvatarDisplay = value;
+
+        var cfg = ConfigurationService.GetConfiguration();
+        cfg.Avatar.Character = value;
+
+        // Determine whether selected avatar is custom (not in standard list)
+        var standard = new[] { "lisa", "harry", "jeff", "lori", "max", "meg" };
+        cfg.Avatar.IsCustomAvatar = !standard.Contains(value.ToLowerInvariant());
+
+        await ConfigurationService.SaveConfigurationAsync(cfg);
+    }
+}
+
