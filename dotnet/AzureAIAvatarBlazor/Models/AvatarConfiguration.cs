@@ -29,6 +29,27 @@ public class AvatarConfiguration
     /// Avatar display configuration
     /// </summary>
     public AvatarDisplayConfig Avatar { get; set; } = new();
+
+    /// <summary>
+    /// Optional set of predefined questions (1-5) available in the chat UI
+    /// </summary>
+    public List<PredefinedQuestion> PredefinedQuestions { get; set; } = new();
+}
+
+/// <summary>
+/// Represents a single predefined question with a short title and full question text
+/// </summary>
+public class PredefinedQuestion
+{
+    /// <summary>
+    /// Short title displayed on the button
+    /// </summary>
+    public string Title { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Full question text sent to the chat service
+    /// </summary>
+    public string Question { get; set; } = string.Empty;
 }
 
 /// <summary>

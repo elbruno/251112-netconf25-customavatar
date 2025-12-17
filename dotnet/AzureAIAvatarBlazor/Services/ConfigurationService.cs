@@ -219,6 +219,47 @@ public class ConfigurationService : IConfigurationService
         _logger.LogInformation("Configuration loaded - Avatar Character: {Character}, Style: '{Style}', IsCustom: {IsCustom}",
             config.Avatar.Character, config.Avatar.Style ?? "(none)", config.Avatar.IsCustomAvatar);
 
+        // Load predefined questions from configuration (supports appsettings JSON array or env vars like PredefinedQuestions:0:Title)
+        try
+        {
+            var predefinedSection = _configuration.GetSection("PredefinedQuestions");
+            if (predefinedSection.Exists())
+            {
+                var list = predefinedSection.Get<List<PredefinedQuestion>>() ?? new List<PredefinedQuestion>();
+                if (list.Count > 0)
+                {
+                    // Limit to maximum 5 questions
+                    config.PredefinedQuestions = list.Take(5).Where(p => !string.IsNullOrWhiteSpace(p.Question)).ToList();
+                    _logger.LogInformation("Loaded {Count} predefined questions from configuration", config.PredefinedQuestions.Count);
+                }
+            }
+            else
+            {
+                // Also support a single environment variable containing JSON array
+                var envJson = _configuration["PREDEFINED_QUESTIONS_JSON"];
+                if (!string.IsNullOrWhiteSpace(envJson))
+                {
+                    try
+                    {
+                        var parsed = System.Text.Json.JsonSerializer.Deserialize<List<PredefinedQuestion>>(envJson, new System.Text.Json.JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true
+                        }) ?? new List<PredefinedQuestion>();
+                        config.PredefinedQuestions = parsed.Take(5).Where(p => !string.IsNullOrWhiteSpace(p.Question)).ToList();
+                        _logger.LogInformation("Loaded {Count} predefined questions from PREDEFINED_QUESTIONS_JSON env var", config.PredefinedQuestions.Count);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to parse PREDEFINED_QUESTIONS_JSON environment variable");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error loading predefined questions from configuration");
+        }
+
         // Check if Cognitive Search is configured
         var searchEndpoint = ExtractEndpointFromConnectionString("search")
             ?? _configuration["AZURE_COGNITIVE_SEARCH_ENDPOINT"]
@@ -286,6 +327,11 @@ public class ConfigurationService : IConfigurationService
             config.Avatar.IsCustomAvatar, config.Avatar.UseBuiltInVoice);
         _logger.LogInformation("  - TTS Voice: {Voice}, Custom Endpoint: {Endpoint}",
             config.SttTts.TtsVoice, config.SttTts.CustomVoiceEndpointId ?? "(none)");
+
+        if (config.PredefinedQuestions != null && config.PredefinedQuestions.Count > 0)
+        {
+            _logger.LogInformation("  - PredefinedQuestions: {Count}", config.PredefinedQuestions.Count);
+        }
 
         // In a real application, this would save to a database or configuration store
         // For now, we cache it in memory - it will persist for the app session

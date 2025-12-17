@@ -115,14 +115,24 @@
                     <!-- Input area -->
                     <div class="chat-input-container border-top p-3">
                         <div class="d-flex flex-wrap gap-2 mb-2">
-                            <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="SendHelloAsync"
-                                disabled="@(!isSessionActive)">
-                                Hello
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary btn-sm"
-                                @onclick="SendDotNetConfAsync" disabled="@(!isSessionActive)">
-                                What can you tell me about .NET Conf 2025
-                            </button>
+                            @if (config?.PredefinedQuestions != null)
+                            {
+                                var validQuestions = config.PredefinedQuestions.Where(p => !string.IsNullOrWhiteSpace(p.Question)).ToList();
+                                if (validQuestions.Count > 0)
+                                {
+                                    foreach (var pq in validQuestions)
+                                    {
+                                        var qText = pq.Question ?? string.Empty;
+                                        var btnLabel = string.IsNullOrWhiteSpace(pq.Title)
+                                            ? (pq.Question?.Length > 30 ? pq.Question[..30] + "..." : pq.Question)
+                                            : pq.Title;
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="() => SendPredefinedMessage(qText)" disabled="@(!isSessionActive)">
+                                            @btnLabel
+                                        </button>
+                                    }
+                                }
+                                // If no valid questions, render nothing (no hardcoded fallbacks)
+                            }
                         </div>
                         <div class="input-group">
                             <input type="text" class="form-control" placeholder="Type a message..." @bind="userMessage"
@@ -401,18 +411,6 @@
 
     private Task SendPredefinedMessage(string presetMessage) => ProcessOutgoingMessageAsync(presetMessage, clearInput:
     true);
-
-    private async Task SendHelloAsync()
-    {
-        await JSRuntime.InvokeVoidAsync("console.log", "[Button Click] SEND HELLO button clicked");
-        await SendPredefinedMessage("Hello");
-    }
-
-    private async Task SendDotNetConfAsync()
-    {
-        await JSRuntime.InvokeVoidAsync("console.log", "[Button Click] SEND DOTNET CONF button clicked");
-        await SendPredefinedMessage("What can you tell me about .NET Conf 2025");
-    }
 
     private async Task ProcessOutgoingMessageAsync(string? content, bool clearInput)
     {

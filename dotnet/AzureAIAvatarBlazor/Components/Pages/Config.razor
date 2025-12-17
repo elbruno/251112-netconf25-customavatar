@@ -11,418 +11,538 @@
 <PageTitle>Configuration - Azure AI Avatar</PageTitle>
 
 <div class="container mt-3">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2><i class="bi bi-gear me-2"></i>Configuration</h2>
-        <div>
-            <button class="btn btn-primary" @onclick="SaveConfiguration">
-                <i class="bi bi-save me-1"></i>Save Configuration
-            </button>
-            <button class="btn btn-outline-secondary ms-2" @onclick="ExportConfiguration">
-                <i class="bi bi-download me-1"></i>Export
-            </button>
-            <label class="btn btn-outline-secondary ms-2 mb-0">
-                <i class="bi bi-upload me-1"></i>Import
-                <InputFile OnChange="ImportConfiguration" class="d-none" accept=".json" />
-            </label>
-            <a href="/chat" class="btn btn-outline-primary ms-2">
-                <i class="bi bi-arrow-left me-1"></i>Back to Chat
-            </a>
-        </div>
-    </div>
+	<div class="d-flex justify-content-between align-items-center mb-3">
+		<h2><i class="bi bi-gear me-2"></i>Configuration</h2>
+		<div>
+			<button class="btn btn-primary" @onclick="SaveConfiguration">
+				<i class="bi bi-save me-1"></i>Save Configuration
+			</button>
+			<button class="btn btn-outline-secondary ms-2" @onclick="ExportConfiguration">
+				<i class="bi bi-download me-1"></i>Export
+			</button>
+			<label class="btn btn-outline-secondary ms-2 mb-0">
+				<i class="bi bi-upload me-1"></i>Import
+				<InputFile OnChange="ImportConfiguration" class="d-none" accept=".json" />
+			</label>
+			<a href="/chat" class="btn btn-outline-primary ms-2">
+				<i class="bi bi-arrow-left me-1"></i>Back to Chat
+			</a>
+		</div>
+	</div>
 
-    <div class="alert alert-warning" role="alert">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i>
-        <strong>Security Notice:</strong> Exported configuration files contain sensitive information including API keys,
-        endpoints, and subscription keys.
-        Store these files securely and never share them publicly or commit them to version control.
-    </div>
+	<div class="alert alert-warning" role="alert">
+		<i class="bi bi-exclamation-triangle-fill me-2"></i>
+		<strong>Security Notice:</strong> Exported configuration files contain sensitive information including API keys,
+		endpoints, and subscription keys.
+		Store these files securely and never share them publicly or commit them to version control.
+	</div>
 
-    @if (!string.IsNullOrEmpty(statusMessage))
-    {
-        <div class="alert @(isError ? "alert-danger" : "alert-success") alert-dismissible fade show" role="alert">
-            @statusMessage
-            <button type="button" class="btn-close" @onclick="() => statusMessage = string.Empty"></button>
-        </div>
-    }
+	@if (!string.IsNullOrEmpty(statusMessage))
+	{
+		<div class="alert @(isError ? "alert-danger" : "alert-success") alert-dismissible fade show" role="alert">
+			@statusMessage
+			<button type="button" class="btn-close" @onclick="() => statusMessage = string.Empty"></button>
+		</div>
+	}
 
-    <div class="row g-3">
-        <!-- Azure Speech Service -->
-        <div class="col-12 col-lg-6">
-            <div class="card shadow-sm h-100">
-                <div class="card-header">
-                    <i class="bi bi-soundwave me-2"></i>Azure Speech Service
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label class="form-label">Region</label>
-                        <select class="form-select" @bind="config.AzureSpeech.Region">
-                            <option value="westus2">West US 2</option>
-                            <option value="westeurope">West Europe</option>
-                            <option value="eastus2">East US 2</option>
-                            <option value="southeastasia">Southeast Asia</option>
-                            <option value="swedencentral">Sweden Central</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">API Key</label>
-                        <input type="password" class="form-control" @bind="config.AzureSpeech.ApiKey"
-                            placeholder="Enter your Speech API key">
-                        <div class="form-text">Your API key is stored securely.</div>
-                    </div>
-                    <div class="form-check mb-3">
-                        <input type="checkbox" class="form-check-input" id="enablePrivateEndpoint"
-                            @bind="config.AzureSpeech.EnablePrivateEndpoint">
-                        <label class="form-check-label" for="enablePrivateEndpoint">
-                            Enable Private Endpoint
-                        </label>
-                    </div>
-                    @if (config.AzureSpeech.EnablePrivateEndpoint)
+	<div class="row g-3">
+		<!-- Azure Speech Service -->
+		<div class="col-12 col-lg-6">
+			<div class="card shadow-sm h-100">
+				<div class="card-header">
+					<i class="bi bi-soundwave me-2"></i>Azure Speech Service
+				</div>
+				<div class="card-body">
+					<div class="mb-3">
+						<label class="form-label">Region</label>
+						<select class="form-select" @bind="config.AzureSpeech.Region">
+							<option value="westus2">West US 2</option>
+							<option value="westeurope">West Europe</option>
+							<option value="eastus2">East US 2</option>
+							<option value="southeastasia">Southeast Asia</option>
+							<option value="swedencentral">Sweden Central</option>
+						</select>
+					</div>
+					<div class="mb-3">
+						<label class="form-label">API Key</label>
+						<input type="password" class="form-control" @bind="config.AzureSpeech.ApiKey"
+							   placeholder="Enter your Speech API key">
+						<div class="form-text">Your API key is stored securely.</div>
+					</div>
+					<div class="form-check mb-3">
+						<input type="checkbox" class="form-check-input" id="enablePrivateEndpoint"
+							   @bind="config.AzureSpeech.EnablePrivateEndpoint">
+						<label class="form-check-label" for="enablePrivateEndpoint">
+							Enable Private Endpoint
+						</label>
+					</div>
+					@if (config.AzureSpeech.EnablePrivateEndpoint)
+					{
+						<div class="mb-3">
+							<label class="form-label">Private Endpoint URL</label>
+							<input type="text" class="form-control" @bind="config.AzureSpeech.PrivateEndpoint"
+								   placeholder="https://your-endpoint.cognitiveservices.azure.com/">
+						</div>
+					}
+				</div>
+			</div>
+		</div>
+
+		<!-- Azure OpenAI -->
+		<div class="col-12 col-lg-6">
+			<div class="card shadow-sm h-100">
+				<div class="card-header">
+					<i class="bi bi-cpu me-2"></i>Azure OpenAI / Agent Configuration
+				</div>
+				<div class="card-body">
+					<div class="mb-3">
+						<label class="form-label">Mode</label>
+						<select class="form-select" @bind="config.AzureOpenAI.Mode">
+							<option value="LLM">LLM (Direct OpenAI)</option>
+							<option value="Agent-LLM">Agent-LLM (Agent Framework with OpenAI)</option>
+							<option value="Agent-AIFoundry">Agent-AIFoundry (Azure AI Foundry Agent)</option>
+						</select>
+						<div class="form-text">Choose how the AI responds to user queries</div>
+					</div>
+
+					@if (config.AzureOpenAI.Mode == "Agent-AIFoundry")
+					{
+						<div class="mb-3">
+							<label class="form-label">Agent ID</label>
+							<input type="text" class="form-control" @bind="config.AzureOpenAI.AgentId"
+								   placeholder="Enter your Azure AI Foundry Agent ID">
+							<div class="form-text">The ID of your pre-configured Azure AI Foundry agent</div>
+						</div>
+						<div class="mb-3">
+							<label class="form-label">Azure AI Foundry Project Endpoint</label>
+							<input type="text" class="form-control" @bind="config.AzureOpenAI.AIFoundryEndpoint"
+								   placeholder="https://your-project.api.azureml.ms">
+							<div class="form-text">
+								Azure AI Foundry project endpoint (different from Azure OpenAI endpoint)
+							</div>
+						</div>
+					}
+
+					@if (config.AzureOpenAI.Mode == "LLM" || config.AzureOpenAI.Mode == "Agent-LLM")
+					{
+						<div class="mb-3">
+							<label class="form-label">Azure OpenAI Endpoint</label>
+							<input type="text" class="form-control" @bind="config.AzureOpenAI.Endpoint"
+								   placeholder="https://your-resource.openai.azure.com">
+							<div class="form-text">Azure OpenAI resource endpoint</div>
+						</div>
+					}
+
+					@if (config.AzureOpenAI.Mode == "LLM" || config.AzureOpenAI.Mode == "Agent-LLM")
+					{
+						<div class="mb-3">
+							<label class="form-label">API Key</label>
+							<input type="password" class="form-control" @bind="config.AzureOpenAI.ApiKey"
+								   placeholder="Enter your OpenAI API key">
+						</div>
+						<div class="mb-3">
+							<label class="form-label">Deployment Name</label>
+							<input type="text" class="form-control" @bind="config.AzureOpenAI.DeploymentName"
+								   placeholder="gpt-5.1-chat">
+						</div>
+					}
+
+					@if (config.AzureOpenAI.Mode == "LLM" || config.AzureOpenAI.Mode == "Agent-LLM")
+					{
+						<div class="mb-3">
+							<label class="form-label">System Prompt / Instructions</label>
+							<div class="input-group">
+								<textarea class="form-control" rows="3" @bind="config.AzureOpenAI.SystemPrompt"></textarea>
+							</div>
+							<button class="btn btn-outline-secondary btn-sm mt-2" @onclick="ResetSystemPromptToDefault">
+								<i class="bi bi-arrow-counterclockwise me-1"></i>Reset to Default
+							</button>
+						</div>
+					}
+				</div>
+			</div>
+		</div>
+
+		<!-- STT/TTS Configuration -->
+		<div class="col-12 col-lg-6">
+			<div class="card shadow-sm h-100">
+				<div class="card-header">
+					<i class="bi bi-mic me-2"></i>STT/TTS Configuration
+				</div>
+				<div class="card-body">
+					<div class="mb-3">
+						<label class="form-label">STT Locales</label>
+						<input type="text" class="form-control" @bind="config.SttTts.SttLocales"
+							   placeholder="en-US,es-ES,fr-FR">
+						<div class="form-text">Comma-separated list of locale codes</div>
+					</div>
+					<div class="mb-3">
+						<label class="form-label">TTS Voice</label>
+						<select class="form-select" @bind="config.SttTts.TtsVoice">
+							<option value="">(Use Custom Avatar's Built-In Voice)</option>
+							<option value="en-US-AvaMultilingualNeural">en-US-AvaMultilingualNeural</option>
+							<option value="en-US-AndrewMultilingualNeural">en-US-AndrewMultilingualNeural</option>
+							<option value="en-US-EmmaMultilingualNeural">en-US-EmmaMultilingualNeural</option>
+							<option value="en-US-BrianMultilingualNeural">en-US-BrianMultilingualNeural</option>
+							<option value="es-ES-ElviraNeural">es-ES-ElviraNeural</option>
+							<option value="fr-FR-DeniseNeural">fr-FR-DeniseNeural</option>
+						</select>
+						<div class="form-text">
+							Select "(Use Custom Avatar's Built-In Voice)" for custom avatars with
+							their own voice
+						</div>
+					</div>
+					<div class="mb-3">
+						<label class="form-label">Custom Voice Endpoint ID (Optional)</label>
+						<input type="text" class="form-control" @bind="config.SttTts.CustomVoiceEndpointId"
+							   placeholder="Leave empty for standard voices">
+					</div>
+					<div class="form-check">
+						<input type="checkbox" class="form-check-input" id="continuousConversation"
+							   @bind="config.SttTts.ContinuousConversation">
+						<label class="form-check-label" for="continuousConversation">
+							Continuous Conversation
+						</label>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Avatar Configuration -->
+		<div class="col-12 col-lg-6">
+			<div class="card shadow-sm h-100">
+				<div class="card-header">
+					<i class="bi bi-robot me-2"></i>Avatar Configuration
+				</div>
+				<div class="card-body">
+					<div class="mb-3">
+						<label class="form-label">Character</label>
+						<select class="form-select" @bind="config.Avatar.Character">
+							<option value="Bruno-Avatar-02">Bruno Avatar 02</option>
+							<option value="lisa">Lisa</option>
+							<option value="harry">Harry</option>
+							<option value="jeff">Jeff</option>
+							<option value="lori">Lori</option>
+							<option value="max">Max</option>
+							<option value="meg">Meg</option>
+						</select>
+					</div>
+					<div class="mb-3">
+						<label class="form-label">Style</label>
+						<select class="form-select" @bind="config.Avatar.Style">
+							<option value="">No Style (for custom avatars)</option>
+							<option value="casual-sitting">Casual Sitting</option>
+							<option value="business">Business</option>
+							<option value="casual">Casual</option>
+							<option value="formal">Formal</option>
+						</select>
+						<div class="form-text">Select "No Style" for custom avatars that don't require a style</div>
+					</div>
+					<div class="form-check mb-2">
+						<input type="checkbox" class="form-check-input" id="customAvatar"
+							   @bind="config.Avatar.IsCustomAvatar">
+						<label class="form-check-label" for="customAvatar">
+							Custom Avatar
+						</label>
+					</div>
+					<div class="form-check mb-2">
+						<input type="checkbox" class="form-check-input" id="useBuiltInVoice"
+							   @bind="config.Avatar.UseBuiltInVoice">
+						<label class="form-check-label" for="useBuiltInVoice">
+							Use Built-In Voice
+						</label>
+					</div>
+					<div class="form-check mb-2">
+						<input type="checkbox" class="form-check-input" id="enableSubtitles"
+							   @bind="config.Avatar.EnableSubtitles">
+						<label class="form-check-label" for="enableSubtitles">
+							Enable Subtitles
+						</label>
+					</div>
+					<div class="form-check mb-3">
+						<input type="checkbox" class="form-check-input" id="enableAutoReconnect"
+							   @bind="config.Avatar.EnableAutoReconnect">
+						<label class="form-check-label" for="enableAutoReconnect">
+							Enable Auto Reconnect
+						</label>
+					</div>
+					<div class="mb-3">
+						<label class="form-label">Audio Gain: @config.Avatar.AudioGain.ToString("F1")</label>
+						<input type="range" class="form-range" min="0.1" max="5.0" step="0.1"
+							   @bind="config.Avatar.AudioGain">
+						<div class="form-text">Adjust volume amplification (0.1x - 5.0x)</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Predefined Questions -->
+		<div class="col-12">
+			<div class="card shadow-sm">
+				<div class="card-header">
+					<i class="bi bi-list-ul me-2"></i>Predefined Quick Questions (1-5)
+				</div>
+				<div class="card-body">
+					<p class="form-text mb-3">Define up to five quick questions. Only questions with content will appear as buttons in the Chat page.</p>
+
+					@if (config.PredefinedQuestions == null || config.PredefinedQuestions.Count == 0)
+					{
+						<div class="mb-3 text-muted">No predefined questions configured. Click "Add Question" to create one.</div>
+					}
+
+					@for (int i = 0; i < config.PredefinedQuestions.Count; i++)
                     {
-                        <div class="mb-3">
-                            <label class="form-label">Private Endpoint URL</label>
-                            <input type="text" class="form-control" @bind="config.AzureSpeech.PrivateEndpoint"
-                                placeholder="https://your-endpoint.cognitiveservices.azure.com/">
-                        </div>
-                    }
-                </div>
-            </div>
-        </div>
-
-        <!-- Azure OpenAI -->
-        <div class="col-12 col-lg-6">
-            <div class="card shadow-sm h-100">
-                <div class="card-header">
-                    <i class="bi bi-cpu me-2"></i>Azure OpenAI / Agent Configuration
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label class="form-label">Mode</label>
-                        <select class="form-select" @bind="config.AzureOpenAI.Mode">
-                            <option value="LLM">LLM (Direct OpenAI)</option>
-                            <option value="Agent-LLM">Agent-LLM (Agent Framework with OpenAI)</option>
-                            <option value="Agent-AIFoundry">Agent-AIFoundry (Azure AI Foundry Agent)</option>
-                        </select>
-                        <div class="form-text">Choose how the AI responds to user queries</div>
-                    </div>
-
-                    @if (config.AzureOpenAI.Mode == "Agent-AIFoundry")
-                    {
-                        <div class="mb-3">
-                            <label class="form-label">Agent ID</label>
-                            <input type="text" class="form-control" @bind="config.AzureOpenAI.AgentId"
-                                placeholder="Enter your Azure AI Foundry Agent ID">
-                            <div class="form-text">The ID of your pre-configured Azure AI Foundry agent</div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Azure AI Foundry Project Endpoint</label>
-                            <input type="text" class="form-control" @bind="config.AzureOpenAI.AIFoundryEndpoint"
-                                placeholder="https://your-project.api.azureml.ms">
-                            <div class="form-text">Azure AI Foundry project endpoint (different from Azure OpenAI endpoint)
+                        var pq = config.PredefinedQuestions[i];
+                        var index = i; // capture loop index for lambda
+                        <div class="mb-3 border rounded p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <strong>Question @(index + 1)</strong>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveQuestion(index)">Remove</button>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Title (short)</label>
+                                <input type="text" class="form-control" @bind="pq.Title" placeholder="Short label for button">
+                            </div>
+                            <div>
+                                <label class="form-label">Question (full text)</label>
+                                <textarea class="form-control" rows="2" @bind="pq.Question" placeholder="Full question to send to chat"></textarea>
                             </div>
                         </div>
                     }
 
-                    @if (config.AzureOpenAI.Mode == "LLM" || config.AzureOpenAI.Mode == "Agent-LLM")
-                    {
-                        <div class="mb-3">
-                            <label class="form-label">Azure OpenAI Endpoint</label>
-                            <input type="text" class="form-control" @bind="config.AzureOpenAI.Endpoint"
-                                placeholder="https://your-resource.openai.azure.com">
-                            <div class="form-text">Azure OpenAI resource endpoint</div>
-                        </div>
-                    }
+					<div class="d-flex gap-2">
+						<button class="btn btn-outline-primary" @onclick="AddQuestion" disabled="@(config.PredefinedQuestions != null && config.PredefinedQuestions.Count >= 5)">Add Question</button>
+						<button class="btn btn-outline-secondary" @onclick="AddDefaultQuestions" disabled="@(config.PredefinedQuestions != null && config.PredefinedQuestions.Count >= 5)">Add Default Questions</button>
+						<div class="form-text text-muted">You can add up to 5 questions. Empty question text will be ignored in the Chat UI.</div>
+					</div>
+				</div>
+			</div>
+		</div>
 
-                    @if (config.AzureOpenAI.Mode == "LLM" || config.AzureOpenAI.Mode == "Agent-LLM")
-                    {
-                        <div class="mb-3">
-                            <label class="form-label">API Key</label>
-                            <input type="password" class="form-control" @bind="config.AzureOpenAI.ApiKey"
-                                placeholder="Enter your OpenAI API key">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Deployment Name</label>
-                            <input type="text" class="form-control" @bind="config.AzureOpenAI.DeploymentName"
-                                placeholder="gpt-5.1-chat">
-                        </div>
-                    }
-
-                    @if (config.AzureOpenAI.Mode == "LLM" || config.AzureOpenAI.Mode == "Agent-LLM")
-                    {
-                        <div class="mb-3">
-                            <label class="form-label">System Prompt / Instructions</label>
-                            <div class="input-group">
-                                <textarea class="form-control" rows="3" @bind="config.AzureOpenAI.SystemPrompt"></textarea>
-                            </div>
-                            <button class="btn btn-outline-secondary btn-sm mt-2" @onclick="ResetSystemPromptToDefault">
-                                <i class="bi bi-arrow-counterclockwise me-1"></i>Reset to Default
-                            </button>
-                        </div>
-                    }
-                </div>
-            </div>
-        </div>
-
-        <!-- STT/TTS Configuration -->
-        <div class="col-12 col-lg-6">
-            <div class="card shadow-sm h-100">
-                <div class="card-header">
-                    <i class="bi bi-mic me-2"></i>STT/TTS Configuration
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label class="form-label">STT Locales</label>
-                        <input type="text" class="form-control" @bind="config.SttTts.SttLocales"
-                            placeholder="en-US,es-ES,fr-FR">
-                        <div class="form-text">Comma-separated list of locale codes</div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">TTS Voice</label>
-                        <select class="form-select" @bind="config.SttTts.TtsVoice">
-                            <option value="">(Use Custom Avatar's Built-In Voice)</option>
-                            <option value="en-US-AvaMultilingualNeural">en-US-AvaMultilingualNeural</option>
-                            <option value="en-US-AndrewMultilingualNeural">en-US-AndrewMultilingualNeural</option>
-                            <option value="en-US-EmmaMultilingualNeural">en-US-EmmaMultilingualNeural</option>
-                            <option value="en-US-BrianMultilingualNeural">en-US-BrianMultilingualNeural</option>
-                            <option value="es-ES-ElviraNeural">es-ES-ElviraNeural</option>
-                            <option value="fr-FR-DeniseNeural">fr-FR-DeniseNeural</option>
-                        </select>
-                        <div class="form-text">Select "(Use Custom Avatar's Built-In Voice)" for custom avatars with
-                            their own voice</div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Custom Voice Endpoint ID (Optional)</label>
-                        <input type="text" class="form-control" @bind="config.SttTts.CustomVoiceEndpointId"
-                            placeholder="Leave empty for standard voices">
-                    </div>
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input" id="continuousConversation"
-                            @bind="config.SttTts.ContinuousConversation">
-                        <label class="form-check-label" for="continuousConversation">
-                            Continuous Conversation
-                        </label>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Avatar Configuration -->
-        <div class="col-12 col-lg-6">
-            <div class="card shadow-sm h-100">
-                <div class="card-header">
-                    <i class="bi bi-robot me-2"></i>Avatar Configuration
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label class="form-label">Character</label>
-                        <select class="form-select" @bind="config.Avatar.Character">
-                            <option value="Bruno-Avatar-02">Bruno Avatar 02</option>
-                            <option value="lisa">Lisa</option>
-                            <option value="harry">Harry</option>
-                            <option value="jeff">Jeff</option>
-                            <option value="lori">Lori</option>
-                            <option value="max">Max</option>
-                            <option value="meg">Meg</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Style</label>
-                        <select class="form-select" @bind="config.Avatar.Style">
-                            <option value="">No Style (for custom avatars)</option>
-                            <option value="casual-sitting">Casual Sitting</option>
-                            <option value="business">Business</option>
-                            <option value="casual">Casual</option>
-                            <option value="formal">Formal</option>
-                        </select>
-                        <div class="form-text">Select "No Style" for custom avatars that don't require a style</div>
-                    </div>
-                    <div class="form-check mb-2">
-                        <input type="checkbox" class="form-check-input" id="customAvatar"
-                            @bind="config.Avatar.IsCustomAvatar">
-                        <label class="form-check-label" for="customAvatar">
-                            Custom Avatar
-                        </label>
-                    </div>
-                    <div class="form-check mb-2">
-                        <input type="checkbox" class="form-check-input" id="useBuiltInVoice"
-                            @bind="config.Avatar.UseBuiltInVoice">
-                        <label class="form-check-label" for="useBuiltInVoice">
-                            Use Built-In Voice
-                        </label>
-                    </div>
-                    <div class="form-check mb-2">
-                        <input type="checkbox" class="form-check-input" id="enableSubtitles"
-                            @bind="config.Avatar.EnableSubtitles">
-                        <label class="form-check-label" for="enableSubtitles">
-                            Enable Subtitles
-                        </label>
-                    </div>
-                    <div class="form-check mb-3">
-                        <input type="checkbox" class="form-check-input" id="enableAutoReconnect"
-                            @bind="config.Avatar.EnableAutoReconnect">
-                        <label class="form-check-label" for="enableAutoReconnect">
-                            Enable Auto Reconnect
-                        </label>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Audio Gain: @config.Avatar.AudioGain.ToString("F1")</label>
-                        <input type="range" class="form-range" min="0.1" max="5.0" step="0.1"
-                            @bind="config.Avatar.AudioGain">
-                        <div class="form-text">Adjust volume amplification (0.1x - 5.0x)</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+	</div>
 </div>
 
 @code {
-    private AvatarConfiguration config = new();
-    private string statusMessage = string.Empty;
-    private bool isError = false;
+	private AvatarConfiguration config = new();
+	private string statusMessage = string.Empty;
+	private bool isError = false;
 
-    // Default system prompt from ConfigurationService.cs
-    private const string DefaultSystemPrompt = "You are Bruno Capuano (El Bruno). Respond in the user's language with brief answers (1-2 sentences) and a friendly, approachable tone. Convert numeric times (e.g., 08:00) to spoken format (e.g., \"eight in the morning\"). AgentCon Lima — November 8, 2025 (UPC Monterrico). Agenda (summary): 08:00 Registration; 08:15 Welcome; 08:30 Keynote — Bruno Capuano; parallel sessions throughout the day on agent development, Azure AI, Copilot Studio, and more; 12:05 Lunch; 15:45 Panel: The Future of Agents; 16:30 Photos & Closing; 16:45 Raffle. .NET Conf 2025 — November 11-13, 2025 (virtual, free). Day 1 (Nov 11): Welcome to .NET 10 & Visual Studio 2026 keynote (11:00 AM EST) featuring Scott Hanselman, Damian Edwards, David Fowler, and the .NET team; sessions on ASP.NET Core, C# 14, Blazor, Aspire, AI-powered development with GitHub Copilot, building intelligent apps, Model Context Protocol (MCP), .NET MAUI, Windows development, and more. Day 2 (Nov 12): Azure keynote with Scott Hunter and Paul Yuknewicz; sessions on building remote MCP servers, Redis with Agent Framework, Aspire deep dive, Azure App Service, testing with Microsoft.Testing.Platform, NuGet updates, containers, AI-powered testing. Community Day (Nov 13): 50+ community sessions on topics from Newtonsoft.Json migration, Xamarin.Forms to MAUI, authentication with Blazor, retro computing with C# on Commodore 64, OpenTelemetry observability, security tools, clean architecture, MCP server creation, passkeys, AI agents, and more. Student Zone on November 14, 2025 - beginner-friendly virtual event on AI, web, mobile, and game development. Watch on YouTube/Twitch, use #dotnetconf hashtag. Download .NET 10 at get.dot.net/10. Use `/prompts/agentcon-lima.md` as authoritative reference for AgentCon details; if information isn't in that source, respond in the same language: \"I don't have that information.\"";
+	// Default system prompt (shortened to avoid Razor parsing issues)
+	private const string DefaultSystemPrompt = "You are an AI assistant. Respond briefly and helpfully. If information is missing, say: I don't have that information.";
 
-    protected override void OnInitialized()
-    {
-        config = ConfigService.GetConfiguration();
-    }
+	protected override void OnInitialized()
+	{
+		config = ConfigService.GetConfiguration();
 
-    private void ResetSystemPromptToDefault()
-    {
-        config.AzureOpenAI.SystemPrompt = DefaultSystemPrompt;
-        statusMessage = "System prompt reset to default value.";
-        isError = false;
+		// Ensure list initialized
+		if (config.PredefinedQuestions == null)
+		{
+			config.PredefinedQuestions = new List<PredefinedQuestion>();
+		}
+
+		// Ensure at least one editable block appears
+		if (config.PredefinedQuestions.Count == 0)
+		{
+			config.PredefinedQuestions.Add(new PredefinedQuestion());
+		}
+	}
+
+	private void AddQuestion()
+	{
+		if (config.PredefinedQuestions == null)
+			config.PredefinedQuestions = new List<PredefinedQuestion>();
+
+		if (config.PredefinedQuestions.Count >= 5) return;
+		config.PredefinedQuestions.Add(new PredefinedQuestion());
+	}
+
+	private void RemoveQuestion(int index)
+	{
+		if (config.PredefinedQuestions == null) return;
+		if (index < 0 || index >= config.PredefinedQuestions.Count) return;
+		config.PredefinedQuestions.RemoveAt(index);
+
+		// Ensure at least one block remains to edit
+		if (config.PredefinedQuestions.Count == 0)
+		{
+			config.PredefinedQuestions.Add(new PredefinedQuestion());
+		}
+
+		StateHasChanged();
+	}
+
+	private void ResetSystemPromptToDefault()
+	{
+		config.AzureOpenAI.SystemPrompt = DefaultSystemPrompt;
+		statusMessage = "System prompt reset to default value.";
+		isError = false;
+		StateHasChanged();
+	}
+
+	private async Task SaveConfiguration()
+	{
+		try
+		{
+			// Filter out empty questions and enforce max 5
+			config.PredefinedQuestions = (config.PredefinedQuestions ?? new List<PredefinedQuestion>())
+				.Where(p => !string.IsNullOrWhiteSpace(p.Question))
+				.Take(5)
+				.Select(p => new PredefinedQuestion { Title = p.Title?.Trim() ?? string.Empty, Question = p.Question!.Trim() })
+				.ToList();
+
+			if (config.PredefinedQuestions.Count == 0)
+			{
+				statusMessage = "Please configure at least one predefined question with full question text.";
+				isError = true;
+				StateHasChanged();
+				return;
+			}
+
+			await ConfigService.SaveConfigurationAsync(config);
+			statusMessage = "Configuration saved successfully!";
+			isError = false;
+			StateHasChanged();
+
+			// Clear message after 3 seconds
+			await Task.Delay(3000);
+			statusMessage = string.Empty;
+			StateHasChanged();
+		}
+		catch (Exception ex)
+		{
+			statusMessage = $"Error saving configuration: {ex.Message}";
+			isError = true;
+			StateHasChanged();
+		}
+	}
+
+	private async Task ExportConfiguration()
+	{
+		try
+		{
+			var jsonOptions = new JsonSerializerOptions
+			{
+				WriteIndented = true,
+				PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+			};
+
+			var jsonContent = JsonSerializer.Serialize(config, jsonOptions);
+			var timestamp = DateTime.Now.ToString("yyyy-MM-dd-hhmmss");
+			var filename = $"azure-avatar-config-{timestamp}.json";
+
+			await JSRuntime.InvokeVoidAsync("downloadFile", filename, jsonContent);
+
+			statusMessage = "Configuration exported successfully!";
+			isError = false;
+			StateHasChanged();
+
+			await Task.Delay(3000);
+			statusMessage = string.Empty;
+			StateHasChanged();
+		}
+		catch (Exception ex)
+		{
+			statusMessage = $"Error exporting configuration: {ex.Message}";
+			isError = true;
+			StateHasChanged();
+		}
+	}
+
+	private async Task ImportConfiguration(InputFileChangeEventArgs e)
+	{
+		try
+		{
+			var file = e.File;
+			if (file == null)
+			{
+				return;
+			}
+
+			// Limit file size to 1MB
+			const long maxFileSize = 1024 * 1024;
+			if (file.Size > maxFileSize)
+			{
+				statusMessage = "File is too large. Maximum size is 1MB.";
+				isError = true;
+				StateHasChanged();
+				return;
+			}
+
+			using var stream = file.OpenReadStream(maxFileSize);
+			using var reader = new StreamReader(stream);
+			var jsonContent = await reader.ReadToEndAsync();
+
+			var jsonOptions = new JsonSerializerOptions
+			{
+				PropertyNameCaseInsensitive = true,
+				PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+			};
+
+			var importedConfig = JsonSerializer.Deserialize<AvatarConfiguration>(jsonContent, jsonOptions);
+
+			if (importedConfig == null)
+			{
+				statusMessage = "Invalid configuration file format.";
+				isError = true;
+				StateHasChanged();
+				return;
+			}
+
+			// Validate the imported configuration
+			var validationError = await ConfigService.ValidateConfigurationAsync(importedConfig);
+			if (!string.IsNullOrEmpty(validationError))
+			{
+				statusMessage = $"Configuration validation failed: {validationError}";
+				isError = true;
+				StateHasChanged();
+				return;
+
+			}
+
+			// Replace current configuration with imported one
+			config = importedConfig;
+			await ConfigService.SaveConfigurationAsync(config);
+
+			statusMessage = "Configuration imported and saved successfully!";
+			isError = false;
+			StateHasChanged();
+
+			await Task.Delay(3000);
+			statusMessage = string.Empty;
+			StateHasChanged();
+		}
+		catch (JsonException)
+		{
+			statusMessage = "Invalid JSON file format. Please ensure the file is a valid configuration export.";
+			isError = true;
+			StateHasChanged();
+		}
+		catch (Exception ex)
+		{
+			statusMessage = $"Error importing configuration: {ex.Message}";
+			isError = true;
+			StateHasChanged();
+		}
+	}
+
+	private void AddDefaultQuestions()
+	{
+		// Replace the list with the presets (clear existing)
+        config.PredefinedQuestions = new List<PredefinedQuestion>();
+
+        var presets = new List<PredefinedQuestion>
+		{
+			new PredefinedQuestion { Title = "Hi", Question = "Hello" },
+			new PredefinedQuestion { Title = "Microsoft�Canada AI initiative for Canadian enterprises", Question = "How is Microsoft collaborating with the Canadian government and organizations on AI initiatives? Make a single response in a paragraph and mention the sources " },
+			new PredefinedQuestion { Title = ".NET Conf 2025", Question = "What can you tell me about .NET Conf 2025" },
+			new PredefinedQuestion { Title = ".NET Conf 2025 (FR)", Question = "Que pouvez-vous me dire au sujet de .NET Conf 2025 ?" }
+		};
+
+        foreach (var p in presets.Take(5))
+        {
+            config.PredefinedQuestions.Add(new PredefinedQuestion { Title = p.Title, Question = p.Question });
+        }
+
         StateHasChanged();
-    }
-
-    private async Task SaveConfiguration()
-    {
-        try
-        {
-            await ConfigService.SaveConfigurationAsync(config);
-            statusMessage = "Configuration saved successfully!";
-            isError = false;
-            StateHasChanged();
-
-            // Clear message after 3 seconds
-            await Task.Delay(3000);
-            statusMessage = string.Empty;
-            StateHasChanged();
-        }
-        catch (Exception ex)
-        {
-            statusMessage = $"Error saving configuration: {ex.Message}";
-            isError = true;
-            StateHasChanged();
-        }
-    }
-
-    private async Task ExportConfiguration()
-    {
-        try
-        {
-            var jsonOptions = new JsonSerializerOptions
-            {
-                WriteIndented = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            };
-
-            var jsonContent = JsonSerializer.Serialize(config, jsonOptions);
-            var timestamp = DateTime.Now.ToString("yyyy-MM-dd-HHmmss");
-            var filename = $"azure-avatar-config-{timestamp}.json";
-
-            await JSRuntime.InvokeVoidAsync("downloadFile", filename, jsonContent);
-
-            statusMessage = "Configuration exported successfully!";
-            isError = false;
-            StateHasChanged();
-
-            await Task.Delay(3000);
-            statusMessage = string.Empty;
-            StateHasChanged();
-        }
-        catch (Exception ex)
-        {
-            statusMessage = $"Error exporting configuration: {ex.Message}";
-            isError = true;
-            StateHasChanged();
-        }
-    }
-
-    private async Task ImportConfiguration(InputFileChangeEventArgs e)
-    {
-        try
-        {
-            var file = e.File;
-            if (file == null)
-            {
-                return;
-            }
-
-            // Limit file size to 1MB
-            const long maxFileSize = 1024 * 1024;
-            if (file.Size > maxFileSize)
-            {
-                statusMessage = "File is too large. Maximum size is 1MB.";
-                isError = true;
-                StateHasChanged();
-                return;
-            }
-
-            using var stream = file.OpenReadStream(maxFileSize);
-            using var reader = new StreamReader(stream);
-            var jsonContent = await reader.ReadToEndAsync();
-
-            var jsonOptions = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            };
-
-            var importedConfig = JsonSerializer.Deserialize<AvatarConfiguration>(jsonContent, jsonOptions);
-
-            if (importedConfig == null)
-            {
-                statusMessage = "Invalid configuration file format.";
-                isError = true;
-                StateHasChanged();
-                return;
-            }
-
-            // Validate the imported configuration
-            var validationError = await ConfigService.ValidateConfigurationAsync(importedConfig);
-            if (!string.IsNullOrEmpty(validationError))
-            {
-                statusMessage = $"Configuration validation failed: {validationError}";
-                isError = true;
-                StateHasChanged();
-                return;
-            }
-
-            // Replace current configuration with imported one
-            config = importedConfig;
-            await ConfigService.SaveConfigurationAsync(config);
-
-            statusMessage = "Configuration imported and saved successfully!";
-            isError = false;
-            StateHasChanged();
-
-            await Task.Delay(3000);
-            statusMessage = string.Empty;
-            StateHasChanged();
-        }
-        catch (JsonException)
-        {
-            statusMessage = "Invalid JSON file format. Please ensure the file is a valid configuration export.";
-            isError = true;
-            StateHasChanged();
-        }
-        catch (Exception ex)
-        {
-            statusMessage = $"Error importing configuration: {ex.Message}";
-            isError = true;
-            StateHasChanged();
-        }
-    }
+	}
 }
