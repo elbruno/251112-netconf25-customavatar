@@ -26,11 +26,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 // Register application services
-// Register both OpenAI service and Agent service
-// The Chat.razor will use the appropriate one based on configuration
-builder.Services.AddScoped<AzureOpenAIService>();
 builder.Services.AddScoped<AzureAIAgentService>();
-builder.Services.AddScoped<AzureSpeechService>();
 builder.Services.AddScoped<ConfigurationService>();
 
 var app = builder.Build();
@@ -41,7 +37,6 @@ app.MapDefaultEndpoints();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 

@@ -4,7 +4,6 @@
 @using System.Text.Json
 @using Microsoft.JSInterop
 @using Microsoft.AspNetCore.Components.Web
-@inject AzureOpenAIService OpenAIService
 @inject AzureAIAgentService AgentService
 @inject ConfigurationService ConfigService
 @inject IJSRuntime JSRuntime
@@ -564,17 +563,9 @@
             var assistantResponse = new System.Text.StringBuilder();
 
             // Use the appropriate service based on mode
-            var mode = config?.AzureOpenAI.Mode ?? "LLM";
-
-            if (mode == "LLM")
-            {
-                Console.WriteLine("Using LLM mode (standard OpenAI service)");
-                await foreach (var chunk in OpenAIService.GetChatCompletionStreamAsync(messagesForAPI))
-                {
-                    assistantResponse.Append(chunk);
-                }
-            }
-            else if (mode == "Agent-LLM" || mode == "Agent-AIFoundry" || mode == "Agent-MicrosoftFoundry")
+            var mode = config?.AzureOpenAI.Mode ?? "Agent-LLM";
+            
+            if (mode == "Agent-LLM" || mode == "Agent-AIFoundry" || mode == "Agent-MicrosoftFoundry")
             {
                 Console.WriteLine($"Using {mode} mode (Agent Framework)");
                 await foreach (var chunk in AgentService.GetChatCompletionStreamAsync(messagesForAPI))
