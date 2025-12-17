@@ -7,6 +7,7 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
 @rendermode InteractiveServer
+@implements IDisposable
 
 <PageTitle>Configuration - Azure AI Avatar</PageTitle>
 
@@ -356,6 +357,9 @@
 	{
 		config = ConfigService.GetConfiguration();
 
+		// Subscribe to configuration changes so the page auto-updates when config is saved elsewhere
+		ConfigService.ConfigurationChanged += OnConfigurationChanged;
+
 		// Ensure list initialized
 		if (config.PredefinedQuestions == null)
 		{
@@ -399,6 +403,32 @@
 		statusMessage = "System prompt reset to default value.";
 		isError = false;
 		StateHasChanged();
+	}
+
+	private void OnConfigurationChanged(object? sender, AvatarConfiguration? newConfig)
+	{
+		// Ensure UI updates on the Blazor renderer thread
+		InvokeAsync(() =>
+		{
+			if (newConfig != null)
+			{
+				config = newConfig;
+			}
+			else
+			{
+				config = ConfigService.GetConfiguration();
+			}
+			StateHasChanged();
+		});
+	}
+
+	public void Dispose()
+	{
+		try
+		{
+			ConfigService.ConfigurationChanged -= OnConfigurationChanged;
+		}
+		catch { }
 	}
 
 	private async Task SaveConfiguration()
@@ -518,7 +548,6 @@
 				isError = true;
 				StateHasChanged();
 				return;
-
 			}
 
 			// Replace current configuration with imported one
@@ -550,9 +579,9 @@
 	private void AddDefaultQuestions()
 	{
 		// Replace the list with the presets (clear existing)
-        config.PredefinedQuestions = new List<PredefinedQuestion>();
+		config.PredefinedQuestions = new List<PredefinedQuestion>();
 
-        var presets = new List<PredefinedQuestion>
+		var presets = new List<PredefinedQuestion>
 		{
 			new PredefinedQuestion { Title = "Hi", Question = "Hello" },
 			new PredefinedQuestion { Title = "Microsoft–Canada AI initiative for Canadian enterprises", Question = "How is Microsoft collaborating with the Canadian government and organizations on AI initiatives? Make a single response in a paragraph and mention the sources " },
@@ -560,12 +589,12 @@
 			new PredefinedQuestion { Title = ".NET Conf 2025 (FR)", Question = "Que pouvez-vous me dire au sujet de .NET Conf 2025 ?" }
 		};
 
-        foreach (var p in presets.Take(5))
-        {
-            config.PredefinedQuestions.Add(new PredefinedQuestion { Title = p.Title, Question = p.Question });
-        }
+		foreach (var p in presets.Take(5))
+		{
+			config.PredefinedQuestions.Add(new PredefinedQuestion { Title = p.Title, Question = p.Question });
+		}
 
-        StateHasChanged();
+		StateHasChanged();
 	}
 
 	private void SelectMode(string mode)
@@ -574,3 +603,4 @@
 		StateHasChanged();
 	}
 }
+// end of file

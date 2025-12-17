@@ -39,11 +39,13 @@
         <div class="ms-2">
             <label class="form-label mb-0">Mode</label>
             <select class="form-select form-select-sm" @onchange="ModeChanged" value="@(config?.AzureOpenAI?.Mode)">
-                <option value="LLM">LLM</option>
-                <option value="Agent-LLM">Agent-LLM</option>
-                <option value="Agent-AIFoundry">Agent-AIFoundry</option>
-                <option value="Agent-MicrosoftFoundry">Agent-MicrosoftFoundry</option>
+                <option value="LLM">@($"LLM - {(string.IsNullOrWhiteSpace(config?.AzureOpenAI?.DeploymentName) ? "gpt-5.1-chat" : config.AzureOpenAI.DeploymentName)}")</option>
+                <option value="Agent-LLM">@($"Agent-LLM - {(string.IsNullOrWhiteSpace(config?.AzureOpenAI?.DeploymentName) ? "gpt-5.1-chat" : config.AzureOpenAI.DeploymentName)}")</option>
+                <option value="Agent-AIFoundry">@($"Agent-AIFoundry - {(string.IsNullOrWhiteSpace(config?.AzureOpenAI?.AgentId) ? "(no agent id)" : config.AzureOpenAI.AgentId)}")</option>
+                <option value="Agent-MicrosoftFoundry">@($"Agent-MicrosoftFoundry - {(string.IsNullOrWhiteSpace(config?.AzureOpenAI?.MicrosoftFoundryAgentName) ? "(no agent name)" : config.AzureOpenAI.MicrosoftFoundryAgentName)}")</option>
             </select>
+
+            <div class="form-text mt-1">@GetModeInfo()</div>
         </div>
 
         <button class="btn btn-modern btn-sm px-3" @onclick="StartAvatarSession"
@@ -219,6 +221,20 @@
     {
         if (config == null) return "LLM";
         return config.AzureOpenAI.Mode ?? "LLM";
+    }
+
+    private string GetModeInfo()
+    {
+        if (config == null) return string.Empty;
+        var mode = config.AzureOpenAI.Mode ?? "LLM";
+        return mode switch
+        {
+            "LLM" => $"LLM - {(string.IsNullOrWhiteSpace(config.AzureOpenAI.DeploymentName) ? "gpt-5.1-chat" : config.AzureOpenAI.DeploymentName)}",
+            "Agent-LLM" => $"Agent-LLM - {(string.IsNullOrWhiteSpace(config.AzureOpenAI.DeploymentName) ? "gpt-5.1-chat" : config.AzureOpenAI.DeploymentName)}",
+            "Agent-AIFoundry" => $"Agent-AIFoundry - {(string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentId) ? "(no agent id)" : config.AzureOpenAI.AgentId)}",
+            "Agent-MicrosoftFoundry" => $"Agent-MicrosoftFoundry - {(string.IsNullOrWhiteSpace(config.AzureOpenAI.MicrosoftFoundryAgentName) ? "(no agent name)" : config.AzureOpenAI.MicrosoftFoundryAgentName)}",
+            _ => mode
+        };
     }
 
     private async Task ModeChanged(ChangeEventArgs e)

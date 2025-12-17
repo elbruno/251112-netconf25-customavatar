@@ -20,6 +20,8 @@ public class ConfigurationService : IConfigurationService
         _logger = logger;
     }
 
+    public event EventHandler<AvatarConfiguration?>? ConfigurationChanged;
+
     private bool DetermineEnablePrivateEndpoint(IConfiguration config)
     {
         // Check if explicitly set in configuration  
@@ -339,6 +341,16 @@ public class ConfigurationService : IConfigurationService
         await Task.CompletedTask;
 
         _logger.LogInformation("Configuration saved successfully to memory cache - changes will be used until app restart");
+
+        // Notify subscribers about the change
+        try
+        {
+            ConfigurationChanged?.Invoke(this, _cachedConfig);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error while invoking ConfigurationChanged event");
+        }
     }
 
     public async Task<string?> ValidateConfigurationAsync(AvatarConfiguration config)
