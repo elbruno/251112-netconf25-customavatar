@@ -24,7 +24,7 @@
                     SignalR/WebSocket
                          │
 ┌────────────────────────▼────────────────────────────────────────┐
-│                   Blazor Server (.NET 9)                         │
+│                   Blazor Server (.NET 10)                         │
 ├──────────────────────────────────────────────────────────────────┤
 │  ┌─────────────────────────────────────────────────────────┐    │
 │  │                    Presentation Layer                    │    │
@@ -336,9 +336,9 @@ public class ChatMessage
 
 ## Technology Stack Details
 
-### Backend (.NET 9)
-- **Runtime**: .NET 9.0
-- **Framework**: ASP.NET Core 9.0
+### Backend (.NET 10)
+- **Runtime**: .NET 10.0
+- **Framework**: ASP.NET Core 10.0
 - **UI**: Blazor Server (Interactive Server Render Mode)
 - **Communication**: SignalR over WebSocket
 

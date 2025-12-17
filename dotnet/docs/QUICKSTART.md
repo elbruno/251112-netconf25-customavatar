@@ -9,7 +9,7 @@ Get up and running with the Azure AI Avatar Blazor application in minutes using 
 Verify you have the required software:
 
 ```bash
-# Check .NET version (should be 9.0 or higher)
+# Check .NET version (should be 10.0 or higher)
 dotnet --version
 
 # Check git
@@ -19,8 +19,8 @@ git --version
 dotnet workload install aspire
 ```
 
-If you don't have .NET 9:
-- **Windows/macOS/Linux**: Download from https://dotnet.microsoft.com/download/dotnet/9.0
+If you don't have .NET 10:
+- **Windows/macOS/Linux**: Download from https://dotnet.microsoft.com/download/dotnet/10.0
 
 ### Step 2: Clone and Navigate
 
@@ -346,4 +346,4 @@ If you're stuck:
 
 You've successfully set up the Azure AI Avatar Blazor application!
 
-Enjoy exploring the power of Azure AI Services with .NET 9 and Blazor! 🚀
+Enjoy exploring the power of Azure AI Services with .NET 10 and Blazor! 🚀

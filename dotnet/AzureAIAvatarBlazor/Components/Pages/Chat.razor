@@ -1,4 +1,5 @@
 @page "/chat"
+
 @using AzureAIAvatarBlazor.Models
 @using AzureAIAvatarBlazor.Services
 @using System.Text.Json
@@ -34,8 +35,13 @@
             <span class="badge @modeBadgeClass px-3 py-2">
                 <i class="bi bi-cpu me-1"></i>@modeDisplayText
             </span>
+
+            @* Avatar badge *@
+            <span class="badge bg-secondary px-3 py-2 ms-2">
+                <i class="bi bi-person-circle me-1"></i>@GetSelectedAvatarName()
+            </span>
         }
-        
+
         <div class="ms-2">
             <label class="form-label mb-0">Mode</label>
             <select class="form-select form-select-sm" @onchange="ModeChanged" value="@(config?.AzureOpenAI?.Mode)">
@@ -45,6 +51,20 @@
             </select>
 
             <div class="form-text mt-1">@GetModeInfo()</div>
+        </div>
+
+        @* Avatar selection dropdown placed here *@
+        <div class="ms-3">
+            <label class="form-label mb-0">Select Avatar</label>
+            <select class="form-select form-select-sm" @onchange="SelectedAvatarChanged">
+                @if (avatars != null && avatars.Count > 0)
+                {
+                    foreach (var a in avatars)
+                    {
+                        <option value="@a.Id" selected="@(string.Equals(a.Id, SelectedAvatarId, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@a.Name</option>
+                    }
+                }
+            </select>
         </div>
 
         <button class="btn btn-modern btn-sm px-3" @onclick="StartAvatarSession"
@@ -104,8 +124,7 @@
                     <div class="chat-messages-container flex-grow-1 overflow-auto p-3" id="chatContainer">
                         @foreach (var message in chatMessages.Where(m => m.Role != "system"))
                         {
-                            <div
-                                class="chat-message-wrapper @(message.Role == "user" ? "user-message" : "assistant-message")">
+                            <div class="chat-message-wrapper @(message.Role == "user" ? "user-message" : "assistant-message")">
                                 <div class="chat-bubble @(message.Role == "user" ? "user-bubble" : "assistant-bubble")">
                                     <div class="chat-bubble-header">@GetMessageLabel(message.Role)</div>
                                     <div class="chat-bubble-content">@message.Content</div>
@@ -162,6 +181,22 @@
     </div>
 </div>
 
+@* Toast notifications *@
+<div aria-live="polite" aria-atomic="true" class="position-relative">
+  <div class="toast-container position-absolute top-0 end-0 p-3">
+    <div class="toast" role="alert" id="avatarToast">
+      <div class="toast-header">
+        <strong class="me-auto">Avatar</strong>
+        <small class="text-muted">now</small>
+        <button type="button" class="btn-close ms-2 mb-1" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+      <div class="toast-body">
+        Avatar selection saved.
+      </div>
+    </div>
+  </div>
+</div>
+
 @code {
     private AvatarConfiguration? config;
     private List<ChatMessage> chatMessages = new();
@@ -173,54 +208,127 @@
     private bool isMicrophoneActive = false;
     private DotNetObjectReference<Chat>? dotNetReference;
 
+    // Avatar state
+    private List<AvatarProfile> avatars = new();
+    private string SelectedAvatarId = string.Empty;
+
     protected override async Task OnInitializedAsync()
     {
-        Console.WriteLine("[Init] Initializing Chat component...");
+        config = ConfigService.GetConfiguration();
+        ConfigService.ConfigurationChanged += OnConfigurationChanged;
+
+        if (config?.Avatars != null && config.Avatars.Count > 0)
+            avatars = config.Avatars;
+
+        SelectedAvatarId = config?.SelectedAvatarId ?? config?.Avatar?.Character ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(SelectedAvatarId) && avatars.Count > 0)
+            SelectedAvatarId = avatars[0].Id;
+
+        // add system prompt if present
+        if (!string.IsNullOrEmpty(config?.AzureOpenAI?.AgentLLM?.SystemPrompt))
+        {
+            chatMessages.Add(new ChatMessage { Role = "system", Content = config.AzureOpenAI.AgentLLM.SystemPrompt });
+        }
+    }
+
+    private async Task ApplySelectedProfileToConfigAsync(string id, bool applySave = false)
+    {
+        if (config == null) return;
+        var profile = avatars.FirstOrDefault(a => string.Equals(a.Id, id, StringComparison.OrdinalIgnoreCase));
+        if (profile != null)
+        {
+            config.SelectedAvatarId = profile.Id;
+            config.Avatar.Character = profile.Character;
+            config.Avatar.Style = profile.Style;
+            config.Avatar.IsCustomAvatar = profile.IsCustomAvatar;
+            config.Avatar.UseBuiltInVoice = profile.UseBuiltInVoice;
+            config.Avatar.EnableSubtitles = profile.EnableSubtitles;
+            config.Avatar.EnableAutoReconnect = profile.EnableAutoReconnect;
+            config.Avatar.AudioGain = profile.AudioGain;
+            config.Avatar.UserLabel = profile.UserLabel;
+            config.Avatar.AssistantLabel = profile.AssistantLabel;
+
+            if (applySave)
+            {
+                await ConfigService.SaveConfigurationAsync(config);
+                // Show toast to confirm save
+                await ShowAvatarSavedToastAsync(profile.Name ?? profile.Id);
+            }
+        }
+    }
+
+    private async Task ShowAvatarSavedToastAsync(string avatarName)
+    {
         try
         {
-            config = ConfigService.GetConfiguration();
-            // Subscribe to configuration changes so the chat UI reflects updates made in Config page or saved configuration
-            ConfigService.ConfigurationChanged += OnConfigurationChanged;
-            Console.WriteLine("[Init] Configuration loaded successfully");
-            Console.WriteLine($"[Init] Avatar Character: {config?.Avatar?.Character ?? "null"}");
-            Console.WriteLine($"[Init] Azure Speech Region: {config?.AzureSpeech?.Region ?? "null"}");
-            Console.WriteLine($"[Init] Azure OpenAI Endpoint: {config?.AzureOpenAI?.AgentLLM?.Endpoint ?? "null"}");
+            // Update toast message and show it via JS
+            await JSRuntime.InvokeVoidAsync("eval", $"document.getElementById('avatarToast').querySelector('.toast-body').textContent = 'Selected avatar: {avatarName}';");
+            await JSRuntime.InvokeVoidAsync("eval", "var t = new bootstrap.Toast(document.getElementById('avatarToast')); t.show();");
+        }
+        catch
+        {
+            // ignore failures showing toast
+        }
+    }
 
-            // Add system message (not displayed in UI, but used for API calls)
-            if (!string.IsNullOrEmpty(config.AzureOpenAI.AgentLLM.SystemPrompt))
-            {
-                chatMessages.Add(new ChatMessage
-                {
-                    Role = "system",
-                    Content = config.AzureOpenAI.AgentLLM.SystemPrompt
-                });
-                Console.WriteLine($"[Init] System prompt added ({config.AzureOpenAI.AgentLLM.SystemPrompt.Length} characters)");
-            }
+    private string GetSelectedAvatarName()
+    {
+        if (avatars == null || avatars.Count == 0) return config?.Avatar?.Character ?? string.Empty;
+        var match = avatars.FirstOrDefault(a => string.Equals(a.Id, SelectedAvatarId, StringComparison.OrdinalIgnoreCase));
+        return match?.Name ?? SelectedAvatarId;
+    }
+
+    private async Task SelectedAvatarChanged(ChangeEventArgs e)
+    {
+        var newId = e.Value?.ToString() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(newId)) return;
+        SelectedAvatarId = newId;
+        await ApplySelectedProfileToConfigAsync(newId, applySave: true);
+        StateHasChanged();
+    }
+
+    private async Task StartAvatarSession()
+    {
+        try
+        {
+            if (config == null) throw new InvalidOperationException("Configuration not loaded.");
+
+            // Ensure selected profile applied
+            await ApplySelectedProfileToConfigAsync(SelectedAvatarId, applySave: false);
+
+            isSessionStarting = true;
+            StateHasChanged();
+
+            var validationError = await ConfigService.ValidateConfigurationAsync(config);
+            if (validationError != null) throw new Exception($"Configuration error: {validationError}");
+
+            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true };
+            var configJson = JsonSerializer.Serialize(config, options);
+
+            await JSRuntime.InvokeVoidAsync("startAvatarSessionFromJson", configJson);
+
+            isSessionActive = true;
+            isSessionStarting = false;
+            StateHasChanged();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[Init] ERROR during initialization: {ex.Message}");
-            Console.WriteLine($"[Init] Stack trace: {ex.StackTrace}");
+            isSessionActive = false;
+            isSessionStarting = false;
+            StateHasChanged();
+            chatMessages.Add(new ChatMessage { Role = "system", Content = $"Error starting avatar: {ex.Message}" });
         }
-        await Task.CompletedTask;
     }
 
     private string GetMessageLabel(string role)
     {
         if (config == null) return role;
-
         return role.ToLower() switch
         {
             "user" => config.Avatar.UserLabel ?? "User",
             "assistant" => config.Avatar.AssistantLabel ?? "AI Avatar",
             _ => role
         };
-    }
-
-    private string GetCurrentMode()
-    {
-        if (config == null) return "Agent-LLM";
-        return config.AzureOpenAI.Mode ?? "Agent-LLM";
     }
 
     private string GetModeInfo()
@@ -238,162 +346,21 @@
 
     private async Task ModeChanged(ChangeEventArgs e)
     {
-        try
-        {
-            var newMode = e.Value?.ToString() ?? "Agent-LLM";
-            Console.WriteLine($"Mode changed to: {newMode}");
-
-            if (config == null)
-            {
-                config = ConfigService.GetConfiguration();
-            }
-
-            config.AzureOpenAI.Mode = newMode;
-            await ConfigService.SaveConfigurationAsync(config);
-
-            // Reset agent to pick up new configuration
-            try
-            {
-                await AgentService.ResetAgentAsync();
-            }
-            catch (NotImplementedException nie)
-            {
-                // Show friendly system message to user
-                HandleAgentNotImplemented(nie);
-            }
-
-            StateHasChanged();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error changing mode: {ex.Message}");
-        }
+        var newMode = e.Value?.ToString() ?? "Agent-LLM";
+        if (config == null) config = ConfigService.GetConfiguration();
+        config.AzureOpenAI.Mode = newMode;
+        await ConfigService.SaveConfigurationAsync(config);
+        try { await AgentService.ResetAgentAsync(); } catch { }
+        StateHasChanged();
     }
 
     private async Task ScrollToBottom()
     {
-        try
-        {
-            await JSRuntime.InvokeVoidAsync("scrollChatToBottom");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error scrolling to bottom: {ex.Message}");
-        }
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            Console.WriteLine("[Render] First render - initializing Avatar SDK...");
-            try
-            {
-                dotNetReference = DotNetObjectReference.Create(this);
-                Console.WriteLine("[Render] DotNetObjectReference created");
-                await JSRuntime.InvokeVoidAsync("initializeAvatarSDK", dotNetReference);
-                Console.WriteLine("[Render] Avatar SDK initialized successfully");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[Render] ERROR initializing Avatar SDK: {ex.Message}");
-                Console.WriteLine($"[Render] Stack trace: {ex.StackTrace}");
-            }
-        }
-    }
-
-    private async Task StartAvatarSession()
-    {
-        await JSRuntime.InvokeVoidAsync("console.log", "[Session] ========================================");
-        await JSRuntime.InvokeVoidAsync("console.log", "[Session] START AVATAR SESSION BUTTON CLICKED");
-        await JSRuntime.InvokeVoidAsync("console.log", "[Session] ========================================");
-        try
-        {
-            if (config == null)
-            {
-                await JSRuntime.InvokeVoidAsync("console.error", "[Session] ERROR: config is null!");
-                throw new Exception("Configuration not loaded. Please refresh the page.");
-            }
-
-            await JSRuntime.InvokeVoidAsync("console.log", "[Session] Setting isSessionStarting = true...");
-            isSessionStarting = true;
-            StateHasChanged();
-            await JSRuntime.InvokeVoidAsync("console.log", "[Session] UI updated with loading state");
-
-            // Validate configuration before proceeding
-            await JSRuntime.InvokeVoidAsync("console.log", "[Session] Validating configuration...");
-            var validationError = await ConfigService.ValidateConfigurationAsync(config);
-            if (validationError != null)
-            {
-                await JSRuntime.InvokeVoidAsync("console.error", $"[Session] VALIDATION FAILED: {validationError}");
-                throw new Exception($"Configuration error: {validationError}");
-            }
-            await JSRuntime.InvokeVoidAsync("console.log", "[Session] Configuration validation passed");
-
-            // Serialize config with camelCase for JavaScript
-            await JSRuntime.InvokeVoidAsync("console.log", "[Session] Serializing config to JSON...");
-            var options = new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                WriteIndented = true
-            };
-            var configJson = JsonSerializer.Serialize(config, options);
-            await JSRuntime.InvokeVoidAsync("console.log", $"[Session] Config JSON (length: {configJson.Length} chars):");
-            await JSRuntime.InvokeVoidAsync("console.log", configJson);
-
-            await JSRuntime.InvokeVoidAsync("console.log", "[Session] Calling JavaScript function: startAvatarSessionFromJson");
-            await JSRuntime.InvokeVoidAsync("startAvatarSessionFromJson", configJson);
-            
-            await JSRuntime.InvokeVoidAsync("console.log", "[Session] JavaScript call completed successfully");
-            isSessionActive = true;
-            isSessionStarting = false;
-            StateHasChanged();
-            await JSRuntime.InvokeVoidAsync("console.log", "[Session] Avatar session started successfully!");
-        }
-        catch (Exception ex)
-        {
-            var errorMessage = ex.Message ?? string.Empty;
-            var stackTrace = ex.StackTrace ?? "<no stack trace>";
-            var isCancellation = errorMessage.Contains("Avatar start cancelled", System.StringComparison.OrdinalIgnoreCase);
-
-            await JSRuntime.InvokeVoidAsync("console.error", "[Session] ========================================");
-            await JSRuntime.InvokeVoidAsync("console.error", $"[Session] ERROR OCCURRED: {(isCancellation ? "CANCELLED" : "FAILED")}");
-            await JSRuntime.InvokeVoidAsync("console.error", "[Session] ========================================");
-            await JSRuntime.InvokeVoidAsync("console.error", $"[Session] Exception type: {ex.GetType().Name}");
-            await JSRuntime.InvokeVoidAsync("console.error", $"[Session] Error message: {errorMessage}");
-            
-            if (!isCancellation)
-            {
-                await JSRuntime.InvokeVoidAsync("console.error", $"[Session] Stack trace:");
-                await JSRuntime.InvokeVoidAsync("console.error", stackTrace);
-                
-                if (ex.InnerException != null)
-                {
-                    await JSRuntime.InvokeVoidAsync("console.error", $"[Session] Inner exception: {ex.InnerException.Message}");
-                    await JSRuntime.InvokeVoidAsync("console.error", $"[Session] Inner stack trace: {ex.InnerException.StackTrace}");
-                }
-            }
-            
-            isSessionActive = false;
-            isSessionStarting = false;
-            StateHasChanged();
-
-            if (!isCancellation)
-            {
-                // Show error to user
-                chatMessages.Add(new ChatMessage
-                {
-                    Role = "system",
-                    Content = $"Error starting avatar: {errorMessage}"
-                });
-                StateHasChanged();
-            }
-        }
+        try { await JSRuntime.InvokeVoidAsync("scrollChatToBottom"); } catch { }
     }
 
     private async Task StopSession()
     {
-        await JSRuntime.InvokeVoidAsync("console.log", "[Button Click] STOP SESSION button clicked");
         try
         {
             await JSRuntime.InvokeVoidAsync("stopAvatarSession");
@@ -402,310 +369,97 @@
             isSessionStarting = false;
             StateHasChanged();
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error stopping session: {ex.Message}");
-        }
+        catch { }
     }
 
     private async Task ToggleMicrophone()
     {
-        try
-        {
-            if (!isSessionActive)
-            {
-                return;
-            }
-
-            isMicrophoneActive = !isMicrophoneActive;
-            await JSRuntime.InvokeVoidAsync("toggleMicrophone", isMicrophoneActive);
-
-            if (isMicrophoneActive)
-            {
-                await StartSpeaking();
-            }
-            else
-            {
-                await StopSpeaking();
-            }
-
-            StateHasChanged();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error toggling microphone: {ex.Message}");
-        }
+        if (!isSessionActive) return;
+        isMicrophoneActive = !isMicrophoneActive;
+        await JSRuntime.InvokeVoidAsync("toggleMicrophone", isMicrophoneActive);
+        if (isMicrophoneActive) await StartSpeaking(); else await StopSpeaking();
+        StateHasChanged();
     }
 
     private async Task StartSpeaking()
     {
-        if (isSpeaking || string.IsNullOrWhiteSpace(userMessage))
-        {
-            return;
-        }
-
-        isSpeaking = true;
-        StateHasChanged();
-
-        try
-        {
-            // Simulate speaking time
-            var speakingTime = CalculateSpeakingTime(userMessage);
-            await Task.Delay(speakingTime);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error during speaking: {ex.Message}");
-        }
-        finally
-        {
-            isSpeaking = false;
-            StateHasChanged();
-        }
+        if (isSpeaking || string.IsNullOrWhiteSpace(userMessage)) return;
+        isSpeaking = true; StateHasChanged();
+        try { var speakingTime = CalculateSpeakingTime(userMessage); await Task.Delay(speakingTime); } catch { }
+        finally { isSpeaking = false; StateHasChanged(); }
     }
 
     private async Task StopSpeaking()
     {
-        try
-        {
-            isSpeaking = false;
-            await JSRuntime.InvokeVoidAsync("stopSpeaking");
-            StateHasChanged();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error stopping speaking: {ex.Message}");
-        }
+        try { isSpeaking = false; await JSRuntime.InvokeVoidAsync("stopSpeaking"); StateHasChanged(); } catch { }
     }
 
-    private int CalculateSpeakingTime(string message)
-    {
-        // Basic estimation: 100 milliseconds per word
-        var wordCount = message.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
-        return Math.Max(500, Math.Min(5000, wordCount * 100));
-    }
+    private int CalculateSpeakingTime(string message) => Math.Max(500, Math.Min(5000, message.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length * 100));
 
     private async Task ClearChatHistory()
     {
-        try
-        {
-            // Keep system message, clear the rest
-            var systemMessage = chatMessages.FirstOrDefault(m => m.Role == "system");
-            chatMessages.Clear();
-            if (systemMessage != null)
-            {
-                chatMessages.Add(systemMessage);
-            }
-            await JSRuntime.InvokeVoidAsync("clearChatHistory");
-            StateHasChanged();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error clearing chat history: {ex.Message}");
-        }
+        var systemMessage = chatMessages.FirstOrDefault(m => m.Role == "system");
+        chatMessages.Clear(); if (systemMessage != null) chatMessages.Add(systemMessage);
+        try { await JSRuntime.InvokeVoidAsync("clearChatHistory"); } catch { }
+        StateHasChanged();
     }
 
-    private async Task HandleKeyPress(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(userMessage))
-        {
-            await SendMessage();
-        }
-    }
+    private async Task HandleKeyPress(KeyboardEventArgs e) { if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(userMessage)) await SendMessage(); }
 
-    private async Task SendMessage()
-    {
-        await JSRuntime.InvokeVoidAsync("console.log", "[Button Click] SEND MESSAGE button clicked");
-        await ProcessOutgoingMessageAsync(userMessage, clearInput: true);
-    }
+    private async Task SendMessage() { await ProcessOutgoingMessageAsync(userMessage, clearInput: true); }
 
     private Task SendPredefinedMessage(string presetMessage) => ProcessOutgoingMessageAsync(presetMessage, clearInput: true);
 
     private async Task ProcessOutgoingMessageAsync(string? content, bool clearInput)
     {
-        if (string.IsNullOrWhiteSpace(content))
-        {
-            if (clearInput && !string.IsNullOrEmpty(userMessage))
-            {
-                userMessage = string.Empty;
-                StateHasChanged();
-            }
-            return;
-        }
-
-        var message = content.Trim();
-
-        if (clearInput)
-        {
-            userMessage = string.Empty;
-            StateHasChanged();
-        }
-
-        Console.WriteLine($"Sending message: {message}");
-
-        // Add user message to history
-        chatMessages.Add(new ChatMessage { Role = "user", Content = message });
-        isTyping = true;
-        StateHasChanged();
-        await ScrollToBottom();
+        if (string.IsNullOrWhiteSpace(content)) { if (clearInput) { userMessage = string.Empty; StateHasChanged(); } return; }
+        var message = content!.Trim(); if (clearInput) { userMessage = string.Empty; StateHasChanged(); }
+        chatMessages.Add(new ChatMessage { Role = "user", Content = message }); isTyping = true; StateHasChanged(); await ScrollToBottom();
 
         try
         {
-            Console.WriteLine("Getting chat completion from OpenAI...");
-
-            // Get messages for API (including system message)
-            var messagesForAPI = chatMessages.Select(m => new ChatMessage
-            {
-                Role = m.Role,
-                Content = m.Content
-            }).ToList();
-
+            var messagesForAPI = chatMessages.Select(m => new ChatMessage { Role = m.Role, Content = m.Content }).ToList();
             var assistantResponse = new System.Text.StringBuilder();
-
-            // Use the appropriate service based on mode
             var mode = config?.AzureOpenAI.Mode ?? "Agent-LLM";
-            
             if (mode == "Agent-LLM" || mode == "Agent-AIFoundry" || mode == "Agent-MicrosoftFoundry")
             {
-                Console.WriteLine($"Using {mode} mode (Agent Framework)");
-                await foreach (var chunk in AgentService.GetChatCompletionStreamAsync(messagesForAPI))
-                {
-                    assistantResponse.Append(chunk);
-                }
+                await foreach (var chunk in AgentService.GetChatCompletionStreamAsync(messagesForAPI)) assistantResponse.Append(chunk);
             }
-            else
-            {
-                throw new InvalidOperationException($"Unsupported mode: {mode}");
-            }
+            else throw new InvalidOperationException($"Unsupported mode: {mode}");
 
             var fullResponse = assistantResponse.ToString();
-            Console.WriteLine($"Received response: {fullResponse.Substring(0, Math.Min(100, fullResponse.Length))}...");
-
             chatMessages.Add(new ChatMessage { Role = "assistant", Content = fullResponse });
-            StateHasChanged();
-            await ScrollToBottom();
+            StateHasChanged(); await ScrollToBottom();
 
-            // Speak the response using avatar
             if (isSessionActive)
             {
-                Console.WriteLine("Speaking text via avatar...");
-                isSpeaking = true;
-                StateHasChanged();
-
-                try
-                {
-                    await JSRuntime.InvokeVoidAsync("speakText", fullResponse);
-                    Console.WriteLine("✅ Avatar speech completed successfully");
-                }
-                catch (Exception speakEx)
-                {
-                    Console.WriteLine($"⚠️ Speech error: {speakEx.Message}");
-                    // Don't throw - allow conversation to continue
-                }
-                finally
-                {
-                    isSpeaking = false;
-                }
-            }
-            else
-            {
-                Console.WriteLine("Avatar session not active, skipping speech");
+                isSpeaking = true; StateHasChanged();
+                try { await JSRuntime.InvokeVoidAsync("speakText", fullResponse); } catch { }
+                finally { isSpeaking = false; }
             }
         }
-        catch (NotImplementedException nie)
-        {
-            Console.WriteLine($"Mode not implemented: {nie.Message}");
-            HandleAgentNotImplemented(nie);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error in chat: {ex.Message}");
-            Console.WriteLine($"Stack trace: {ex.StackTrace}");
-            chatMessages.Add(new ChatMessage
-            {
-                Role = "assistant",
-                Content = "An error occurred while processing the request."
-            });
-            StateHasChanged();
-        }
-        finally
-        {
-            isTyping = false;
-            isSpeaking = false;
-            StateHasChanged();
-        }
+        catch (NotImplementedException nie) { HandleAgentNotImplemented(nie); }
+        catch (Exception) { chatMessages.Add(new ChatMessage { Role = "assistant", Content = "An error occurred while processing the request." }); StateHasChanged(); }
+        finally { isTyping = false; isSpeaking = false; StateHasChanged(); }
     }
 
     [JSInvokable("OnSpeechRecognized")]
     public async Task OnSpeechRecognizedAsync(string text)
     {
-        if (string.IsNullOrWhiteSpace(text))
-            return;
-
-        Console.WriteLine($"Speech recognized: {text}");
-
-        await InvokeAsync(() =>
-        {
-            userMessage = text;
-            StateHasChanged();
-        });
-
-        await InvokeAsync(async () => await SendMessage());
+        if (string.IsNullOrWhiteSpace(text)) return;
+        userMessage = text; StateHasChanged(); await SendMessage();
     }
 
     [JSInvokable("OnMicrophoneStateChanged")]
-    public async Task OnMicrophoneStateChangedAsync(bool active)
-    {
-        await InvokeAsync(() =>
-        {
-            isMicrophoneActive = active;
-            StateHasChanged();
-        });
-    }
+    public async Task OnMicrophoneStateChangedAsync(bool active) { isMicrophoneActive = active; StateHasChanged(); }
 
-    private void HandleAgentNotImplemented(NotImplementedException nie)
-    {
-        // Add a system message to notify the user
-        chatMessages.Add(new ChatMessage { Role = "system", Content = $"Selected agent mode is not available: {nie.Message}" });
-        StateHasChanged();
-    }
+    private void HandleAgentNotImplemented(NotImplementedException nie) { chatMessages.Add(new ChatMessage { Role = "system", Content = $"Selected agent mode is not available: {nie.Message}" }); StateHasChanged(); }
 
-    private void OnConfigurationChanged(object? sender, AvatarConfiguration? newConfig)
-    {
-        // Update local config on the renderer thread
-        InvokeAsync(() =>
-        {
-            if (newConfig != null)
-            {
-                config = newConfig;
-            }
-            else
-            {
-                config = ConfigService.GetConfiguration();
-            }
-            StateHasChanged();
-        });
-    }
+    private void OnConfigurationChanged(object? sender, AvatarConfiguration? newConfig) { InvokeAsync(() => { config = newConfig ?? ConfigService.GetConfiguration(); StateHasChanged(); }); }
 
     public async ValueTask DisposeAsync()
     {
-        Console.WriteLine("[Dispose] Disposing Chat component...");
-        try
-        {
-            // Cleanup logic: unsubscribe from config changes
-            ConfigService.ConfigurationChanged -= OnConfigurationChanged;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[Dispose] Error during disposal: {ex.Message}");
-        }
-
-        if (dotNetReference != null)
-        {
-            dotNetReference.Dispose();
-            dotNetReference = null;
-        }
-
-        await Task.CompletedTask;
+        try { ConfigService.ConfigurationChanged -= OnConfigurationChanged; } catch { }
+        dotNetReference?.Dispose(); dotNetReference = null; await Task.CompletedTask;
     }
 }

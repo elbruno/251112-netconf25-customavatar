@@ -1,6 +1,6 @@
 namespace AzureAIAvatarBlazor.Models;
 
-public class AzureOpenAI
+public class AzureOpenAIConfig
 {
     public string Mode { get; set; } = "Agent-LLM";
     public string TenantId { get; set; } = string.Empty;

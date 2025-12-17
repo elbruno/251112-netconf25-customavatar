@@ -1,12 +1,12 @@
 # Deployment Guide
 
-This guide covers deploying the Azure AI Avatar Blazor application to various environments.
+This deployment uses .NET 10 runtime.
 
 ## Prerequisites
 
 Before deploying, ensure you have:
 - [ ] Azure subscription with active credits
-- [ ] .NET 9 SDK installed (`dotnet --version`)
+- [ ] .NET 10 SDK installed (`dotnet --version`)
 - [ ] Aspire workload installed (`dotnet workload install aspire`)
 - [ ] Azure Developer CLI installed (for Aspire deployment)
 - [ ] Git installed
@@ -419,7 +419,7 @@ on:
 
 env:
   AZURE_WEBAPP_NAME: your-app-name
-  DOTNET_VERSION: '9.0.x'
+  DOTNET_VERSION: '10.0.x'
 
 jobs:
   build-and-deploy:

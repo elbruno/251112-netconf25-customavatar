@@ -93,7 +93,7 @@ public class ConfigurationService
                     ? enablePrivateEndpointValue
                     : false,
             },
-            AzureOpenAI = new AzureOpenAI
+            AzureOpenAI = new AzureOpenAIConfig
             {
                 Mode = _configuration["AGENT_MODE"]
                     ?? _configuration["AzureOpenAI__Mode"]
@@ -253,6 +253,67 @@ public class ConfigurationService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Error loading predefined questions from configuration");
+        }
+
+        // Load Avatars collection from configuration if available
+        try
+        {
+            var avatarsSection = _configuration.GetSection("Avatars");
+            if (avatarsSection.Exists())
+            {
+                var list = avatarsSection.Get<List<AvatarProfile>>() ?? new List<AvatarProfile>();
+                if (list.Count > 0)
+                {
+                    config.Avatars = list;
+                }
+            }
+
+            // SelectedAvatarId handling
+            var selectedId = _configuration["SelectedAvatarId"] ?? _configuration["Avatar__SelectedAvatarId"] ?? _configuration["SelectedAvatarId"];
+            if (!string.IsNullOrWhiteSpace(selectedId))
+            {
+                config.SelectedAvatarId = selectedId;
+            }
+
+            // If a SelectedAvatarId is present, set active Avatar accordingly
+            if (!string.IsNullOrWhiteSpace(config.SelectedAvatarId) && config.Avatars != null && config.Avatars.Count > 0)
+            {
+                var match = config.Avatars.FirstOrDefault(a => string.Equals(a.Id, config.SelectedAvatarId, StringComparison.OrdinalIgnoreCase));
+                if (match != null)
+                {
+                    config.Avatar.Character = match.Character;
+                    config.Avatar.Style = match.Style;
+                    config.Avatar.IsCustomAvatar = match.IsCustomAvatar;
+                    config.Avatar.UseBuiltInVoice = match.UseBuiltInVoice;
+                    config.Avatar.EnableSubtitles = match.EnableSubtitles;
+                    config.Avatar.EnableAutoReconnect = match.EnableAutoReconnect;
+                    config.Avatar.AudioGain = match.AudioGain;
+                    config.Avatar.UserLabel = match.UserLabel;
+                    config.Avatar.AssistantLabel = match.AssistantLabel;
+                }
+            }
+            else
+            {
+                // Fallback: if no SelectedAvatarId but Avatars list exists, use the first one
+                if (config.Avatars != null && config.Avatars.Count > 0)
+                {
+                    var first = config.Avatars[0];
+                    config.SelectedAvatarId = first.Id;
+                    config.Avatar.Character = first.Character;
+                    config.Avatar.Style = first.Style;
+                    config.Avatar.IsCustomAvatar = first.IsCustomAvatar;
+                    config.Avatar.UseBuiltInVoice = first.UseBuiltInVoice;
+                    config.Avatar.EnableSubtitles = first.EnableSubtitles;
+                    config.Avatar.EnableAutoReconnect = first.EnableAutoReconnect;
+                    config.Avatar.AudioGain = first.AudioGain;
+                    config.Avatar.UserLabel = first.UserLabel;
+                    config.Avatar.AssistantLabel = first.AssistantLabel;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to load Avatars collection from configuration");
         }
 
         _cachedConfig = config;

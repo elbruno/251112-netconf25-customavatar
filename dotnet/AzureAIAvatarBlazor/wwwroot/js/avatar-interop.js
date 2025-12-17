@@ -84,32 +84,6 @@ function clearAvatarStartControl(reason = 'manual') {
     window.avatarStartControl = null;
 }
 
-// Initialize the Azure Speech SDK
-window.initializeAvatarSDK = function(dotNetRef) {
-    console.log('[Init] ========================================');
-    console.log('[Init] INITIALIZING AVATAR SDK');
-    console.log('[Init] ========================================');
-    console.log('[Init] dotNetRef:', dotNetRef ? 'provided' : 'NULL');
-    
-    if (dotNetRef) {
-        window.dotNetAvatarRef = dotNetRef;
-        console.log('[Init] dotNetAvatarRef stored successfully');
-    } else {
-        console.error('[Init] ERROR: dotNetRef is null or undefined!');
-    }
-    
-    console.log('[Init] Checking Speech SDK availability...');
-    if (typeof SpeechSDK === 'undefined') {
-        console.error('[Init] ERROR: SpeechSDK is NOT loaded! Check if the script tag is correct.');
-        console.error('[Init] Script should be: https://aka.ms/csspeech/jsbrowserpackageraw');
-    } else {
-        console.log('[Init] ✅ SpeechSDK is available');
-        console.log('[Init] SpeechSDK version:', SpeechSDK.SDK_VERSION || 'unknown');
-    }
-    
-    console.log('[Init] Azure Speech SDK initialization complete');
-};
-
 // Start avatar session from JSON string
 window.startAvatarSessionFromJson = async function(configJson) {
     console.log('[StartSession] ========================================');
@@ -117,12 +91,16 @@ window.startAvatarSessionFromJson = async function(configJson) {
     console.log('[StartSession] ========================================');
     console.log('[StartSession] Received configJson (type):', typeof configJson);
     console.log('[StartSession] Config JSON length:', configJson ? configJson.length : 'NULL');
-    
+
     try {
         console.log('[StartSession] Parsing JSON...');
         const config = JSON.parse(configJson);
         console.log('[StartSession] ✅ JSON parsed successfully');
-        console.log('[StartSession] Config object:', config);
+        console.log('[StartSession] Config object (server authoritative):', config);
+
+        // Do NOT override avatar.character with localStorage here.
+        // Server-side configuration is authoritative; localStorage is only a convenience sync.
+
         console.log('[StartSession] Starting avatar session with parsed config...');
         return await startAvatarSession(config);
     } catch (error) {
@@ -143,15 +121,15 @@ async function startAvatarSession(config) {
         console.log('[AvatarSession] Config received:', config);
         console.log('[AvatarSession] Storing config in window.avatarAppConfig...');
         window.avatarAppConfig = config;
-        
+
         // Get Speech SDK token
         console.log('[AvatarSession] Extracting Azure Speech credentials...');
         const region = config.azureSpeech?.region;
         const subscriptionKey = config.azureSpeech?.apiKey;
-        
+
         console.log('[AvatarSession] Region:', region || 'MISSING');
         console.log('[AvatarSession] Subscription Key:', subscriptionKey ? '***' + subscriptionKey.slice(-4) : 'MISSING');
-        
+
         if (!subscriptionKey || !region) {
             const error = 'Azure Speech credentials are missing! Please configure them in the Configuration page.';
             console.error('[AvatarSession] ❌ ERROR:', error);

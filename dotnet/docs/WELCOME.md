@@ -171,8 +171,8 @@ Let's walk through a typical conversation:
       │  localhost:    │  │  Services       │  │  • OpenAI         │
       │    15216       │  │  Components     │  │  • Speech         │
       │                │  │  Pages          │  │  • Search         │
-      │  • Logs        │  │                 │  └───────────────────┘
-      │  • Metrics     │  └─────────────────┘
+      │  • Logs        │  └─────────────────┘  └───────────────────┘
+      │  • Metrics     │
       │  • Traces      │
       │  • Health      │
       └────────────────┘
