@@ -13,7 +13,7 @@ window.microphoneActive = false;
 window.currentSpeakingText = '';
 window.peerConnectionDataChannel = null;
 
-const AVATAR_START_TIMEOUT_MS = 30000;
+const AVATAR_START_TIMEOUT_MS = 60000;
 window.avatarStartControl = null;
 
 function initializeAvatarStartControl(resolve, reject) {
@@ -122,6 +122,33 @@ async function startAvatarSession(config) {
         console.log('[AvatarSession] Storing config in window.avatarAppConfig...');
         window.avatarAppConfig = config;
 
+        // Early client-side validation for custom voice settings
+        try {
+            const useBuiltIn = !!(config.avatar && config.avatar.useBuiltInVoice);
+            const avatarEndpoint = (config.avatar && config.avatar.customVoiceEndpointId) ? String(config.avatar.customVoiceEndpointId).trim() : '';
+            const globalEndpoint = (config.sttTts && config.sttTts.customVoiceEndpointId) ? String(config.sttTts.customVoiceEndpointId).trim() : '';
+            const effectiveEndpoint = (avatarEndpoint || globalEndpoint).toLowerCase();
+            const avatarVoice = (config.avatar && config.avatar.ttsVoice) ? String(config.avatar.ttsVoice).trim() : '';
+            const globalVoice = (config.sttTts && config.sttTts.ttsVoice) ? String(config.sttTts.ttsVoice).trim() : '';
+            const effectiveVoice = (avatarVoice || globalVoice);
+
+            const isPlaceholderEndpoint = !effectiveEndpoint || effectiveEndpoint === 'your_custom_voice_endpoint_id' || effectiveEndpoint.startsWith('xxxxx') || effectiveEndpoint.startsWith('your-');
+
+            if (!useBuiltIn) {
+                if (!effectiveVoice) {
+                    throw new Error('Custom avatar selected but TTS voice is not configured. Set avatar.TtsVoice or SttTts.TtsVoice in configuration.');
+                }
+                if (isPlaceholderEndpoint) {
+                    throw new Error('Custom avatar selected but CustomVoiceEndpointId is missing or placeholder. Set avatar.CustomVoiceEndpointId or SttTts.CustomVoiceEndpointId in configuration.');
+                }
+            }
+        } catch (earlyErr) {
+            console.error('[AvatarSession] Early validation failed:', earlyErr);
+            const errorDetails = `Failed to start avatar session: ${earlyErr.message}\n\nPlease check your configuration and enable a custom voice only when endpoint and voice are configured.`;
+            alert(errorDetails);
+            throw earlyErr;
+        }
+
         // Get Speech SDK token
         console.log('[AvatarSession] Extracting Azure Speech credentials...');
         const region = config.azureSpeech?.region;
@@ -152,9 +179,8 @@ async function startAvatarSession(config) {
         console.log('[AvatarSession] Token response status:', response.status);
         
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error('[AvatarSession] ❌ Token request failed:', response.status);
-            console.error('[AvatarSession] Error details:', errorText);
+            const errorText = await response.text().catch(() => '(no body)');
+            console.error('[AvatarSession] ❌ Token request failed:', response.status, errorText);
             throw new Error(`Failed to get avatar token: ${response.status} - ${errorText}`);
         }
 
@@ -454,23 +480,26 @@ async function setupWebRTC(iceServerUrl, username, password, config) {
     console.log('[Config] Speech config created successfully');
 
     // Configure TTS voice and custom endpoint (matching Python implementation logic)
-    const customVoiceEndpointId = config.sttTts.customVoiceEndpointId || '';
-    const customVoiceEndpointIdTrim = customVoiceEndpointId.trim().toLowerCase();
+    // Prefer avatar-level values then fallback to global sttTts values
+    const avatarTtsVoice = (config.avatar && config.avatar.ttsVoice) ? config.avatar.ttsVoice : (config.sttTts && config.sttTts.ttsVoice ? config.sttTts.ttsVoice : '');
+    const avatarCustomVoiceEndpointId = (config.avatar && config.avatar.customVoiceEndpointId) ? config.avatar.customVoiceEndpointId : (config.sttTts && config.sttTts.customVoiceEndpointId ? config.sttTts.customVoiceEndpointId : '');
+
+    const customVoiceEndpointIdTrim = (avatarCustomVoiceEndpointId || '').trim().toLowerCase();
     const isPlaceholder = !customVoiceEndpointIdTrim || 
                          customVoiceEndpointIdTrim === 'your_custom_voice_endpoint_id' || 
                          customVoiceEndpointIdTrim.startsWith('xxxxx');
     
     console.log('[Voice] 🔧 Voice configuration analysis:');
-    console.log('[Voice]   - Custom Voice Endpoint ID:', customVoiceEndpointId || '(empty)');
+    console.log('[Voice]   - Custom Voice Endpoint ID (avatar-level):', avatarCustomVoiceEndpointId || '(empty)');
     console.log('[Voice]   - Is Placeholder:', isPlaceholder);
     console.log('[Voice]   - Use Built-In Voice:', config.avatar.useBuiltInVoice);
-    console.log('[Voice]   - TTS Voice:', config.sttTts.ttsVoice);
+    console.log('[Voice]   - TTS Voice (avatar-level or global):', avatarTtsVoice);
     console.log('[Voice]   - Is Custom Avatar:', config.avatar.isCustomAvatar);
     
     // Only set custom endpoint if not using built-in voice and endpoint is valid
     if (!config.avatar.useBuiltInVoice && !isPlaceholder) {
-        speechConfig.endpointId = customVoiceEndpointId;
-        console.log('[Voice] ✅ Using custom voice endpoint:', customVoiceEndpointId);
+        speechConfig.endpointId = avatarCustomVoiceEndpointId;
+        console.log('[Voice] ✅ Using custom voice endpoint:', avatarCustomVoiceEndpointId);
     } else {
         speechConfig.endpointId = '';
         if (config.avatar.useBuiltInVoice) {
@@ -483,10 +512,10 @@ async function setupWebRTC(iceServerUrl, username, password, config) {
     }
     
     // Note: We do NOT set speechSynthesisVoiceName here
-    // Voice selection is handled in the speakText function via SSML
+    // Voice selection is handled in the speakText function via SSML using avatarTtsVoice
     console.log('[Voice] 📋 Final configuration:', {
         useBuiltInVoice: config.avatar.useBuiltInVoice,
-        ttsVoice: config.sttTts.ttsVoice,
+        ttsVoice: avatarTtsVoice,
         endpointIdSet: speechConfig.endpointId ? 'custom-endpoint' : 'standard',
         isCustomAvatar: config.avatar.isCustomAvatar
     });
@@ -500,7 +529,7 @@ async function setupWebRTC(iceServerUrl, username, password, config) {
     console.log('  - Style:', avatarStyle || '(none)');
     console.log('  - Is Custom:', isCustom);
     console.log('  - Use Built-in Voice:', config.avatar.useBuiltInVoice);
-    console.log('  - Custom Voice Endpoint ID:', customVoiceEndpointId || '(none)');
+    console.log('  - Custom Voice Endpoint ID:', avatarCustomVoiceEndpointId || '(none)');
     console.log('  - Speech Config Endpoint ID:', speechConfig.endpointId || '(none)');
     
     console.log('  - Is Custom:', isCustom);
@@ -734,7 +763,8 @@ window.speakText = async function(text) {
 
     try {
         const useBuiltInVoice = window.avatarAppConfig.avatar.useBuiltInVoice;
-        const ttsVoice = window.avatarAppConfig.sttTts.ttsVoice || '';
+        // Prefer avatar-level TTS voice then fallback to global sttTts
+        const ttsVoice = (window.avatarAppConfig.avatar && window.avatarAppConfig.avatar.ttsVoice) ? window.avatarAppConfig.avatar.ttsVoice : (window.avatarAppConfig.sttTts && window.avatarAppConfig.sttTts.ttsVoice ? window.avatarAppConfig.sttTts.ttsVoice : '');
         
         // Store text for subtitle display (matching Python implementation)
         window.currentSpeakingText = text;
@@ -742,7 +772,7 @@ window.speakText = async function(text) {
         
         console.log('[Speak] Starting speech synthesis...');
         console.log('[Speak] Use built-in voice:', useBuiltInVoice);
-        console.log('[Speak] TTS voice:', ttsVoice);
+        console.log('[Speak] TTS voice (avatar-level or global):', ttsVoice);
         console.log('[Speak] Text length:', text.length);
         console.log('[Speak] Text content:', text.substring(0, Math.min(100, text.length)));
         console.log('[Speak] Peer connection state before speak:', window.peerConnection?.connectionState);
@@ -788,11 +818,11 @@ window.speakText = async function(text) {
                     }
                 );
             } else {
-                // Create SSML for the text with voice tag
+                // Create SSML for the text with voice tag using avatar-level voice
                 const ssml = createSSML(text, ttsVoice, useBuiltInVoice);
                 console.log('[Speak] Using speakSsmlAsync with custom voice');
                 console.log('[Speak] SSML:', ssml.substring(0, Math.min(200, ssml.length)));
-                
+
                 window.avatarSynthesizer.speakSsmlAsync(
                     ssml,
                     (result) => {

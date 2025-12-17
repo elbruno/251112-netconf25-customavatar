@@ -248,6 +248,14 @@
             config.Avatar.UserLabel = profile.UserLabel;
             config.Avatar.AssistantLabel = profile.AssistantLabel;
 
+            // persist per-avatar voice settings into stt/tts config so JS can use them
+            config.SttTts.TtsVoice = profile.TtsVoice ?? config.SttTts.TtsVoice;
+            config.SttTts.CustomVoiceEndpointId = profile.CustomVoiceEndpointId ?? config.SttTts.CustomVoiceEndpointId;
+
+            // Also set avatar-level display config so JS prefers avatar-level values
+            config.Avatar.TtsVoice = profile.TtsVoice ?? config.Avatar.TtsVoice;
+            config.Avatar.CustomVoiceEndpointId = profile.CustomVoiceEndpointId ?? config.Avatar.CustomVoiceEndpointId;
+
             if (applySave)
             {
                 await ConfigService.SaveConfigurationAsync(config);
@@ -301,6 +309,17 @@
 
             var validationError = await ConfigService.ValidateConfigurationAsync(config);
             if (validationError != null) throw new Exception($"Configuration error: {validationError}");
+
+            // Validate that custom voice settings are present when required
+            if (!config.Avatar.UseBuiltInVoice)
+            {
+                var customEndpoint = config.SttTts.CustomVoiceEndpointId;
+                var ttsVoice = config.SttTts.TtsVoice;
+                if (string.IsNullOrWhiteSpace(customEndpoint) || string.IsNullOrWhiteSpace(ttsVoice))
+                {
+                    throw new InvalidOperationException("Custom voice is selected for the avatar but CustomVoiceEndpointId or TtsVoice is not configured. Please configure them in the Configuration page.");
+                }
+            }
 
             var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true };
             var configJson = JsonSerializer.Serialize(config, options);

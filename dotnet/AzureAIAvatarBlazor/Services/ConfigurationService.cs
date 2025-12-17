@@ -290,6 +290,14 @@ public class ConfigurationService
                     config.Avatar.AudioGain = match.AudioGain;
                     config.Avatar.UserLabel = match.UserLabel;
                     config.Avatar.AssistantLabel = match.AssistantLabel;
+
+                    // Apply per-avatar TTS settings to avatar display config
+                    config.Avatar.TtsVoice = match.TtsVoice ?? config.Avatar.TtsVoice;
+                    config.Avatar.CustomVoiceEndpointId = match.CustomVoiceEndpointId ?? config.Avatar.CustomVoiceEndpointId;
+
+                    // Also prefer avatar-level TTS settings for global SttTts if they are present
+                    if (!string.IsNullOrWhiteSpace(match.TtsVoice)) config.SttTts.TtsVoice = match.TtsVoice;
+                    if (!string.IsNullOrWhiteSpace(match.CustomVoiceEndpointId)) config.SttTts.CustomVoiceEndpointId = match.CustomVoiceEndpointId;
                 }
             }
             else
@@ -308,6 +316,13 @@ public class ConfigurationService
                     config.Avatar.AudioGain = first.AudioGain;
                     config.Avatar.UserLabel = first.UserLabel;
                     config.Avatar.AssistantLabel = first.AssistantLabel;
+
+                    // Apply per-avatar TTS settings from first avatar
+                    config.Avatar.TtsVoice = first.TtsVoice ?? config.Avatar.TtsVoice;
+                    config.Avatar.CustomVoiceEndpointId = first.CustomVoiceEndpointId ?? config.Avatar.CustomVoiceEndpointId;
+
+                    if (!string.IsNullOrWhiteSpace(first.TtsVoice)) config.SttTts.TtsVoice = first.TtsVoice;
+                    if (!string.IsNullOrWhiteSpace(first.CustomVoiceEndpointId)) config.SttTts.CustomVoiceEndpointId = first.CustomVoiceEndpointId;
                 }
             }
         }
@@ -515,6 +530,19 @@ public class ConfigurationService
         _logger.LogInformation("TTS voice validation: UseBuiltInVoice={UseBuiltIn}, TtsVoice='{Voice}'",
             config.Avatar.UseBuiltInVoice,
             config.SttTts.TtsVoice ?? "(empty)");
+
+        // If avatar requires a custom voice endpoint ensure it is present and not a placeholder
+        if (!config.Avatar.UseBuiltInVoice)
+        {
+            var endpoint = config.SttTts?.CustomVoiceEndpointId ?? config.Avatar?.CustomVoiceEndpointId ?? string.Empty;
+            var endpointTrim = (endpoint ?? string.Empty).Trim().ToLowerInvariant();
+            var isPlaceholderEndpoint = string.IsNullOrWhiteSpace(endpointTrim) || endpointTrim == "your_custom_voice_endpoint_id" || endpointTrim.StartsWith("xxxxx") || endpointTrim.StartsWith("your-");
+            if (isPlaceholderEndpoint)
+            {
+                _logger.LogWarning("Validation failed: CustomVoiceEndpointId is missing or placeholder: '{Endpoint}'", endpoint);
+                return "CustomVoiceEndpointId is required and must be a valid endpoint id when not using built-in avatar voice.";
+            }
+        }
 
         // Validate private endpoint if enabled
         if (config.AzureSpeech.EnablePrivateEndpoint && !string.IsNullOrWhiteSpace(config.AzureSpeech.PrivateEndpoint))

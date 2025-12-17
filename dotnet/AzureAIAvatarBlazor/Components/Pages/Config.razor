@@ -295,6 +295,46 @@
 			</div>
 		</div>
 
+		<!-- Avatars collection: per-avatar voice settings -->
+		<div class="col-12">
+			<div class="card shadow-sm">
+				<div class="card-header">
+					<i class="bi bi-people me-2"></i>Avatars
+				</div>
+				<div class="card-body">
+					@if (config.Avatars == null || config.Avatars.Count == 0)
+					{
+						<div class="text-muted">No avatars configured.</div>
+					}
+					else
+					{
+						@for (int i = 0; i < config.Avatars.Count; i++)
+						{
+							var a = config.Avatars[i];
+							<div class="border rounded p-3 mb-3">
+								<div class="d-flex justify-content-between align-items-center mb-2">
+									<strong>@a.Name (@a.Id)</strong>
+									<span class="text-muted">Character: @a.Character</span>
+								</div>
+								<div class="form-check mb-2">
+									<input type="checkbox" class="form-check-input" @bind="a.UseBuiltInVoice" id="useBuiltIn_@i" />
+									<label class="form-check-label" for="useBuiltIn_@i">Use Built-In Voice</label>
+								</div>
+								<div class="mb-2">
+									<label class="form-label">TTS Voice (override)</label>
+									<input type="text" class="form-control" @bind="a.TtsVoice" placeholder="e.g. en-US-BrunoNeural" />
+								</div>
+								<div class="mb-2">
+									<label class="form-label">Custom Voice Endpoint ID (override)</label>
+									<input type="text" class="form-control" @bind="a.CustomVoiceEndpointId" placeholder="your-custom-endpoint-id" />
+								</div>
+							</div>
+						}
+					}
+				</div>
+			</div>
+		</div>
+
 		<!-- Predefined Questions -->
 		<div class="col-12">
 			<div class="card shadow-sm">
@@ -435,6 +475,16 @@
 			if (config.PredefinedQuestions.Count == 0)
 			{
 				statusMessage = "Please configure at least one predefined question with full question text.";
+				isError = true;
+				StateHasChanged();
+				return;
+			}
+
+			// Validate configuration server-side before saving to catch missing custom voice settings etc.
+			var validationError = await ConfigService.ValidateConfigurationAsync(config);
+			if (!string.IsNullOrEmpty(validationError))
+			{
+				statusMessage = $"Configuration validation failed: {validationError}";
 				isError = true;
 				StateHasChanged();
 				return;

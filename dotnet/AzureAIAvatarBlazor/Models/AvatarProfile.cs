@@ -13,4 +13,8 @@ public class AvatarProfile
     public double AudioGain { get; set; } = 1.8;
     public string UserLabel { get; set; } = "User";
     public string AssistantLabel { get; set; } = "AI Avatar";
+
+    // Per-avatar TTS settings
+    public string TtsVoice { get; set; } = string.Empty;
+    public string? CustomVoiceEndpointId { get; set; }
 }
