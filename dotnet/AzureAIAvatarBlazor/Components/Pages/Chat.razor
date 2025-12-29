@@ -56,12 +56,12 @@
         @* Avatar selection dropdown placed here *@
         <div class="ms-3">
             <label class="form-label mb-0">Select Avatar</label>
-            <select class="form-select form-select-sm" @onchange="SelectedAvatarChanged">
+            <select class="form-select form-select-sm" value="@SelectedAvatarId" @onchange="SelectedAvatarChanged">
                 @if (avatars != null && avatars.Count > 0)
                 {
                     foreach (var a in avatars)
                     {
-                        <option value="@a.Id" selected="@(string.Equals(a.Id, SelectedAvatarId, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@a.Name</option>
+                        <option value="@a.Id">@a.Name</option>
                     }
                 }
             </select>
@@ -231,6 +231,16 @@
         }
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Create and register the .NET reference for JS callbacks
+            dotNetReference = DotNetObjectReference.Create(this);
+            await JSRuntime.InvokeVoidAsync("setDotNetAvatarRef", dotNetReference);
+        }
+    }
+
     private async Task ApplySelectedProfileToConfigAsync(string id, bool applySave = false)
     {
         if (config == null) return;
@@ -238,28 +248,13 @@
         if (profile != null)
         {
             config.SelectedAvatarId = profile.Id;
-            config.Avatar.Character = profile.Character;
-            config.Avatar.Style = profile.Style;
-            config.Avatar.IsCustomAvatar = profile.IsCustomAvatar;
-            config.Avatar.UseBuiltInVoice = profile.UseBuiltInVoice;
-            config.Avatar.EnableSubtitles = profile.EnableSubtitles;
-            config.Avatar.EnableAutoReconnect = profile.EnableAutoReconnect;
-            config.Avatar.AudioGain = profile.AudioGain;
-            config.Avatar.UserLabel = profile.UserLabel;
-            config.Avatar.AssistantLabel = profile.AssistantLabel;
-
-            // persist per-avatar voice settings into stt/tts config so JS can use them
-            config.SttTts.TtsVoice = profile.TtsVoice ?? config.SttTts.TtsVoice;
-            config.SttTts.CustomVoiceEndpointId = profile.CustomVoiceEndpointId ?? config.SttTts.CustomVoiceEndpointId;
-
-            // Also set avatar-level display config so JS prefers avatar-level values
-            config.Avatar.TtsVoice = profile.TtsVoice ?? config.Avatar.TtsVoice;
-            config.Avatar.CustomVoiceEndpointId = profile.CustomVoiceEndpointId ?? config.Avatar.CustomVoiceEndpointId;
+            
+            // Use the centralized ApplyTo method
+            profile.ApplyTo(config.Avatar, config.SttTts);
 
             if (applySave)
             {
                 await ConfigService.SaveConfigurationAsync(config);
-                // Show toast to confirm save
                 await ShowAvatarSavedToastAsync(profile.Name ?? profile.Id);
             }
         }

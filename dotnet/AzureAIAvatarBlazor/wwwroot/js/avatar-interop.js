@@ -16,6 +16,12 @@ window.peerConnectionDataChannel = null;
 const AVATAR_START_TIMEOUT_MS = 60000;
 window.avatarStartControl = null;
 
+// Set the .NET reference for callbacks from JavaScript to Blazor
+window.setDotNetAvatarRef = function(dotNetRef) {
+    console.log('[DotNet] Setting .NET avatar reference');
+    window.dotNetAvatarRef = dotNetRef;
+};
+
 function initializeAvatarStartControl(resolve, reject) {
     window.avatarStartControl = {
         resolve,
@@ -132,7 +138,7 @@ async function startAvatarSession(config) {
             const globalVoice = (config.sttTts && config.sttTts.ttsVoice) ? String(config.sttTts.ttsVoice).trim() : '';
             const effectiveVoice = (avatarVoice || globalVoice);
 
-            const isPlaceholderEndpoint = !effectiveEndpoint || effectiveEndpoint === 'your_custom_voice_endpoint_id' || effectiveEndpoint.startsWith('xxxxx') || effectiveEndpoint.startsWith('your-');
+            const isPlaceholderEndpoint = !effectiveEndpoint || effectiveEndpoint === 'your_custom_voice_endpoint_id' || effectiveEndpoint.startsWith('xxxxx') || effectiveEndpoint.startsWith('your-' );
 
             if (!useBuiltIn) {
                 if (!effectiveVoice) {
@@ -548,6 +554,11 @@ async function setupWebRTC(iceServerUrl, username, password, config) {
     // Set customized flag for custom avatars
     avatarConfig.customized = isCustom;
     console.log('[Avatar] Customized flag set to:', avatarConfig.customized);
+    
+    // CRITICAL: Set useBuiltInVoice flag to use the avatar's built-in voice
+    // This tells the SDK to use the avatar's own voice instead of an external TTS voice
+    avatarConfig.useBuiltInVoice = config.avatar.useBuiltInVoice === true;
+    console.log('[Avatar] UseBuiltInVoice flag set to:', avatarConfig.useBuiltInVoice);
 
     const videoFormat = new SpeechSDK.AvatarVideoFormat();
     videoFormat.bitrate = 2000000;
@@ -764,7 +775,7 @@ window.speakText = async function(text) {
     try {
         const useBuiltInVoice = window.avatarAppConfig.avatar.useBuiltInVoice;
         // Prefer avatar-level TTS voice then fallback to global sttTts
-        const ttsVoice = (window.avatarAppConfig.avatar && window.avatarAppConfig.avatar.ttsVoice) ? window.avatarAppConfig.avatar.ttsVoice : (window.avatarAppConfig.sttTts && window.avatarAppConfig.sttTts.ttsVoice ? window.avatarAppConfig.sttTts.ttsVoice : '');
+        const ttsVoice = (window.avatarAppConfig.avatar && window.avatarAppConfig.avatar.ttsVoice) ? window.avatarAppConfig.avatar.ttsVoice : (window.avatarAppConfig.sttTts && window.avatarAppConfig.sttTts.ttsVoice ? window.avatarAppConfig.sttTts.ttsVoice : '' );
         
         // Store text for subtitle display (matching Python implementation)
         window.currentSpeakingText = text;
@@ -870,6 +881,21 @@ window.speakText = async function(text) {
 window.stopSpeaking = function() {
     if (window.avatarSynthesizer) {
         window.avatarSynthesizer.stopSpeakingAsync();
+    }
+};
+
+// Toggle microphone on/off
+window.toggleMicrophone = async function(active) {
+    console.log('[Microphone] Toggle microphone called, active:', active);
+    try {
+        if (active) {
+            await window.startMicrophone();
+        } else {
+            await window.stopMicrophone();
+        }
+    } catch (error) {
+        console.error('[Microphone] Error toggling microphone:', error);
+        throw error;
     }
 };
 

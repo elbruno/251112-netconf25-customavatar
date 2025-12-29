@@ -132,3 +132,5 @@ Desktop.ini
 .env
 dotnet/AzureAIAvatarBlazor/.vs/AzureAIAvatarBlazor.slnx/v18/.suo
 dotnet/AzureAIAvatarBlazor/appsettings.Development.json
+
+dotnet/AzureAIAvatarBlazor/appsettings.json

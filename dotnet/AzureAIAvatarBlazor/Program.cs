@@ -49,4 +49,11 @@ app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
+// Endpoint para probar conexión a Azure OpenAI
+app.MapGet("/api/test-openai", async (AzureAIAgentService agentService) =>
+{
+    var (success, message) = await agentService.TestConnectionAsync();
+    return Results.Ok(new { success, message });
+});
+
 app.Run();
