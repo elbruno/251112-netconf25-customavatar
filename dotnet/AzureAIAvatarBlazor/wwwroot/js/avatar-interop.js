@@ -775,7 +775,7 @@ window.speakText = async function(text) {
     try {
         const useBuiltInVoice = window.avatarAppConfig.avatar.useBuiltInVoice;
         // Prefer avatar-level TTS voice then fallback to global sttTts
-        const ttsVoice = (window.avatarAppConfig.avatar && window.avatarAppConfig.avatar.ttsVoice) ? window.avatarAppConfig.avatar.ttsVoice : (window.avatarAppConfig.sttTts && window.avatarAppConfig.sttTts.ttsVoice ? window.avatarAppConfig.sttTts.ttsVoice : '' );
+        const ttsVoice = (window.avatarAppConfig.avatar && window.avatarAppConfig.avatar.ttsVoice) ? window.avatarAppConfig.avatar.ttsVoice : (window.avatarAppConfig.sttTts && window.avatarAppConfig.sttTts.ttsVoice ? window.avatarAppConfig.sttTts.ttsVoice : '');
         
         // Store text for subtitle display (matching Python implementation)
         window.currentSpeakingText = text;
