@@ -138,7 +138,7 @@ async function startAvatarSession(config) {
             const globalVoice = (config.sttTts && config.sttTts.ttsVoice) ? String(config.sttTts.ttsVoice).trim() : '';
             const effectiveVoice = (avatarVoice || globalVoice);
 
-            const isPlaceholderEndpoint = !effectiveEndpoint || effectiveEndpoint === 'your_custom_voice_endpoint_id' || effectiveEndpoint.startsWith('xxxxx') || effectiveEndpoint.startsWith('your-' );
+            const isPlaceholderEndpoint = !effectiveEndpoint || effectiveEndpoint === 'your_custom_voice_endpoint_id' || effectiveEndpoint.startsWith('xxxxx') || effectiveEndpoint.startsWith('your-');
 
             if (!useBuiltIn) {
                 if (!effectiveVoice) {
