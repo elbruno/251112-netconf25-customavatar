@@ -76,10 +76,10 @@
 ┌─────────────────────────────────────────────────────────────────┐
 │                    .NET Aspire AppHost                           │
 │  ┌────────────────────────────────────────────────────────────┐ │
-│  │  Resource Definitions                                       │ │
-│  │  • Azure OpenAI (with deployment)                          │ │
-│  │  • Azure Speech Service                                    │ │
-│  │  • Azure Application Insights                              │ │
+│  │  Resource Definitions (Environment-Specific)                │ │
+│  │  • Application Insights (Dev: conn string / Prod: Azure)   │ │
+│  │  • Microsoft Foundry Project (optional, connection string) │ │
+│  │  • Azure Tenant ID (optional, connection string)           │ │
 │  │  • Azure Cognitive Search (optional)                       │ │
 │  └─────────────┬──────────────────────────────────────────────┘ │
 │                │ Connection Strings + Env Vars                  │
@@ -89,26 +89,25 @@
         ▼                 ▼
 ┌─────────────────┐  ┌─────────────────────────────────┐
 │  Aspire         │  │   Azure Resources (Publish)     │
-│  Dashboard      │  │   • OpenAI + Deployment         │
-│  (Dev Only)     │  │   • Speech Service              │
-│  localhost:15216│  │   • Application Insights        │
-└─────────────────┘  │   • Cognitive Search            │
-        │            └─────────────────────────────────┘
+│  Dashboard      │  │   • Application Insights        │
+│  (Dev Only)     │  │   • Microsoft Foundry Project   │
+│  localhost:15216│  │   • Cognitive Search            │
+└─────────────────┘  └─────────────────────────────────┘
+        │
         │ Telemetry (OTLP + Azure Monitor)
         ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │               AzureAIAvatarBlazor Application                    │
 │  ┌────────────────────────────────────────────────────────────┐ │
-│  │  Aspire-Managed Clients                                    │ │
-│  │  • AzureOpenAIClient (injected via DI)                    │ │
-│  │  • Speech credentials (from ConnectionStrings)            │ │
+│  │  Aspire-Managed Clients & Infrastructure                   │ │
 │  │  • Application Insights (automatic via ServiceDefaults)   │ │
+│  │  • MAFFoundry Library (optional, IChatClient)             │ │
+│  │  • Speech credentials (from env vars/config)              │ │
 │  └────────────────────────────────────────────────────────────┘ │
 │  ┌────────────────────────────────────────────────────────────┐ │
 │  │  Application Services                                      │ │
-│  │  • AzureOpenAIService (uses injected client)              │ │
-│  │  • AzureSpeechService (reads connection strings)          │ │
-│  │  • ConfigurationService (env vars only)                   │ │
+│  │  • AzureAIAgentService (uses MAF or direct OpenAI)        │ │
+│  │  • ConfigurationService (env vars + user secrets)         │ │
 │  │  • TelemetryService (custom metrics & tracing)            │ │
 │  └────────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────┘
@@ -264,6 +263,45 @@ public class ChatMessage
     public DateTime Timestamp { get; set; }
 }
 ```
+
+### 4. Infrastructure Layer
+
+#### MAFFoundry Library (AzureAIAvatarBlazor.MAFFoundry)
+**Purpose**: Manages Microsoft Foundry project integration
+
+**Key Classes**:
+- `MAFFoundryAgentProvider`: Core provider for Foundry agents and clients
+- `MAFFoundryAgentExtensions`: DI registration extensions
+
+**Key Methods**:
+```csharp
+// MAFFoundryAgentProvider
+public IChatClient GetChatClient(string? deploymentName = null)
+public IEmbeddingGenerator<string, Embedding<float>> GetEmbeddingGenerator(string? deploymentName = null)
+public AIAgent GetAIAgent(string agentName, List<AITool>? tools = null)
+public AIAgent GetOrCreateAIAgent(string agentName, string model, string instructions, List<AITool>? tools = null)
+
+// MAFFoundryAgentExtensions
+public static WebApplicationBuilder AddMAFFoundryAgents(this WebApplicationBuilder builder)
+```
+
+**Configuration**:
+- Connection string: `microsoftfoundryproject`
+- Tenant ID: `tenantId` (optional)
+- Automatic fallback if not configured
+
+**What it provides**:
+- `IChatClient`: Registered in DI for chat operations
+- `IEmbeddingGenerator<string, Embedding<float>>`: Registered in DI for embeddings
+- `MAFFoundryAgentProvider`: Registered as singleton for advanced scenarios
+
+**Dependencies**:
+- `Azure.AI.Projects` (AIProjectClient)
+- `Azure.Identity` (DefaultAzureCredential)
+- `Azure.AI.OpenAI` (AzureOpenAIClient)
+- Microsoft.Agents.AI packages
+
+**See**: [MAFFOUNDRY_LIBRARY.md](./MAFFOUNDRY_LIBRARY.md) for detailed documentation
 
 ## Data Flow Diagrams
 
