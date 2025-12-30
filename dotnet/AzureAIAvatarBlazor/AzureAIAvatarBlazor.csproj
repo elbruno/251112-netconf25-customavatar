@@ -11,14 +11,14 @@
 		<!-- NEW: Aspire client integration packages -->
 		<PackageReference Include="Aspire.Azure.AI.OpenAI" Version="9.5.2-preview.1.25522.3" />
 
-		<!-- Agent Framework packages -->
+		<!-- Agent Framework packages - Updated to latest -->
 		<PackageReference Include="Azure.AI.Agents.Persistent" Version="1.2.0-beta.7" />
 
-		<PackageReference Include="Microsoft.Agents.AI" Version="1.0.0-preview.251204.1" />
-		<PackageReference Include="Microsoft.Agents.AI.AzureAI" Version="1.0.0-preview.251204.1" />
-		<PackageReference Include="Microsoft.Agents.AI.Abstractions" Version="1.0.0-preview.251204.1" />
-		<PackageReference Include="Microsoft.Agents.AI.Hosting" Version="1.0.0-preview.251204.1" />
-		<PackageReference Include="Microsoft.Agents.AI.Hosting.OpenAI" Version="1.0.0-alpha.251204.1" />
+		<PackageReference Include="Microsoft.Agents.AI" Version="1.0.0-preview.251219.1" />
+		<PackageReference Include="Microsoft.Agents.AI.AzureAI" Version="1.0.0-preview.251219.1" />
+		<PackageReference Include="Microsoft.Agents.AI.Abstractions" Version="1.0.0-preview.251219.1" />
+		<PackageReference Include="Microsoft.Agents.AI.Hosting" Version="1.0.0-preview.251219.1" />
+		<PackageReference Include="Microsoft.Agents.AI.Hosting.OpenAI" Version="1.0.0-alpha.251219.1" />
 		<PackageReference Include="Azure.Identity" Version="1.18.0-beta.2" />
 
 		<!-- KEEP: Speech SDK (no Aspire component yet, use manual registration) -->
@@ -30,6 +30,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\AzureAIAvatarBlazor.ServiceDefaults\AzureAIAvatarBlazor.ServiceDefaults.csproj" />
+		<ProjectReference Include="..\AzureAIAvatarBlazor.MAFFoundry\AzureAIAvatarBlazor.MAFFoundry.csproj" />
 	</ItemGroup>
 
 </Project>

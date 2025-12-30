@@ -1,4 +1,6 @@
-﻿using Azure.AI.Agents.Persistent;
+﻿#pragma warning disable CA2252, OPENAI001
+
+using Azure.AI.Agents.Persistent;
 using Azure.AI.OpenAI;
 using Azure.AI.Projects;
 using Azure.Identity;

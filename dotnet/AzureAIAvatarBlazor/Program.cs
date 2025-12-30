@@ -1,5 +1,6 @@
 using AzureAIAvatarBlazor.Components;
 using AzureAIAvatarBlazor.Services;
+using AzureAIAvatarBlazor.MAFFoundry;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,9 +10,6 @@ builder.AddServiceDefaults();
 // Aspire-Managed Clients
 // ==============================
 
-// Azure OpenAI Client (automatically configured from AppHost)
-builder.AddAzureOpenAIClient("microsoftfoundrycnnstring");
-
 // Note: Speech Service doesn't have Aspire component yet
 // Configuration is injected via environment variables from AppHost
 
@@ -20,6 +18,14 @@ if (builder.Environment.IsDevelopment())
 {
     builder.Configuration.AddUserSecrets<Program>();
 }
+
+// ==============================
+// MAF Foundry Integration
+// ==============================
+
+// Register MAF Foundry agents and chat client
+// This will configure IChatClient and IEmbeddingGenerator if Microsoft Foundry endpoint is available
+builder.AddMAFFoundryAgents();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()

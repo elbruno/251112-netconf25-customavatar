@@ -42,33 +42,33 @@ With Aspire, all credentials are managed by the AppHost. Choose your configurati
 # Navigate to AppHost project (if not already there)
 cd dotnet/AzureAIAvatarBlazor.AppHost
 
-# Configure Azure OpenAI connection string
-dotnet user-secrets set "ConnectionStrings:openai" "Endpoint=https://YOUR_RESOURCE.openai.azure.com/;Key=YOUR_OPENAI_API_KEY;"
-
-# Configure Azure Speech Service connection string
-dotnet user-secrets set "ConnectionStrings:speech" "Endpoint=https://westus2.api.cognitive.microsoft.com/;Key=YOUR_SPEECH_API_KEY;"
-
 # (Optional) Configure Application Insights connection string for telemetry
 dotnet user-secrets set "ConnectionStrings:appinsights" "InstrumentationKey=YOUR_INSTRUMENTATION_KEY;IngestionEndpoint=https://YOUR_REGION.in.applicationinsights.azure.com/;LiveEndpoint=https://YOUR_REGION.livediagnostics.monitor.azure.com/"
+
+# (Optional) Configure Microsoft Foundry project endpoint
+dotnet user-secrets set "ConnectionStrings:microsoftfoundryproject" "https://YOUR_FOUNDRY_PROJECT.services.ai.azure.com/api/projects/YOUR_PROJECT_ID"
+
+# (Optional) Configure Azure Tenant ID for Microsoft Foundry
+dotnet user-secrets set "ConnectionStrings:tenantId" "YOUR_TENANT_ID"
 
 # Set application defaults
 dotnet user-secrets set "Avatar:Character" "lisa"
 dotnet user-secrets set "Avatar:Style" "casual-sitting"
-dotnet user-secrets set "OpenAI:DeploymentName" "gpt-4o-mini"
 dotnet user-secrets set "SystemPrompt" "You are a helpful AI assistant."
 ```
 
 Replace:
-- `YOUR_RESOURCE`: Your Azure OpenAI resource name
-- `YOUR_OPENAI_API_KEY`: Your Azure OpenAI key
-- `YOUR_SPEECH_API_KEY`: Your Azure Speech Service key
 - `YOUR_INSTRUMENTATION_KEY`: Your Application Insights instrumentation key (optional)
 - `YOUR_REGION`: Your Application Insights region (e.g., westus2)
-- `gpt-4o-mini`: Your deployed model name
+- `YOUR_FOUNDRY_PROJECT`: Your Microsoft Foundry project name (optional)
+- `YOUR_PROJECT_ID`: Your Microsoft Foundry project ID (optional)
+- `YOUR_TENANT_ID`: Your Azure tenant ID (optional)
 
-**Important**: Notice the connection string format with `Endpoint=...;Key=...;` - this is the Aspire connection string format.
+**Important**: 
+- **Application Insights** (optional): If not provided in development, telemetry will only be visible in the Aspire Dashboard. In production, Aspire automatically provisions Application Insights.
+- **Microsoft Foundry** (optional): If provided, the application will use Microsoft Foundry agents and IChatClient. If not provided, the application will fall back to direct Azure OpenAI configuration.
+- All connection strings use the Aspire connection string format.
 
-> **💡 Application Insights Note**: The Application Insights connection string is optional for local development. If not provided, telemetry will only be visible in the Aspire Dashboard. In production, Aspire will automatically provision Application Insights.
 
 #### Method B: Environment Variables (CI/CD & Production)
 
