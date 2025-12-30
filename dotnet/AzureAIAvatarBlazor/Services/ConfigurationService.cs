@@ -36,21 +36,16 @@ public class ConfigurationService
             return result;
         }
 
-        // Auto-detect: custom avatars typically have "-Avatar-" in their name or aren't in the standard list
+        // Auto-detect using the centralized method
         var character = config["Avatar__Character"]
             ?? config["Avatar:Character"]
             ?? config["AVATAR_CHARACTER"]
             ?? "lisa";
 
-        var standardAvatars = new[] { "lisa", "harry", "jeff", "lori", "max", "meg" };
-
         _logger.LogInformation("Checking character '{Character}' against standard avatars", character);
-        _logger.LogInformation("Character lowercase: '{Lower}'", character.ToLowerInvariant());
 
-        var isStandard = standardAvatars.Contains(character.ToLowerInvariant());
-        var isCustom = !isStandard;
-
-        _logger.LogInformation("Is standard avatar: {IsStandard}, Is custom: {IsCustom}", isStandard, isCustom);
+        var isCustom = AvatarDisplayConfig.IsCustomAvatarCharacter(character);
+        _logger.LogInformation("Auto-detected IsCustomAvatar: {IsCustom}", isCustom);
 
         return isCustom;
     }
@@ -128,7 +123,7 @@ public class ConfigurationService
                         ?? _configuration["AzureOpenAI__SystemPrompt"]
                         ?? _configuration["AzureOpenAI:AgentLLMConfig:SystemPrompt"]
                         ?? _configuration["SYSTEM_PROMPT"]
-                        ?? "You are Bruno Capuano (El Bruno). Respond in the user's language with brief answers (1-2 sentences) and a friendly, approachable tone.",
+                        ?? "You are a helpful AI assistant. Respond in the user's language with brief answers (1-2 sentences) and a friendly, approachable tone.",
                 },
                 AgentAIFoundry = new AgentAIFoundryConfig
                 {
@@ -349,7 +344,6 @@ public class ConfigurationService
         {
             _logger.LogInformation("  - PredefinedQuestions: {Count}", config.PredefinedQuestions.Count);
         }
-
         // In a real application, this would save to a database or configuration store
         // For now, we cache it in memory - it will persist for the app session
         _cachedConfig = config;

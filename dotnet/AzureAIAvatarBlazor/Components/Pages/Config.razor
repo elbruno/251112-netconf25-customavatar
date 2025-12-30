@@ -237,6 +237,7 @@
 					<div class="mb-3">
 						<label class="form-label">Character</label>
 						<select class="form-select" @bind="config.Avatar.Character">
+							<option value="PablitoPiova-Sep-2025">Pablito Piova - Sep2025</option>
 							<option value="Bruno-Avatar-02">Bruno Avatar 02</option>
 							<option value="lisa">Lisa</option>
 							<option value="harry">Harry</option>
@@ -311,22 +312,41 @@
 						@for (int i = 0; i < config.Avatars.Count; i++)
 						{
 							var a = config.Avatars[i];
-							<div class="border rounded p-3 mb-3">
+							var hasWarning = a.HasMissingCustomVoiceConfig;
+							<div class="border rounded p-3 mb-3 @(hasWarning ? "border-warning" : "")">
 								<div class="d-flex justify-content-between align-items-center mb-2">
-									<strong>@a.Name (@a.Id)</strong>
+									<div>
+										<strong>@a.Name (@a.Id)</strong>
+										@if (a.IsCustomAvatar)
+										{
+											<span class="badge bg-info ms-2">Custom</span>
+										}
+										@if (hasWarning)
+										{
+											<span class="badge bg-warning text-dark ms-2" title="Custom voice selected but endpoint or voice not configured">
+												<i class="bi bi-exclamation-triangle"></i> Config Required
+											</span>
+										}
+									</div>
 									<span class="text-muted">Character: @a.Character</span>
 								</div>
+								@if (!string.IsNullOrWhiteSpace(a.Description))
+								{
+									<p class="text-muted small mb-2">@a.Description</p>
+								}
 								<div class="form-check mb-2">
 									<input type="checkbox" class="form-check-input" @bind="a.UseBuiltInVoice" id="useBuiltIn_@i" />
 									<label class="form-check-label" for="useBuiltIn_@i">Use Built-In Voice</label>
 								</div>
 								<div class="mb-2">
 									<label class="form-label">TTS Voice (override)</label>
-									<input type="text" class="form-control" @bind="a.TtsVoice" placeholder="e.g. en-US-BrunoNeural" />
+									<input type="text" class="form-control @(hasWarning && string.IsNullOrWhiteSpace(a.TtsVoice) ? "border-warning" : "")" 
+										   @bind="a.TtsVoice" placeholder="e.g. en-US-BrunoNeural" />
 								</div>
 								<div class="mb-2">
 									<label class="form-label">Custom Voice Endpoint ID (override)</label>
-									<input type="text" class="form-control" @bind="a.CustomVoiceEndpointId" placeholder="your-custom-endpoint-id" />
+									<input type="text" class="form-control @(hasWarning && string.IsNullOrWhiteSpace(a.CustomVoiceEndpointId) ? "border-warning" : "")" 
+										   @bind="a.CustomVoiceEndpointId" placeholder="your-custom-endpoint-id" />
 								</div>
 							</div>
 						}

@@ -1,0 +1,32 @@
+# User-specific settings with secrets
+appsettings.Development.json
+appsettings.*.local.json
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+build/
+bld/
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio cache/options
+.vs/
+*.cache
+
+# Rider
+.idea/
+
+# dotnet tool
+.config/
+
+# Logs
+*.log

@@ -16,6 +16,12 @@ window.peerConnectionDataChannel = null;
 const AVATAR_START_TIMEOUT_MS = 60000;
 window.avatarStartControl = null;
 
+// Set the .NET reference for callbacks from JavaScript to Blazor
+window.setDotNetAvatarRef = function(dotNetRef) {
+    console.log('[DotNet] Setting .NET avatar reference');
+    window.dotNetAvatarRef = dotNetRef;
+};
+
 function initializeAvatarStartControl(resolve, reject) {
     window.avatarStartControl = {
         resolve,
@@ -548,6 +554,11 @@ async function setupWebRTC(iceServerUrl, username, password, config) {
     // Set customized flag for custom avatars
     avatarConfig.customized = isCustom;
     console.log('[Avatar] Customized flag set to:', avatarConfig.customized);
+    
+    // CRITICAL: Set useBuiltInVoice flag to use the avatar's built-in voice
+    // This tells the SDK to use the avatar's own voice instead of an external TTS voice
+    avatarConfig.useBuiltInVoice = config.avatar.useBuiltInVoice === true;
+    console.log('[Avatar] UseBuiltInVoice flag set to:', avatarConfig.useBuiltInVoice);
 
     const videoFormat = new SpeechSDK.AvatarVideoFormat();
     videoFormat.bitrate = 2000000;
@@ -870,6 +881,21 @@ window.speakText = async function(text) {
 window.stopSpeaking = function() {
     if (window.avatarSynthesizer) {
         window.avatarSynthesizer.stopSpeakingAsync();
+    }
+};
+
+// Toggle microphone on/off
+window.toggleMicrophone = async function(active) {
+    console.log('[Microphone] Toggle microphone called, active:', active);
+    try {
+        if (active) {
+            await window.startMicrophone();
+        } else {
+            await window.stopMicrophone();
+        }
+    } catch (error) {
+        console.error('[Microphone] Error toggling microphone:', error);
+        throw error;
     }
 };
 

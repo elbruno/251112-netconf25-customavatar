@@ -1,4 +1,4 @@
-using Azure.AI.Agents.Persistent;
+﻿using Azure.AI.Agents.Persistent;
 using Azure.AI.OpenAI;
 using Azure.AI.Projects;
 using Azure.Identity;
@@ -115,7 +115,7 @@ public class AzureAIAgentService
         var openAIClient = new AzureOpenAIClient(new Uri(config.AzureOpenAI.AgentLLM.Endpoint), apiKey);
         var chatClient = openAIClient.GetChatClient(deploymentName);
 
-        var instructions = config.AzureOpenAI.AgentLLM.SystemPrompt ?? "You are Bruno Capuano. Respond in the user's language with a short answer and a friendly, approachable tone. If you don't know an answer, just say 'I don't know'.";
+        var instructions = config.AzureOpenAI.AgentLLM.SystemPrompt ?? "You are Pablo Piovano. Respond in the user's language with a short answer and a friendly, approachable tone. If you don't know an answer, just say 'I don't know'.";
         var agent = chatClient.AsIChatClient().CreateAIAgent(instructions: instructions);
 
         _logger.LogInformation("LLM-based Agent created successfully");
@@ -208,5 +208,68 @@ public class AzureAIAgentService
         _agentAIFoundry = null;
         _agentMicrosoftFoundry = null;
         return Task.CompletedTask;
+    }
+
+    public async Task<(bool Success, string Message)> TestConnectionAsync()
+    {
+        try
+        {
+            _logger.LogInformation("Testing Azure OpenAI connection...");
+            
+            var config = _configService.GetConfiguration();
+            var mode = config.AzureOpenAI.Mode ?? "Agent-LLM";
+            
+            _logger.LogInformation("Testing connection for mode: {Mode}", mode);
+
+            if (mode == "Agent-LLM")
+            {
+                if (string.IsNullOrEmpty(config.AzureOpenAI.AgentLLM.Endpoint))
+                    return (false, "❌ Error: Azure OpenAI Endpoint is not configured");
+                
+                if (string.IsNullOrEmpty(config.AzureOpenAI.AgentLLM.ApiKey))
+                    return (false, "❌ Error: Azure OpenAI API Key is not configured");
+
+                // Try to create the agent and make a simple call
+                var agent = await GetOrCreateAgentAsync();
+                var response = await agent.RunAsync("Reply only: OK", cancellationToken: default);
+                
+                if (!string.IsNullOrEmpty(response.Text))
+                {
+                    return (true, $"✅ Connection successful!\n" +
+                        $"Endpoint: {config.AzureOpenAI.AgentLLM.Endpoint}\n" +
+                        $"Deployment: {config.AzureOpenAI.AgentLLM.DeploymentName}\n" +
+                        $"Test response: {response.Text}");
+                }
+                
+                return (false, "❌ Error: No response received from the model");
+            }
+            else if (mode == "Agent-MicrosoftFoundry")
+            {
+                if (string.IsNullOrEmpty(config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryEndpoint))
+                    return (false, "❌ Error: Microsoft Foundry Endpoint is not configured");
+                
+                var agent = await GetOrCreateAgentAsync();
+                var response = await agent.RunAsync("Reply only: OK", cancellationToken: default);
+
+                if (!string.IsNullOrEmpty(response.Text))
+                {
+                    return (true, $"✅ Microsoft Foundry connection successful!\n" +
+                        $"Endpoint: {config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryEndpoint}\n" +
+                        $"Agent: {config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryAgentName}\n" +
+                        $"Test response: {response.Text}");
+                }
+
+                return (false, "❌ Error: No response received from the Microsoft Foundry agent");
+            }
+            else
+            {
+                return (false, $"❌ Mode '{mode}' is not supported for connection testing");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error testing Azure OpenAI connection");
+            return (false, $"❌ Connection error: {ex.Message}");
+        }
     }
 }
