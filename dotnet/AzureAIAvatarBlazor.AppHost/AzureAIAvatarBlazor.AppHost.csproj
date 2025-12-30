@@ -17,6 +17,9 @@
 		<!-- NEW: Azure Cognitive Services (includes OpenAI + Speech) -->
 		<PackageReference Include="Aspire.Hosting.Azure.CognitiveServices" Version="13.0.0" />
 
+		<!-- Application Insights for telemetry and monitoring -->
+		<PackageReference Include="Aspire.Hosting.Azure.ApplicationInsights" Version="9.5.2" />
+
 		<!-- NEW: For Azure Search support -->
 	</ItemGroup>
 

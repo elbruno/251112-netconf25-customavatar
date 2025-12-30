@@ -6,6 +6,7 @@ using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using System.ClientModel;
 using System.Runtime.CompilerServices;
+using System.Diagnostics;
 
 namespace AzureAIAvatarBlazor.Services;
 
@@ -13,6 +14,7 @@ public class AzureAIAgentService
 {
     private readonly ILogger<AzureAIAgentService> _logger;
     private readonly ConfigurationService _configService;
+    private readonly TelemetryService _telemetryService;
     private AIAgent? _agentLLM;
     private AIAgent? _agentAIFoundry;
     private AIAgent? _agentMicrosoftFoundry;
@@ -21,10 +23,12 @@ public class AzureAIAgentService
     public AzureAIAgentService(
         IConfiguration configuration,
         ILogger<AzureAIAgentService> logger,
-        ConfigurationService configService)
+        ConfigurationService configService,
+        TelemetryService telemetryService)
     {
         _logger = logger;
         _configService = configService;
+        _telemetryService = telemetryService;
     }
 
     private async Task<AIAgent> GetOrCreateAgentAsync()
@@ -165,12 +169,17 @@ public class AzureAIAgentService
         List<Models.ChatMessage> messages,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
+        var stopwatch = Stopwatch.StartNew();
+        using var activity = _telemetryService.StartActivity("GetChatCompletion", ActivityKind.Client);
+        
         _logger.LogInformation("Starting chat completion stream with Agent Framework");
         _logger.LogInformation("Message count: {Count}, Last message role: {Role}",
             messages.Count,
             messages.LastOrDefault()?.Role ?? "(none)");
 
         var agent = await GetOrCreateAgentAsync();
+        var config = _configService.GetConfiguration();
+        var mode = config.AzureOpenAI.Mode ?? "Agent-LLM";
 
         var lastUserMessage = messages.LastOrDefault(m => m.Role == "user");
         if (lastUserMessage == null)
@@ -179,10 +188,16 @@ public class AzureAIAgentService
             yield break;
         }
 
+        // Track chat message
+        _telemetryService.TrackChatMessage("user", lastUserMessage.Content.Length);
+
         _logger.LogInformation("Sending message to agent: {Preview}",
             lastUserMessage.Content.Length > 100
                 ? lastUserMessage.Content.Substring(0, 100) + "..."
                 : lastUserMessage.Content);
+
+        activity?.SetTag("mode", mode);
+        activity?.SetTag("message_length", lastUserMessage.Content.Length);
 
         var totalChunks = 0;
         var totalCharacters = 0;
@@ -198,6 +213,16 @@ public class AzureAIAgentService
             yield return text;
         }
 
+        stopwatch.Stop();
+        
+        // Track AI response time
+        _telemetryService.TrackAIResponseTime(mode, stopwatch.ElapsedMilliseconds, totalCharacters);
+        _telemetryService.TrackChatMessage("assistant", totalCharacters);
+
+        activity?.SetTag("chunks", totalChunks);
+        activity?.SetTag("total_characters", totalCharacters);
+        activity?.SetTag("duration_ms", stopwatch.ElapsedMilliseconds);
+
         _logger.LogInformation("Agent response completed: {Chunks} chunks, {Characters} total characters",
             totalChunks, totalCharacters);
     }
@@ -212,12 +237,16 @@ public class AzureAIAgentService
 
     public async Task<(bool Success, string Message)> TestConnectionAsync()
     {
+        using var activity = _telemetryService.StartActivity("TestConnection", ActivityKind.Client);
+        
         try
         {
             _logger.LogInformation("Testing Azure OpenAI connection...");
             
             var config = _configService.GetConfiguration();
             var mode = config.AzureOpenAI.Mode ?? "Agent-LLM";
+            
+            activity?.SetTag("mode", mode);
             
             _logger.LogInformation("Testing connection for mode: {Mode}", mode);
 
@@ -235,6 +264,7 @@ public class AzureAIAgentService
                 
                 if (!string.IsNullOrEmpty(response.Text))
                 {
+                    activity?.SetTag("success", true);
                     return (true, $"✅ Connection successful!\n" +
                         $"Endpoint: {config.AzureOpenAI.AgentLLM.Endpoint}\n" +
                         $"Deployment: {config.AzureOpenAI.AgentLLM.DeploymentName}\n" +
@@ -253,6 +283,7 @@ public class AzureAIAgentService
 
                 if (!string.IsNullOrEmpty(response.Text))
                 {
+                    activity?.SetTag("success", true);
                     return (true, $"✅ Microsoft Foundry connection successful!\n" +
                         $"Endpoint: {config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryEndpoint}\n" +
                         $"Agent: {config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryAgentName}\n" +
@@ -269,6 +300,9 @@ public class AzureAIAgentService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error testing Azure OpenAI connection");
+            _telemetryService.TrackError("TestConnection", ex);
+            activity?.SetTag("success", false);
+            activity?.SetTag("error", ex.Message);
             return (false, $"❌ Connection error: {ex.Message}");
         }
     }

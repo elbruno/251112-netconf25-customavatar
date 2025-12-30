@@ -1,6 +1,15 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
 // ==============================
+// Azure Application Insights
+// ==============================
+
+// Add Application Insights for monitoring and telemetry
+// In development: Uses local connection string or creates new resource
+// In production: Provisions Application Insights in Azure
+var insights = builder.AddAzureApplicationInsights("appinsights");
+
+// ==============================
 // Azure OpenAI
 // ==============================
 
@@ -12,7 +21,8 @@ IResourceBuilder<IResourceWithConnectionString>? microsoftfoundrycnnstring = bui
 // ==============================
 
 var avatarApp = builder.AddProject<Projects.AzureAIAvatarBlazor>("azureaiavatarblazor")
-    .WithReference(microsoftfoundrycnnstring);
+    .WithReference(microsoftfoundrycnnstring)
+    .WithReference(insights);
 
 // ==============================
 // Build and Run

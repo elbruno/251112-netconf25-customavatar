@@ -28,6 +28,7 @@ builder.Services.AddRazorComponents()
 // Register application services
 builder.Services.AddScoped<AzureAIAgentService>();
 builder.Services.AddScoped<ConfigurationService>();
+builder.Services.AddSingleton<TelemetryService>();
 
 var app = builder.Build();
 

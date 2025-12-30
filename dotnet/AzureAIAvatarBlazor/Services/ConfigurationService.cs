@@ -8,16 +8,19 @@ public class ConfigurationService
     private readonly IConfiguration _configuration;
     private readonly IWebHostEnvironment _environment;
     private readonly ILogger<ConfigurationService> _logger;
+    private readonly TelemetryService _telemetryService;
     private AvatarConfiguration? _cachedConfig;
 
     public ConfigurationService(
         IConfiguration configuration,
         IWebHostEnvironment environment,
-        ILogger<ConfigurationService> logger)
+        ILogger<ConfigurationService> logger,
+        TelemetryService telemetryService)
     {
         _configuration = configuration;
         _environment = environment;
         _logger = logger;
+        _telemetryService = telemetryService;
     }
 
     public event EventHandler<AvatarConfiguration?>? ConfigurationChanged;
@@ -344,6 +347,22 @@ public class ConfigurationService
         {
             _logger.LogInformation("  - PredefinedQuestions: {Count}", config.PredefinedQuestions.Count);
         }
+        
+        // Track configuration changes
+        var oldCharacter = _cachedConfig?.Avatar.Character;
+        var newCharacter = config.Avatar.Character;
+        if (oldCharacter != newCharacter)
+        {
+            _telemetryService.TrackConfigurationChange("Avatar.Character", oldCharacter, newCharacter);
+        }
+        
+        var oldMode = _cachedConfig?.AzureOpenAI.Mode;
+        var newMode = config.AzureOpenAI.Mode;
+        if (oldMode != newMode)
+        {
+            _telemetryService.TrackConfigurationChange("AzureOpenAI.Mode", oldMode, newMode);
+        }
+        
         // In a real application, this would save to a database or configuration store
         // For now, we cache it in memory - it will persist for the app session
         _cachedConfig = config;
