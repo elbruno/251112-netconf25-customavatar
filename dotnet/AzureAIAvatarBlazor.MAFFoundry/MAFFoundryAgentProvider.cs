@@ -66,9 +66,10 @@ public class MAFFoundryAgentProvider
         {
             agent = _projectClient.GetAIAgent(name: agentName, tools: tools);
         }
-        catch
+        catch (Exception ex) when (ex is Azure.RequestFailedException || ex is HttpRequestException)
         {
             // Agent doesn't exist, will create it
+            // Expected exceptions when agent is not found
         }
 
         agent ??= _projectClient.CreateAIAgent(
