@@ -175,13 +175,15 @@ When you first open the application, you'll see:
 
 Click **"Configure"** to verify and customize settings:
 
-1. **Azure Speech Service**
+1. **Azure OpenAI Configuration**
+   - **Note**: Microsoft Foundry endpoint and Application Insights are managed by Aspire AppHost (not editable in UI)
+   - System Prompt: Configure how the AI assistant responds
+   - Deployment Name: AI model deployment (e.g., gpt-4o-mini)
+   - Agent Name: Optional agent name for Microsoft Foundry
+   
+2. **Azure Speech Service**
    - Region should match your resource
    - API key is already set from secrets
-   
-2. **Azure OpenAI**
-   - Endpoint, key, and deployment are configured
-   - Customize the system prompt if desired
    
 3. **Avatar Settings**
    - Choose avatar character (Lisa, Harry, Jeff, etc.)
@@ -189,6 +191,8 @@ Click **"Configure"** to verify and customize settings:
    - Adjust audio gain if needed
    
 4. Click **"Save Configuration"**
+
+> **💡 Configuration Note**: The application now uses Microsoft Foundry for AI operations. The Microsoft Foundry endpoint, Application Insights connection string, and Azure Tenant ID are managed by Aspire AppHost through connection strings and are NOT editable in the Configuration UI. This ensures secure management of credentials and endpoints.
 
 ### 3. Start Chatting
 

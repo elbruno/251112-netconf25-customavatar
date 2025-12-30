@@ -3,6 +3,15 @@ using System.Text.Json;
 
 namespace AzureAIAvatarBlazor.Services;
 
+/// <summary>
+/// Configuration service that manages user-configurable settings.
+/// 
+/// IMPORTANT: AppHost-managed secrets (Application Insights, Microsoft Foundry endpoint, TenantId)
+/// are NOT directly editable in the UI. These are managed through Aspire AppHost connection strings.
+/// 
+/// The application now uses Microsoft Foundry (via AzureAIAvatarBlazor.MAFFoundry library) for AI operations.
+/// IChatClient is automatically registered when the Microsoft Foundry endpoint is configured.
+/// </summary>
 public class ConfigurationService
 {
     private readonly IConfiguration _configuration;
@@ -93,33 +102,24 @@ public class ConfigurationService
             },
             AzureOpenAI = new AzureOpenAIConfig
             {
-                Mode = _configuration["AGENT_MODE"]
-                    ?? _configuration["AzureOpenAI__Mode"]
-                    ?? _configuration["AzureOpenAI:Mode"]
-                    ?? "Agent-LLM",
-                TenantId = _configuration["AZURE_TENANT_ID"]
+                // Mode is now fixed to Agent-MicrosoftFoundry (managed by MAFFoundry library)
+                // Microsoft Foundry endpoint is managed by Aspire AppHost via connection strings
+                Mode = "Agent-MicrosoftFoundry",
+                TenantId = _configuration.GetConnectionString("tenantId")
+                    ?? _configuration["AZURE_TENANT_ID"]
                     ?? _configuration["AzureOpenAI__TenantId"]
                     ?? _configuration["AzureOpenAI:TenantId"]
                     ?? string.Empty,
                 AgentLLM = new AgentLLMConfig
                 {
-                    Endpoint = _configuration["AZURE_OPENAI_ENDPOINT"]
-                        ?? _configuration["AzureOpenAI__AgentLLM__Endpoint"]
-                        ?? _configuration["AzureOpenAI:AgentLLM:Endpoint"]
-                        ?? _configuration["AzureOpenAI__Endpoint"]
-                        ?? _configuration["AzureOpenAI:AgentLLMConfig:Endpoint"]
-                        ?? string.Empty,
-                    ApiKey = _configuration["AZURE_OPENAI_API_KEY"]
-                        ?? _configuration["AzureOpenAI__AgentLLM__ApiKey"]
-                        ?? _configuration["AzureOpenAI:AgentLLM:ApiKey"]
-                        ?? _configuration["AzureOpenAI__ApiKey"]
-                        ?? _configuration["AzureOpenAI:AgentLLMConfig:ApiKey"]
-                        ?? string.Empty,
+                    // Legacy fields - endpoint and API key are now managed by AppHost
+                    Endpoint = string.Empty, // Managed by MAFFoundry
+                    ApiKey = string.Empty, // Managed by MAFFoundry
                     DeploymentName = _configuration["OpenAI__DeploymentName"]
                         ?? _configuration["AZURE_OPENAI_DEPLOYMENT_NAME"]
                         ?? _configuration["AzureOpenAI__DeploymentName"]
                         ?? _configuration["AzureOpenAI:AgentLLMConfig:DeploymentName"]
-                        ?? string.Empty,
+                        ?? "gpt-4o-mini",
                     SystemPrompt = _configuration["SystemPrompt"]
                         ?? _configuration["AzureOpenAI__AgentLLM__SystemPrompt"]
                         ?? _configuration["AzureOpenAI:AgentLLM:SystemPrompt"]
@@ -130,25 +130,19 @@ public class ConfigurationService
                 },
                 AgentAIFoundry = new AgentAIFoundryConfig
                 {
-                    AgentId = _configuration["AGENT_ID"]
-                        ?? _configuration["AzureOpenAI__AgentId"]
-                        ?? _configuration["AzureOpenAI:AgentAIFoundryConfig:AgentId"]
-                        ?? string.Empty,
-                    AIFoundryEndpoint = _configuration["AZURE_AI_FOUNDRY_ENDPOINT"]
-                        ?? _configuration["AzureOpenAI__AIFoundryEndpoint"]
-                        ?? _configuration["AzureOpenAI:AgentAIFoundryConfig:AIFoundryEndpoint"]
-                        ?? string.Empty
+                    // Not used - kept for backward compatibility
+                    AgentId = string.Empty,
+                    AIFoundryEndpoint = string.Empty
                 },
                 AgentMicrosoftFoundry = new AgentMicrosoftFoundryConfig
                 {
-                    MicrosoftFoundryEndpoint = _configuration["AZURE_MICROSOFTFOUNDRY_ENDPOINT"]
-                        ?? _configuration["AzureOpenAI__MicrosoftFoundryEndpoint"]
-                        ?? _configuration["AzureOpenAI:AgentMicrosoftFoundryConfig:MicrosoftFoundryEndpoint"]
-                        ?? string.Empty,
-                    MicrosoftFoundryAgentName = _configuration["MICROSOFTFOUNDRY_AGENT_NAME"]
-                        ?? _configuration["AzureOpenAI__MicrosoftFoundryAgentName"]
-                        ?? _configuration["AzureOpenAI:AgentMicrosoftFoundryConfig:MicrosoftFoundryAgentName"]
-                        ?? string.Empty                }
+                    // Microsoft Foundry endpoint is managed by Aspire AppHost
+                    MicrosoftFoundryEndpoint = _configuration.GetConnectionString("microsoftfoundryproject") ?? string.Empty,
+                    MicrosoftFoundryAgentName = _configuration["AI_AgentName"]
+                        ?? _configuration["AgentName"]
+                        ?? _configuration["AzureOpenAI:AgentMicrosoftFoundry:AgentName"]
+                        ?? "AvatarAgent"
+                }
             },
             SttTts = new SttTtsConfig
             {

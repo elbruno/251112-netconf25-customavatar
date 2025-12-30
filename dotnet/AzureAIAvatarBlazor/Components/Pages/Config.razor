@@ -96,41 +96,10 @@
 					<i class="bi bi-cpu me-2"></i>Azure OpenAI / Agent Configuration
 				</div>
 				<div class="card-body">
-					<div class="mb-3">
-						<label class="form-label">Mode (select one)</label>
-						<div class="list-group">
-							<label class="list-group-item">
-								<input class="form-check-input me-2" type="radio" name="mode" value="Agent-LLM" @onchange='() => SelectMode("Agent-LLM")' checked='@(config.AzureOpenAI.Mode == "Agent-LLM")' />
-								<strong>Agent-LLM</strong> - Agent Framework with OpenAI
-							</label>
-							<label class="list-group-item">
-								<input class="form-check-input me-2" type="radio" name="mode" value="Agent-AIFoundry" @onchange='() => SelectMode("Agent-AIFoundry")' checked='@(config.AzureOpenAI.Mode == "Agent-AIFoundry")' />
-								<strong>Agent-AIFoundry</strong> - Azure AI Foundry Agent
-							</label>
-							<label class="list-group-item">
-								<input class="form-check-input me-2" type="radio" name="mode" value="Agent-MicrosoftFoundry" @onchange='() => SelectMode("Agent-MicrosoftFoundry")' checked='@(config.AzureOpenAI.Mode == "Agent-MicrosoftFoundry")' />
-								<strong>Agent-MicrosoftFoundry</strong> - Microsoft Foundry Agent (not implemented)
-							</label>
-						</div>
-					</div>
-
-					<!-- Agent-LLM fields -->
-					<div class="mb-3">
-						<label class="form-label">Azure OpenAI Endpoint</label>
-						<input type="text" class="form-control" @bind="config.AzureOpenAI.AgentLLM.Endpoint"
-							placeholder="https://your-resource.openai.azure.com">
-						<div class="form-text">Azure OpenAI resource endpoint (used for Agent-LLM)</div>
-					</div>
-
-					<div class="mb-3">
-						<label class="form-label">API Key</label>
-						<input type="password" class="form-control" @bind="config.AzureOpenAI.AgentLLM.ApiKey"
-							placeholder="Enter your OpenAI API key">
-					</div>
-					<div class="mb-3">
-						<label class="form-label">Deployment Name</label>
-						<input type="text" class="form-control" @bind="config.AzureOpenAI.AgentLLM.DeploymentName"
-							placeholder="gpt-5.1-chat">
+					<div class="alert alert-info">
+						<i class="bi bi-info-circle me-2"></i>
+						<strong>Note:</strong> This application uses <strong>Microsoft Foundry</strong> for AI agent management.
+						The Microsoft Foundry endpoint and Application Insights are managed by Aspire AppHost and configured through connection strings (not editable here).
 					</div>
 
 					<div class="mb-3">
@@ -141,42 +110,21 @@
 						<button class="btn btn-outline-secondary btn-sm mt-2" @onclick="ResetSystemPromptToDefault">
 							<i class="bi bi-arrow-counterclockwise me-1"></i>Reset to Default
 						</button>
+						<div class="form-text mt-2">Configure how the AI assistant should respond. This applies to all agent modes.</div>
 					</div>
 
-					<!-- Agent-AIFoundry fields -->
-					<div class="border rounded p-3 mb-3" style="background:#f8f9fa;">
-						<h6>Agent-AIFoundry Configuration</h6>
-						<div class="mb-3">
-							<label class="form-label">Agent ID</label>
-							<input type="text" class="form-control" @bind="config.AzureOpenAI.AgentAIFoundry.AgentId"
-								placeholder="Enter your Azure AI Foundry Agent ID">
-							<div class="form-text">The ID of your pre-configured Azure AI Foundry agent</div>
-						</div>
-						<div class="mb-3">
-							<label class="form-label">Azure AI Foundry Project Endpoint</label>
-							<input type="text" class="form-control" @bind="config.AzureOpenAI.AgentAIFoundry.AIFoundryEndpoint"
-								placeholder="https://your-project.api.azureml.ms">
-							<div class="form-text">
-								Azure AI Foundry project endpoint (different from Azure OpenAI endpoint)
-							</div>
-						</div>
+					<div class="mb-3">
+						<label class="form-label">Deployment Name</label>
+						<input type="text" class="form-control" @bind="config.AzureOpenAI.AgentLLM.DeploymentName"
+							placeholder="gpt-4o-mini">
+						<div class="form-text">The AI model deployment name (e.g., gpt-4o-mini, gpt-5.1-chat)</div>
 					</div>
 
-					<!-- Agent-MicrosoftFoundry fields -->
-					<div class="border rounded p-3 mb-3" style="background:#fff7f0;">
-						<h6>Agent-MicrosoftFoundry Configuration (Not Implemented)</h6>
-						<div class="mb-3">
-							<label class="form-label">Project Endpoint</label>
-							<input type="text" class="form-control" @bind="config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryEndpoint"
-								placeholder="https://your-foundry-endpoint">
-							<div class="form-text">Microsoft Foundry project endpoint</div>
-						</div>
-						<div class="mb-3">
-							<label class="form-label">Agent Name</label>
-							<input type="text" class="form-control" @bind="config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryAgentName"
-								placeholder="Agent name in Microsoft Foundry">
-							<div class="form-text">Agent name used within Microsoft Foundry</div>
-						</div>
+					<div class="mb-3">
+						<label class="form-label">Agent Name (Microsoft Foundry)</label>
+						<input type="text" class="form-control" @bind="config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryAgentName"
+							placeholder="AvatarAgent">
+						<div class="form-text">The name of your agent in Microsoft Foundry (optional)</div>
 					</div>
 				</div>
 			</div>
@@ -639,7 +587,7 @@
 		var presets = new List<PredefinedQuestion>
 		{
 			new PredefinedQuestion { Title = "Hi", Question = "Hello" },
-			new PredefinedQuestion { Title = "Microsoft–Canada AI initiative for Canadian enterprises", Question = "How is Microsoft collaborating with the Canadian government and organizations on AI initiatives? Make a single response in a paragraph and mention the sources " },
+			new PredefinedQuestion { Title = "Microsoftï¿½Canada AI initiative for Canadian enterprises", Question = "How is Microsoft collaborating with the Canadian government and organizations on AI initiatives? Make a single response in a paragraph and mention the sources " },
 			new PredefinedQuestion { Title = ".NET Conf 2025", Question = "What can you tell me about .NET Conf 2025" },
 			new PredefinedQuestion { Title = ".NET Conf 2025 (FR)", Question = "Que pouvez-vous me dire au sujet de .NET Conf 2025 ?" }
 		};
