@@ -250,10 +250,16 @@ public class AzureAIAgentService
                 
                 var agent = await GetOrCreateAgentAsync();
                 var response = await agent.RunAsync("Reply only: OK", cancellationToken: default);
-                
-                return (true, $"✅ Microsoft Foundry connection successful!\n" +
-                    $"Endpoint: {config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryEndpoint}\n" +
-                    $"Agent: {config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryAgentName}");
+
+                if (!string.IsNullOrEmpty(response.Text))
+                {
+                    return (true, $"✅ Microsoft Foundry connection successful!\n" +
+                        $"Endpoint: {config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryEndpoint}\n" +
+                        $"Agent: {config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryAgentName}\n" +
+                        $"Test response: {response.Text}");
+                }
+
+                return (false, "❌ Error: No response received from the Microsoft Foundry agent");
             }
             else
             {
