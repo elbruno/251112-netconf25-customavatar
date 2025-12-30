@@ -48,6 +48,9 @@ dotnet user-secrets set "ConnectionStrings:openai" "Endpoint=https://YOUR_RESOUR
 # Configure Azure Speech Service connection string
 dotnet user-secrets set "ConnectionStrings:speech" "Endpoint=https://westus2.api.cognitive.microsoft.com/;Key=YOUR_SPEECH_API_KEY;"
 
+# (Optional) Configure Application Insights connection string for telemetry
+dotnet user-secrets set "ConnectionStrings:appinsights" "InstrumentationKey=YOUR_INSTRUMENTATION_KEY;IngestionEndpoint=https://YOUR_REGION.in.applicationinsights.azure.com/;LiveEndpoint=https://YOUR_REGION.livediagnostics.monitor.azure.com/"
+
 # Set application defaults
 dotnet user-secrets set "Avatar:Character" "lisa"
 dotnet user-secrets set "Avatar:Style" "casual-sitting"
@@ -59,9 +62,13 @@ Replace:
 - `YOUR_RESOURCE`: Your Azure OpenAI resource name
 - `YOUR_OPENAI_API_KEY`: Your Azure OpenAI key
 - `YOUR_SPEECH_API_KEY`: Your Azure Speech Service key
+- `YOUR_INSTRUMENTATION_KEY`: Your Application Insights instrumentation key (optional)
+- `YOUR_REGION`: Your Application Insights region (e.g., westus2)
 - `gpt-4o-mini`: Your deployed model name
 
 **Important**: Notice the connection string format with `Endpoint=...;Key=...;` - this is the Aspire connection string format.
+
+> **💡 Application Insights Note**: The Application Insights connection string is optional for local development. If not provided, telemetry will only be visible in the Aspire Dashboard. In production, Aspire will automatically provision Application Insights.
 
 #### Method B: Environment Variables (CI/CD & Production)
 
@@ -105,6 +112,7 @@ Aspire will automatically:
 - ✅ Deploy GPT-4o-mini model
 - ✅ Configure all connection strings
 - ✅ Set up managed identities
+- ✅ Provision Application Insights for monitoring
 
 ### Step 4: Run the Application
 
@@ -149,6 +157,8 @@ Two important URLs will be available:
    - View logs and metrics
    - Check resource status
    - Distributed tracing
+   - **Custom telemetry**: View avatar sessions, AI response times, and chat metrics
+   - **Application Insights**: If configured, telemetry is also sent to Azure
 
 2. **Blazor Application**: https://localhost:5001
    - The main avatar chat interface
@@ -246,6 +256,56 @@ en-US,es-ES,fr-FR,de-DE,it-IT,ja-JP,ko-KR,zh-CN
 ```
 
 The avatar will automatically detect the input language!
+
+### View Telemetry and Monitoring
+
+The application includes comprehensive telemetry tracking via Application Insights integration:
+
+#### Aspire Dashboard (Local Development)
+
+1. Open the **Aspire Dashboard**: https://localhost:15216
+2. Navigate to different tabs:
+   - **Logs**: View structured logs from all services
+   - **Metrics**: See custom metrics like:
+     - `avatar.sessions.started`: Number of avatar sessions
+     - `chat.messages.sent`: Chat message counts
+     - `ai.response.duration`: AI response times
+     - `avatar.session.duration`: Session durations
+   - **Traces**: View distributed traces for operations like:
+     - `GetChatCompletion`: Full AI request/response lifecycle
+     - `TestConnection`: Connection validation traces
+   - **Resources**: Check health and status of all services
+
+#### Custom Telemetry Events
+
+The application tracks:
+- 🎭 **Avatar Operations**: Session start/end, character selection
+- 💬 **Chat Interactions**: Message counts, role tracking
+- 🤖 **AI Performance**: Response times, token counts (when available)
+- ⚙️ **Configuration Changes**: Character, mode, settings changes
+- 🔊 **Speech Synthesis**: Voice selection, synthesis duration
+- 🌐 **WebRTC Status**: Connection health
+
+#### Application Insights (Production)
+
+If you configured an Application Insights connection string:
+
+1. Open **Azure Portal**: https://portal.azure.com
+2. Navigate to your **Application Insights** resource
+3. View:
+   - **Application Map**: Service dependencies
+   - **Performance**: Request/response times
+   - **Failures**: Exceptions and errors
+   - **Metrics**: Custom metrics (same as Aspire Dashboard)
+   - **Logs**: Query structured logs with KQL
+
+**Example KQL Query** (in Application Insights Logs):
+```kql
+traces
+| where message contains "Avatar session"
+| project timestamp, message, customDimensions
+| order by timestamp desc
+```
 
 ## 🔧 Troubleshooting
 

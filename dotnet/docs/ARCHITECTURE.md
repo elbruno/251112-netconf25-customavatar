@@ -79,6 +79,7 @@
 │  │  Resource Definitions                                       │ │
 │  │  • Azure OpenAI (with deployment)                          │ │
 │  │  • Azure Speech Service                                    │ │
+│  │  • Azure Application Insights                              │ │
 │  │  • Azure Cognitive Search (optional)                       │ │
 │  └─────────────┬──────────────────────────────────────────────┘ │
 │                │ Connection Strings + Env Vars                  │
@@ -90,10 +91,10 @@
 │  Aspire         │  │   Azure Resources (Publish)     │
 │  Dashboard      │  │   • OpenAI + Deployment         │
 │  (Dev Only)     │  │   • Speech Service              │
-│  localhost:15216│  │   • Cognitive Search            │
-└─────────────────┘  └─────────────────────────────────┘
-        │
-        │ Telemetry (OTLP)
+│  localhost:15216│  │   • Application Insights        │
+└─────────────────┘  │   • Cognitive Search            │
+        │            └─────────────────────────────────┘
+        │ Telemetry (OTLP + Azure Monitor)
         ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │               AzureAIAvatarBlazor Application                    │
@@ -101,12 +102,14 @@
 │  │  Aspire-Managed Clients                                    │ │
 │  │  • AzureOpenAIClient (injected via DI)                    │ │
 │  │  • Speech credentials (from ConnectionStrings)            │ │
+│  │  • Application Insights (automatic via ServiceDefaults)   │ │
 │  └────────────────────────────────────────────────────────────┘ │
 │  ┌────────────────────────────────────────────────────────────┐ │
 │  │  Application Services                                      │ │
 │  │  • AzureOpenAIService (uses injected client)              │ │
 │  │  • AzureSpeechService (reads connection strings)          │ │
 │  │  • ConfigurationService (env vars only)                   │ │
+│  │  • TelemetryService (custom metrics & tracing)            │ │
 │  └────────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -211,6 +214,32 @@ public string GetSubscriptionKey()
 **Dependencies**:
 - IConfiguration
 - IWebHostEnvironment
+
+#### TelemetryService
+**Purpose**: Track custom telemetry events and metrics
+
+**Key Methods**:
+- `TrackAvatarSessionStart()`: Record avatar session initiation
+- `TrackAvatarSessionEnd()`: Record session completion with duration
+- `TrackChatMessage()`: Log chat message events
+- `TrackAIResponseTime()`: Measure AI response performance
+- `StartActivity()`: Create custom distributed tracing spans
+- `TrackConfigurationChange()`: Log configuration updates
+- `TrackError()`: Log exceptions with context
+
+**Custom Metrics**:
+- `avatar.sessions.started`: Counter for avatar sessions
+- `chat.messages.sent`: Counter for chat messages by role
+- `ai.response.duration`: Histogram of AI response times
+- `avatar.session.duration`: Histogram of session durations
+
+**Custom Activity Sources**:
+- `AzureAIAvatarBlazor`: Custom tracing for application operations
+
+**Dependencies**:
+- ILogger
+- System.Diagnostics.ActivitySource (for distributed tracing)
+- System.Diagnostics.Metrics.Meter (for custom metrics)
 
 ### 3. Models Layer
 
@@ -333,6 +362,258 @@ public class ChatMessage
 │ Video Element   │
 └─────────────────┘
 ```
+
+## Telemetry and Observability
+
+### Overview
+
+The application implements comprehensive telemetry using **Azure Application Insights** and **OpenTelemetry** standards, providing end-to-end observability in both development and production environments.
+
+### Telemetry Architecture
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                Application Code                               │
+│  ┌────────────────┐  ┌──────────────────┐  ┌──────────────┐ │
+│  │ TelemetryService│  │ Activity Sources │  │    Meters    │ │
+│  │  • Custom Events│  │  • Custom Spans  │  │  • Counters  │ │
+│  │  • Error Tracking│  │  • Trace Context│  │  • Histograms│ │
+│  └────────┬────────┘  └────────┬─────────┘  └──────┬───────┘ │
+│           │                    │                    │         │
+│           └────────────────────┼────────────────────┘         │
+│                                │                              │
+└────────────────────────────────┼──────────────────────────────┘
+                                 │
+                  ┌──────────────┼──────────────┐
+                  │              │              │
+         ┌────────▼──────┐  ┌───▼────────┐  ┌─▼──────────────┐
+         │ OpenTelemetry │  │   Aspire   │  │   Azure        │
+         │   Collector   │  │  Dashboard │  │ App Insights   │
+         │   (OTLP)      │  │   (Dev)    │  │  (Production)  │
+         └───────────────┘  └────────────┘  └────────────────┘
+```
+
+### Telemetry Components
+
+#### 1. ServiceDefaults (OpenTelemetry Configuration)
+
+Located in `AzureAIAvatarBlazor.ServiceDefaults/Extensions.cs`:
+
+**Logging**:
+```csharp
+builder.Logging.AddOpenTelemetry(logging =>
+{
+    logging.IncludeFormattedMessage = true;
+    logging.IncludeScopes = true;
+});
+```
+
+**Metrics**:
+```csharp
+.WithMetrics(metrics =>
+{
+    metrics.AddAspNetCoreInstrumentation()      // HTTP server metrics
+        .AddHttpClientInstrumentation()          // HTTP client metrics
+        .AddRuntimeInstrumentation()             // .NET runtime metrics
+        .AddMeter("AzureAIAvatarBlazor");       // Custom metrics
+})
+```
+
+**Tracing**:
+```csharp
+.WithTracing(tracing =>
+{
+    tracing.AddSource("AzureAIAvatarBlazor")    // Custom traces
+        .AddAspNetCoreInstrumentation()          // HTTP request traces
+        .AddHttpClientInstrumentation();         // HTTP client traces
+})
+```
+
+**Exporters**:
+- **OTLP Exporter**: Sends to Aspire Dashboard (development)
+- **Azure Monitor Exporter**: Sends to Application Insights (when configured)
+
+#### 2. TelemetryService (Custom Telemetry)
+
+Located in `Services/TelemetryService.cs`:
+
+**Custom Metrics**:
+
+| Metric Name | Type | Description | Tags |
+|------------|------|-------------|------|
+| `avatar.sessions.started` | Counter | Avatar sessions initiated | character, style, is_custom |
+| `chat.messages.sent` | Counter | Chat messages by role | role |
+| `ai.response.duration` | Histogram | AI response time in ms | mode, tokens |
+| `avatar.session.duration` | Histogram | Session duration in seconds | character |
+
+**Custom Activities (Spans)**:
+
+| Activity Name | Description | Tags |
+|--------------|-------------|------|
+| `GetChatCompletion` | AI chat completion operation | mode, message_length, chunks, duration_ms |
+| `TestConnection` | Connection validation | mode, success, error |
+
+**Event Tracking**:
+- Avatar session lifecycle (start/end)
+- Configuration changes
+- Errors with context
+- Speech synthesis operations
+- WebRTC connection status
+
+#### 3. Integration Points
+
+**AzureAIAgentService**:
+```csharp
+using var activity = _telemetryService.StartActivity("GetChatCompletion", ActivityKind.Client);
+
+// Track user message
+_telemetryService.TrackChatMessage("user", message.Length);
+
+// Track AI response
+_telemetryService.TrackAIResponseTime(mode, duration, tokenCount);
+
+// Track assistant message
+_telemetryService.TrackChatMessage("assistant", responseLength);
+```
+
+**ConfigurationService**:
+```csharp
+// Track configuration changes
+_telemetryService.TrackConfigurationChange("Avatar.Character", oldValue, newValue);
+```
+
+### Viewing Telemetry
+
+#### Development (Aspire Dashboard)
+
+Access: https://localhost:15216
+
+**Logs Tab**:
+- Structured logs from all services
+- Filter by severity, source, timestamp
+- Search log content
+- View log context and properties
+
+**Metrics Tab**:
+- Real-time metric charts
+- Custom metrics:
+  - Avatar sessions
+  - Chat messages
+  - AI response times
+  - Session durations
+- System metrics:
+  - HTTP requests/responses
+  - Memory usage
+  - CPU usage
+
+**Traces Tab**:
+- Distributed traces across operations
+- Span details with tags
+- Performance waterfall
+- Dependencies visualization
+
+**Resources Tab**:
+- Service health status
+- Resource utilization
+- Container logs
+
+#### Production (Application Insights)
+
+Access: Azure Portal → Application Insights resource
+
+**Application Map**:
+- Service dependencies
+- Request volumes
+- Response times
+- Failure rates
+
+**Performance**:
+- Request performance
+- Dependency performance
+- Custom metrics
+- Percentile charts
+
+**Failures**:
+- Exception tracking
+- Failure rates by operation
+- Stack traces
+- Affected users
+
+**Logs (KQL Queries)**:
+
+View avatar sessions:
+```kql
+traces
+| where message contains "Avatar session"
+| project timestamp, message, customDimensions
+| order by timestamp desc
+```
+
+View AI response times:
+```kql
+customMetrics
+| where name == "ai.response.duration"
+| summarize avg(value), percentiles(value, 50, 90, 99) by bin(timestamp, 5m)
+| render timechart
+```
+
+View configuration changes:
+```kql
+traces
+| where message contains "Configuration changed"
+| project timestamp, message, customDimensions
+| order by timestamp desc
+```
+
+### Telemetry Best Practices
+
+1. **Structured Logging**: Use structured log messages with parameters
+   ```csharp
+   _logger.LogInformation("Avatar session started: Character={Character}", character);
+   ```
+
+2. **Custom Spans**: Wrap important operations in activities
+   ```csharp
+   using var activity = _telemetryService.StartActivity("OperationName");
+   activity?.SetTag("key", "value");
+   ```
+
+3. **Metrics Over Logs**: Use metrics for counters and measurements
+   ```csharp
+   _telemetryService.TrackAvatarSessionStart(character, style, isCustom);
+   ```
+
+4. **Error Context**: Always include context when logging errors
+   ```csharp
+   _telemetryService.TrackError("OperationName", exception);
+   ```
+
+5. **Performance Tags**: Add relevant tags to spans for filtering
+   ```csharp
+   activity?.SetTag("mode", mode);
+   activity?.SetTag("duration_ms", stopwatch.ElapsedMilliseconds);
+   ```
+
+### Configuration
+
+#### AppHost (Development)
+
+```bash
+# Optional: Configure Application Insights
+dotnet user-secrets set "ConnectionStrings:appinsights" "InstrumentationKey=...;IngestionEndpoint=https://..."
+```
+
+#### Environment Variables (Production)
+
+```bash
+# Application Insights connection string
+APPLICATIONINSIGHTS_CONNECTION_STRING="InstrumentationKey=...;IngestionEndpoint=https://..."
+
+# OTLP endpoint (alternative)
+OTEL_EXPORTER_OTLP_ENDPOINT="http://collector:4317"
+```
+
+If no Application Insights connection string is provided, telemetry is only sent to the Aspire Dashboard (development) or OTLP endpoint (if configured).
 
 ## Technology Stack Details
 
