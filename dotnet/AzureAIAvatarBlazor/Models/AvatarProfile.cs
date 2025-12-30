@@ -55,10 +55,8 @@ public class AvatarProfile
 
         if (sttTtsConfig != null)
         {
-            if (!string.IsNullOrWhiteSpace(TtsVoice))
-                sttTtsConfig.TtsVoice = TtsVoice;
-            if (!string.IsNullOrWhiteSpace(CustomVoiceEndpointId))
-                sttTtsConfig.CustomVoiceEndpointId = CustomVoiceEndpointId;
+            sttTtsConfig.TtsVoice = TtsVoice ?? sttTtsConfig.TtsVoice;
+            sttTtsConfig.CustomVoiceEndpointId = CustomVoiceEndpointId ?? sttTtsConfig.CustomVoiceEndpointId;
         }
     }
 }
