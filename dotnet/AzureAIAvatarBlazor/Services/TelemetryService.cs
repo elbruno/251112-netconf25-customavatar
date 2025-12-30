@@ -6,7 +6,7 @@ namespace AzureAIAvatarBlazor.Services;
 /// <summary>
 /// Service for tracking custom telemetry events specific to avatar operations
 /// </summary>
-public class TelemetryService
+public class TelemetryService : IDisposable
 {
     private readonly ILogger<TelemetryService> _logger;
     private readonly ActivitySource _activitySource;
@@ -15,6 +15,7 @@ public class TelemetryService
     private readonly Counter<int> _chatMessageCounter;
     private readonly Histogram<double> _aiResponseTimeHistogram;
     private readonly Histogram<double> _avatarSessionDurationHistogram;
+    private bool _disposed;
 
     public TelemetryService(ILogger<TelemetryService> logger)
     {
@@ -90,23 +91,23 @@ public class TelemetryService
     /// <summary>
     /// Track AI response time
     /// </summary>
-    public void TrackAIResponseTime(string mode, double durationMs, int? tokenCount = null)
+    public void TrackAIResponseTime(string mode, double durationMs, int? characterCount = null)
     {
         var tags = new List<KeyValuePair<string, object?>>
         {
             new("mode", mode)
         };
 
-        if (tokenCount.HasValue)
+        if (characterCount.HasValue)
         {
-            tags.Add(new("tokens", tokenCount.Value));
+            tags.Add(new("characters", characterCount.Value));
         }
 
         _aiResponseTimeHistogram.Record(durationMs, tags.ToArray());
 
         _logger.LogInformation(
-            "AI response: Mode={Mode}, Duration={Duration}ms, Tokens={Tokens}",
-            mode, durationMs, tokenCount);
+            "AI response: Mode={Mode}, Duration={Duration}ms, Characters={Characters}",
+            mode, durationMs, characterCount);
     }
 
     /// <summary>
@@ -160,5 +161,15 @@ public class TelemetryService
         {
             _logger.LogWarning("WebRTC connection: Status={Status}, Error={Error}", status, errorMessage);
         }
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+            return;
+
+        _activitySource?.Dispose();
+        _meter?.Dispose();
+        _disposed = true;
     }
 }
