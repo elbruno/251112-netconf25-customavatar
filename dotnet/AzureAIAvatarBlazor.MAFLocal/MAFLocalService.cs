@@ -30,9 +30,21 @@ public class MAFLocalAgentProvider
     /// <summary>
     /// Gets an agent by name string.
     /// </summary>
-    public AIAgent GetAgentByName(string agentName)
+    public AIAgent GetOrCreateAgentByName(string agentName, string instructions = "")
     {
-        return _serviceProvider.GetRequiredKeyedService<AIAgent>(agentName);
+        AIAgent agent = null;
+        try
+        {
+            agent = _serviceProvider.GetRequiredKeyedService<AIAgent>(agentName);
+        }
+        catch
+        {
+            var chatClient = _serviceProvider.GetRequiredService<IChatClient>();
+            agent = chatClient.CreateAIAgent(
+                name: agentName,
+                instructions: instructions);
+        }
+        return agent;   
     }
 }
 

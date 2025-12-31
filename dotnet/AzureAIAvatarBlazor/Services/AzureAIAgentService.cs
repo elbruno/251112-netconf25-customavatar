@@ -114,7 +114,7 @@ public class AzureAIAgentService
         }
 
         var deploymentName = string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentLLM.DeploymentName) ? "gpt-5.1-chat" : config.AzureOpenAI.AgentLLM.DeploymentName;
-        var instructions = config.AzureOpenAI.AgentLLM.SystemPrompt ?? "You are Pablo Piovano. Respond in the user's language with a short answer and a friendly, approachable tone. If you don't know an answer, just say 'I don't know'.";
+        var instructions = config.AzureOpenAI.AgentLLM.SystemPrompt ?? "You are a useful assistant.. Respond in the user's language with a short answer and a friendly, approachable tone. If you don't know an answer, just say 'I don't know'.";
 
         _logger.LogInformation("Using Endpoint: {Endpoint}", config.AzureOpenAI.AgentLLM.Endpoint);
         _logger.LogInformation("Using Deployment: {Deployment}", deploymentName);
@@ -125,16 +125,15 @@ public class AzureAIAgentService
             _logger.LogInformation("Using MAFLocal library to create agent");
 
             const string agentName = "CustomAvatarAgent";
-            try
+            try            
             {
-                var mafAgent = _mafLocalProvider.GetAgentByName(agentName);
+                var mafAgent = _mafLocalProvider.GetOrCreateAgentByName(agentName, instructions);
                 _logger.LogInformation("MAF Local agent retrieved from provider");
                 return mafAgent;
             }
             catch (InvalidOperationException)
             {
                 _logger.LogWarning("Agent '{AgentName}' not found in MAFLocal provider. Creating inline agent instead.", agentName);
-                // Fall through to create inline agent
             }
         }
         else
