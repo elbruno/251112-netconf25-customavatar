@@ -153,12 +153,13 @@ info: Aspire.Hosting[0]
 Two important URLs will be available:
 
 1. **Aspire Dashboard**: https://localhost:15216
-   - Monitor all services
+   - Monitor all services (including Redis cache)
    - View logs and metrics
    - Check resource status
    - Distributed tracing
    - **Custom telemetry**: View avatar sessions, AI response times, and chat metrics
    - **Application Insights**: If configured, telemetry is also sent to Azure
+   - **Redis Cache**: Aspire automatically provisions Redis container for configuration caching
 
 2. **Blazor Application**: https://localhost:5001
    - The main avatar chat interface
@@ -303,6 +304,14 @@ curl http://localhost:5173/health/ready
 {
   "status": "Healthy",
   "entries": {
+    "redis": {
+      "status": "Healthy",
+      "description": "Redis is healthy (ping: 1.23ms)",
+      "data": {
+        "connected": true,
+        "ping_ms": 1.23
+      }
+    },
     "microsoft_foundry": {
       "status": "Healthy",
       "description": "Microsoft Foundry is configured"
@@ -320,6 +329,38 @@ curl http://localhost:5173/health/ready
 ```
 
 See [PHASE2_IMPLEMENTATION_SUMMARY.md](PHASE2_IMPLEMENTATION_SUMMARY.md) for detailed health check documentation.
+
+#### Redis Caching (Phase 3)
+
+The application uses Redis for configuration caching to improve performance and support multi-instance scenarios:
+
+**Features**:
+- Configuration cached for 5 minutes
+- Reduces environment variable reads
+- Shared cache across multiple instances
+- Automatic fallback if Redis unavailable
+
+**Local Development**:
+- Aspire automatically provisions Redis container
+- Data persists between application restarts
+- View cache in Aspire Dashboard
+
+**View Cached Data** (optional):
+```bash
+# Find Redis port from Aspire Dashboard
+docker ps | grep redis
+
+# Connect to Redis
+redis-cli -h localhost -p <port>
+
+# View cached configuration
+GET config:default
+
+# Check TTL
+TTL config:default
+```
+
+See [PHASE3_IMPLEMENTATION_SUMMARY.md](PHASE3_IMPLEMENTATION_SUMMARY.md) for detailed Redis caching documentation.
 
 #### Custom Telemetry Events
 

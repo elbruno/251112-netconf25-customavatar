@@ -8,6 +8,7 @@ This repository demonstrates Azure Avatars using .NET 10 and Blazor with enterpr
 - **Aspire Orchestration**: All credentials and endpoints managed by .NET Aspire AppHost
 - **Application Insights**: Comprehensive telemetry and monitoring (Phase 1)
 - **Health Checks**: Production-ready health endpoints for monitoring (Phase 2)
+- **Redis Caching**: Configuration caching for performance and multi-instance support (Phase 3)
 - **Interactive Avatars**: Real-time talking avatars with Azure Speech Service
 - **Simplified Configuration**: AppHost-managed secrets (no manual configuration needed for Microsoft Foundry endpoint or Application Insights)
 
@@ -15,9 +16,10 @@ This repository demonstrates Azure Avatars using .NET 10 and Blazor with enterpr
 
 The application consists of:
 - **AzureAIAvatarBlazor**: Main Blazor Server application
-- **AzureAIAvatarBlazor.AppHost**: Aspire orchestration layer
+- **AzureAIAvatarBlazor.AppHost**: Aspire orchestration layer (manages Redis, Application Insights)
 - **AzureAIAvatarBlazor.ServiceDefaults**: Shared telemetry and resilience configuration
 - **AzureAIAvatarBlazor.MAFFoundry**: Microsoft Foundry integration library (provides IChatClient)
+- **Redis Cache**: Configuration and session state caching (auto-provisioned by Aspire)
 
 ## Configuration Management
 
@@ -64,12 +66,13 @@ dotnet run
 - **[ASPIRE_ENHANCEMENT_PLAN.md](docs/ASPIRE_ENHANCEMENT_PLAN.md)**: Enhancement roadmap (Phases 1-8)
 - **[PHASE1_IMPLEMENTATION_SUMMARY.md](docs/PHASE1_IMPLEMENTATION_SUMMARY.md)**: Application Insights implementation
 - **[PHASE2_IMPLEMENTATION_SUMMARY.md](docs/PHASE2_IMPLEMENTATION_SUMMARY.md)**: Health Checks implementation
+- **[PHASE3_IMPLEMENTATION_SUMMARY.md](docs/PHASE3_IMPLEMENTATION_SUMMARY.md)**: Redis Caching implementation
 
 ## Aspire Enhancement Phases
 
 - ✅ **Phase 1: Application Insights** - Custom telemetry and monitoring (COMPLETE)
 - ✅ **Phase 2: Health Checks** - Readiness and liveness probes (COMPLETE)
-- 📋 **Phase 3: Redis Caching** - Configuration and session state caching
+- ✅ **Phase 3: Redis Caching** - Configuration and session state caching (COMPLETE)
 - 📋 **Phase 4: Structured Logging** - Enhanced logging with Serilog
 - 📋 **Phase 5: Distributed Tracing** - Custom spans for avatar operations
 - 📋 **Phase 6: Container Registry** - ACR integration for deployments
