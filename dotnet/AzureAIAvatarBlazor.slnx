@@ -6,4 +6,8 @@
   <Folder Name="/2 Custom Avatar App/">
     <Project Path="AzureAIAvatarBlazor/AzureAIAvatarBlazor.csproj" />
   </Folder>
+  <Folder Name="/3 Agent Libraries/">
+    <Project Path="AzureAIAvatarBlazor.MAFFoundry/AzureAIAvatarBlazor.MAFFoundry.csproj" />
+    <Project Path="AzureAIAvatarBlazor.MAFLocal/AzureAIAvatarBlazor.MAFLocal.csproj" />
+  </Folder>
 </Solution>
