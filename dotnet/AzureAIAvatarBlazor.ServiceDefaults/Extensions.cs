@@ -74,6 +74,14 @@ public static class Extensions
                     // Uncomment the following line to enable gRPC instrumentation (requires the OpenTelemetry.Instrumentation.GrpcNetClient package)
                     //.AddGrpcClientInstrumentation()
                     .AddHttpClientInstrumentation();
+                
+                // Configure sampling: 100% in development, adaptive in production
+                if (builder.Environment.IsDevelopment())
+                {
+                    // Sample all traces in development for better debugging
+                    tracing.SetSampler(new AlwaysOnSampler());
+                }
+                // In production, use default adaptive sampling (or ParentBasedSampler)
             });
 
         builder.AddOpenTelemetryExporters();

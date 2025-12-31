@@ -68,9 +68,12 @@ public class ConfigurationService
 
     public AvatarConfiguration GetConfiguration()
     {
+        using var activity = _telemetryService.StartConfigLoadSpan("cache-check");
+        
         // First, check in-memory cache (respects user changes from Config page)
         if (_cachedConfig != null)
         {
+            activity?.SetTag("config.cache_hit", "memory");
             _logger.LogDebug("Returning in-memory cached configuration (Character: {AvatarCharacter}, IsCustom: {IsCustomAvatar}, UseBuiltInVoice: {UseBuiltInVoice})",
                 _cachedConfig.Avatar.Character,
                 _cachedConfig.Avatar.IsCustomAvatar,
@@ -84,6 +87,7 @@ public class ConfigurationService
             var cachedFromRedis = _cachingService.GetAsync<AvatarConfiguration>(ConfigCacheKey).GetAwaiter().GetResult();
             if (cachedFromRedis != null)
             {
+                activity?.SetTag("config.cache_hit", "redis");
                 _logger.LogInformation("Returning Redis cached configuration (Character: {Character})", cachedFromRedis.Avatar.Character);
                 _cachedConfig = cachedFromRedis; // Also cache in memory
                 return cachedFromRedis;
@@ -94,6 +98,8 @@ public class ConfigurationService
             _logger.LogWarning(ex, "Failed to get configuration from Redis cache, loading from environment");
         }
 
+        activity?.SetTag("config.cache_hit", "miss");
+        activity?.SetTag("config.source", "environment");
         _logger.LogInformation("Loading configuration from environment/appsettings...");
 
         var avatarCharacter = _configuration["Avatar__Character"] ?? _configuration["Avatar:Character"] ?? _configuration["AVATAR_CHARACTER"] ?? "lisa";
@@ -361,6 +367,19 @@ public class ConfigurationService
 
     public async Task SaveConfigurationAsync(AvatarConfiguration config)
     {
+        // Count changed keys for tracing
+        var changedKeys = new List<string>();
+        if (_cachedConfig != null)
+        {
+            if (_cachedConfig.Avatar.Character != config.Avatar.Character) changedKeys.Add("Avatar.Character");
+            if (_cachedConfig.AzureOpenAI.Mode != config.AzureOpenAI.Mode) changedKeys.Add("AzureOpenAI.Mode");
+            if (_cachedConfig.Avatar.IsCustomAvatar != config.Avatar.IsCustomAvatar) changedKeys.Add("Avatar.IsCustomAvatar");
+            if (_cachedConfig.Avatar.UseBuiltInVoice != config.Avatar.UseBuiltInVoice) changedKeys.Add("Avatar.UseBuiltInVoice");
+        }
+
+        using var activity = _telemetryService.StartConfigSaveSpan(changedKeys.Count);
+        activity?.SetTag("config.changed_keys", string.Join(", ", changedKeys));
+        
         _logger.LogInformation("Saving configuration to cache...");
         _logger.LogInformation("  - Character: {Character}, Style: {Style}",
             config.Avatar.Character, config.Avatar.Style ?? "(none)");
@@ -378,10 +397,13 @@ public class ConfigurationService
         try
         {
             await _cachingService.SetAsync(ConfigCacheKey, config, ConfigCacheExpiration);
+            activity?.SetTag("config.redis_save", "success");
             _logger.LogInformation("Configuration saved to Redis cache");
         }
         catch (Exception ex)
         {
+            activity?.SetTag("config.redis_save", "failed");
+            activity?.SetTag("config.error", ex.Message);
             _logger.LogWarning(ex, "Failed to save configuration to Redis cache");
         }
         

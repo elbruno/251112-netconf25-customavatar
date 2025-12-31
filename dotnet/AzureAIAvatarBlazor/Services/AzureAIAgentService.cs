@@ -47,6 +47,16 @@ public class AzureAIAgentService
                 _ => "unknown"
             };
 
+            var endpoint = mode switch
+            {
+                "Agent-LLM" => config.AzureOpenAI.AgentLLM.Endpoint,
+                "Agent-AIFoundry" => config.AzureOpenAI.AgentAIFoundry.AIFoundryEndpoint,
+                "Agent-MicrosoftFoundry" => config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryEndpoint,
+                _ => null
+            };
+
+            using var initActivity = _telemetryService.StartAIAgentInitSpan(mode, endpoint);
+
             _logger.LogInformation("Initializing AI Agent with {AgentMode} mode, Model/Agent: {ModelDeployment}",
                 mode, deploymentName);
 
@@ -187,7 +197,6 @@ public class AzureAIAgentService
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var stopwatch = Stopwatch.StartNew();
-        using var activity = _telemetryService.StartActivity("GetChatCompletion", ActivityKind.Client);
         
         _logger.LogInformation("Starting chat completion stream with Agent Framework");
         _logger.LogInformation("Message count: {Count}, Last message role: {Role}",
@@ -197,6 +206,12 @@ public class AzureAIAgentService
         var agent = await GetOrCreateAgentAsync();
         var config = _configService.GetConfiguration();
         var mode = config.AzureOpenAI.Mode ?? "Agent-LLM";
+        var modelOrAgent = mode switch
+        {
+            "Agent-LLM" => config.AzureOpenAI.AgentLLM.DeploymentName ?? "gpt-5.1-chat",
+            "Agent-MicrosoftFoundry" => config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryAgentName ?? "unknown",
+            _ => "unknown"
+        };
 
         var lastUserMessage = messages.LastOrDefault(m => m.Role == "user");
         if (lastUserMessage == null)
@@ -205,6 +220,8 @@ public class AzureAIAgentService
             yield break;
         }
 
+        using var activity = _telemetryService.StartAIAgentChatSpan(mode, modelOrAgent, lastUserMessage.Content.Length);
+
         // Track chat message
         _telemetryService.TrackChatMessage("user", lastUserMessage.Content.Length);
 
@@ -212,9 +229,6 @@ public class AzureAIAgentService
             lastUserMessage.Content.Length > 100
                 ? lastUserMessage.Content.Substring(0, 100) + "..."
                 : lastUserMessage.Content);
-
-        activity?.SetTag("mode", mode);
-        activity?.SetTag("message_length", lastUserMessage.Content.Length);
 
         var totalChunks = 0;
         var totalCharacters = 0;
@@ -236,9 +250,12 @@ public class AzureAIAgentService
         _telemetryService.TrackAIResponseTime(mode, stopwatch.ElapsedMilliseconds, totalCharacters);
         _telemetryService.TrackChatMessage("assistant", totalCharacters);
 
-        activity?.SetTag("chunks", totalChunks);
-        activity?.SetTag("total_characters", totalCharacters);
-        activity?.SetTag("duration_ms", stopwatch.ElapsedMilliseconds);
+        // Add rich attributes to span
+        activity?.SetTag("ai.response.chunks", totalChunks);
+        activity?.SetTag("ai.response.completion_length", totalCharacters);
+        activity?.SetTag("ai.response.duration_ms", stopwatch.ElapsedMilliseconds);
+        activity?.SetTag("ai.response.tokens_per_second", 
+            stopwatch.ElapsedMilliseconds > 0 ? (totalCharacters / (stopwatch.ElapsedMilliseconds / 1000.0)) : 0);
 
         _logger.LogInformation("Agent response completed: {Chunks} chunks, {Characters} total characters",
             totalChunks, totalCharacters);

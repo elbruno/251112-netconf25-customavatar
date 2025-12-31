@@ -119,6 +119,75 @@ public class TelemetryService : IDisposable
     }
 
     /// <summary>
+    /// Start avatar session span with rich attributes
+    /// </summary>
+    public Activity? StartAvatarSessionSpan(string character, string style, bool isCustomAvatar)
+    {
+        var activity = _activitySource.StartActivity("AvatarSession.Start", ActivityKind.Internal);
+        activity?.SetTag("avatar.character", character);
+        activity?.SetTag("avatar.style", style);
+        activity?.SetTag("avatar.is_custom", isCustomAvatar);
+        return activity;
+    }
+
+    /// <summary>
+    /// Start AI agent chat completion span with rich attributes
+    /// </summary>
+    public Activity? StartAIAgentChatSpan(string mode, string modelOrAgent, int messageLength)
+    {
+        var activity = _activitySource.StartActivity("AIAgent.ChatCompletion", ActivityKind.Client);
+        activity?.SetTag("ai.agent.mode", mode);
+        activity?.SetTag("ai.model.name", modelOrAgent);
+        activity?.SetTag("ai.prompt.length", messageLength);
+        return activity;
+    }
+
+    /// <summary>
+    /// Start AI agent initialization span
+    /// </summary>
+    public Activity? StartAIAgentInitSpan(string mode, string? endpoint = null)
+    {
+        var activity = _activitySource.StartActivity("AIAgent.Initialize", ActivityKind.Internal);
+        activity?.SetTag("ai.agent.mode", mode);
+        if (!string.IsNullOrEmpty(endpoint))
+        {
+            activity?.SetTag("ai.endpoint", endpoint);
+        }
+        return activity;
+    }
+
+    /// <summary>
+    /// Start speech synthesis span
+    /// </summary>
+    public Activity? StartSpeechSynthesisSpan(string voice, int textLength)
+    {
+        var activity = _activitySource.StartActivity("Speech.Synthesize", ActivityKind.Client);
+        activity?.SetTag("speech.voice", voice);
+        activity?.SetTag("speech.text_length", textLength);
+        return activity;
+    }
+
+    /// <summary>
+    /// Start configuration load span
+    /// </summary>
+    public Activity? StartConfigLoadSpan(string source)
+    {
+        var activity = _activitySource.StartActivity("Config.Load", ActivityKind.Internal);
+        activity?.SetTag("config.source", source);
+        return activity;
+    }
+
+    /// <summary>
+    /// Start configuration save span
+    /// </summary>
+    public Activity? StartConfigSaveSpan(int changedKeyCount)
+    {
+        var activity = _activitySource.StartActivity("Config.Save", ActivityKind.Internal);
+        activity?.SetTag("config.changed_keys", changedKeyCount);
+        return activity;
+    }
+
+    /// <summary>
     /// Track configuration change
     /// </summary>
     public void TrackConfigurationChange(string settingName, string? oldValue, string? newValue)
