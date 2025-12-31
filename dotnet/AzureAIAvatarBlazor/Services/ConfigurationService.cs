@@ -42,6 +42,36 @@ public class ConfigurationService
 
     public event EventHandler<AvatarConfiguration?>? ConfigurationChanged;
 
+    /// <summary>
+    /// Parses Aspire connection string format: "Endpoint=...;Key=...;"
+    /// </summary>
+    private (string? endpoint, string? key) ParseConnectionString(string connectionString)
+    {
+        if (string.IsNullOrWhiteSpace(connectionString))
+            return (null, null);
+
+        string? endpoint = null;
+        string? key = null;
+
+        var parts = connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries);
+        foreach (var part in parts)
+        {
+            var kvp = part.Split('=', 2);
+            if (kvp.Length == 2)
+            {
+                var propName = kvp[0].Trim();
+                var propValue = kvp[1].Trim();
+
+                if (propName.Equals("Endpoint", StringComparison.OrdinalIgnoreCase))
+                    endpoint = propValue;
+                else if (propName.Equals("Key", StringComparison.OrdinalIgnoreCase))
+                    key = propValue;
+            }
+        }
+
+        return (endpoint, key);
+    }
+
     private bool DetermineIfCustomAvatar(IConfiguration config)
     {
         // Check if explicitly set
@@ -110,6 +140,23 @@ public class ConfigurationService
         activity?.SetTag("config.source", "environment");
         _logger.LogInformation("Loading configuration from environment/appsettings...");
 
+        // Parse Aspire connection strings if available
+        var openaiConnectionString = _configuration.GetConnectionString("openai");
+        var (openaiEndpoint, openaiKey) = ParseConnectionString(openaiConnectionString ?? "");
+        
+        var speechConnectionString = _configuration.GetConnectionString("speech");
+        var (speechEndpoint, speechKey) = ParseConnectionString(speechConnectionString ?? "");
+
+        // Extract region from Speech endpoint (format: https://REGION.api.cognitive.microsoft.com/)
+        string? speechRegion = null;
+        if (!string.IsNullOrEmpty(speechEndpoint))
+        {
+            var uri = new Uri(speechEndpoint);
+            var hostParts = uri.Host.Split('.');
+            if (hostParts.Length > 0)
+                speechRegion = hostParts[0]; // Extract "westus2" from "westus2.api.cognitive.microsoft.com"
+        }
+
         var avatarCharacter = _configuration["Avatar__Character"] ?? _configuration["Avatar:Character"] ?? _configuration["AVATAR_CHARACTER"] ?? "lisa";
         _logger.LogInformation("Avatar character from config: '{Character}'", avatarCharacter);
 
@@ -117,11 +164,14 @@ public class ConfigurationService
         {
             AzureSpeech = new AzureSpeechConfig
             {
-                Region = _configuration["AZURE_SPEECH_REGION"]
+                // Prefer Aspire connection string, fallback to individual config values
+                Region = speechRegion
+                    ?? _configuration["AZURE_SPEECH_REGION"]
                     ?? _configuration["AzureSpeech__Region"]
                     ?? _configuration["AzureSpeech:Region"]
                     ?? "westus2",
-                ApiKey = _configuration["AZURE_SPEECH_API_KEY"]
+                ApiKey = speechKey
+                    ?? _configuration["AZURE_SPEECH_API_KEY"]
                     ?? _configuration["AzureSpeech__ApiKey"]
                     ?? _configuration["AzureSpeech:ApiKey"]
                     ?? string.Empty,
