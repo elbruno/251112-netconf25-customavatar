@@ -1,4 +1,6 @@
-﻿using Azure.AI.Agents.Persistent;
+﻿#pragma warning disable CA2252 // Using preview features
+
+using Azure.AI.Agents.Persistent;
 using Azure.AI.OpenAI;
 using Azure.AI.Projects;
 using Azure.Identity;
@@ -6,6 +8,7 @@ using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using System.ClientModel;
 using System.Runtime.CompilerServices;
+using AzureAIAvatarBlazor.MAFLocal;
 
 namespace AzureAIAvatarBlazor.Services;
 
@@ -13,6 +16,7 @@ public class AzureAIAgentService
 {
     private readonly ILogger<AzureAIAgentService> _logger;
     private readonly ConfigurationService _configService;
+    private readonly MAFLocalAgentProvider? _mafLocalProvider;
     private AIAgent? _agentLLM;
     private AIAgent? _agentAIFoundry;
     private AIAgent? _agentMicrosoftFoundry;
@@ -21,10 +25,12 @@ public class AzureAIAgentService
     public AzureAIAgentService(
         IConfiguration configuration,
         ILogger<AzureAIAgentService> logger,
-        ConfigurationService configService)
+        ConfigurationService configService,
+        MAFLocalAgentProvider? mafLocalProvider = null)
     {
         _logger = logger;
         _configService = configService;
+        _mafLocalProvider = mafLocalProvider;
     }
 
     private async Task<AIAgent> GetOrCreateAgentAsync()
@@ -39,7 +45,8 @@ public class AzureAIAgentService
 
             if (mode == "Agent-AIFoundry")
             {
-                if(_agentAIFoundry == null) {
+                if (_agentAIFoundry == null)
+                {
                     _agentAIFoundry = await CreateAzureAIFoundryAgentAsync(config);
                 }
                 return _agentAIFoundry;
@@ -107,18 +114,41 @@ public class AzureAIAgentService
         }
 
         var deploymentName = string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentLLM.DeploymentName) ? "gpt-5.1-chat" : config.AzureOpenAI.AgentLLM.DeploymentName;
+        var instructions = config.AzureOpenAI.AgentLLM.SystemPrompt ?? "You are Pablo Piovano. Respond in the user's language with a short answer and a friendly, approachable tone. If you don't know an answer, just say 'I don't know'.";
 
         _logger.LogInformation("Using Endpoint: {Endpoint}", config.AzureOpenAI.AgentLLM.Endpoint);
         _logger.LogInformation("Using Deployment: {Deployment}", deploymentName);
 
+        // Use MAFLocal library for Agent-LLM mode if provider is available
+        if (_mafLocalProvider != null)
+        {
+            _logger.LogInformation("Using MAFLocal library to create agent");
+
+            const string agentName = "CustomAvatarAgent";
+            try
+            {
+                var mafAgent = _mafLocalProvider.GetAgentByName(agentName);
+                _logger.LogInformation("MAF Local agent retrieved from provider");
+                return mafAgent;
+            }
+            catch (InvalidOperationException)
+            {
+                _logger.LogWarning("Agent '{AgentName}' not found in MAFLocal provider. Creating inline agent instead.", agentName);
+                // Fall through to create inline agent
+            }
+        }
+        else
+        {
+            _logger.LogWarning("MAFLocalAgentProvider not available. Creating inline IChatClient-based agent instead. Consider registering MAFLocal services.");
+        }
+
+        // Fallback: Create agent inline using IChatClient (backward compatibility)
         var apiKey = new ApiKeyCredential(config.AzureOpenAI.AgentLLM.ApiKey);
         var openAIClient = new AzureOpenAIClient(new Uri(config.AzureOpenAI.AgentLLM.Endpoint), apiKey);
         var chatClient = openAIClient.GetChatClient(deploymentName);
-
-        var instructions = config.AzureOpenAI.AgentLLM.SystemPrompt ?? "You are Pablo Piovano. Respond in the user's language with a short answer and a friendly, approachable tone. If you don't know an answer, just say 'I don't know'.";
         var agent = chatClient.AsIChatClient().CreateAIAgent(instructions: instructions);
 
-        _logger.LogInformation("LLM-based Agent created successfully");
+        _logger.LogInformation("LLM-based Agent created successfully (inline)");
         return agent;
     }
 
@@ -215,24 +245,24 @@ public class AzureAIAgentService
         try
         {
             _logger.LogInformation("Testing Azure OpenAI connection...");
-            
+
             var config = _configService.GetConfiguration();
             var mode = config.AzureOpenAI.Mode ?? "Agent-LLM";
-            
+
             _logger.LogInformation("Testing connection for mode: {Mode}", mode);
 
             if (mode == "Agent-LLM")
             {
                 if (string.IsNullOrEmpty(config.AzureOpenAI.AgentLLM.Endpoint))
                     return (false, "❌ Error: Azure OpenAI Endpoint is not configured");
-                
+
                 if (string.IsNullOrEmpty(config.AzureOpenAI.AgentLLM.ApiKey))
                     return (false, "❌ Error: Azure OpenAI API Key is not configured");
 
                 // Try to create the agent and make a simple call
                 var agent = await GetOrCreateAgentAsync();
                 var response = await agent.RunAsync("Reply only: OK", cancellationToken: default);
-                
+
                 if (!string.IsNullOrEmpty(response.Text))
                 {
                     return (true, $"✅ Connection successful!\n" +
@@ -240,14 +270,14 @@ public class AzureAIAgentService
                         $"Deployment: {config.AzureOpenAI.AgentLLM.DeploymentName}\n" +
                         $"Test response: {response.Text}");
                 }
-                
+
                 return (false, "❌ Error: No response received from the model");
             }
             else if (mode == "Agent-MicrosoftFoundry")
             {
                 if (string.IsNullOrEmpty(config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryEndpoint))
                     return (false, "❌ Error: Microsoft Foundry Endpoint is not configured");
-                
+
                 var agent = await GetOrCreateAgentAsync();
                 var response = await agent.RunAsync("Reply only: OK", cancellationToken: default);
 
