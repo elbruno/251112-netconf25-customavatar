@@ -280,6 +280,47 @@ The application includes comprehensive telemetry tracking via Application Insigh
      - `TestConnection`: Connection validation traces
    - **Resources**: Check health and status of all services
 
+#### Health Checks (Phase 2)
+
+The application provides comprehensive health check endpoints for monitoring service health:
+
+**Endpoints**:
+- **`/health`**: Liveness check - Is the app running?
+- **`/health/ready`**: Readiness check - Is the app ready for traffic?
+- **`/health/startup`**: Startup check - Has initialization completed?
+
+**Test Health Checks Locally**:
+```bash
+# Check if app is alive
+curl http://localhost:5173/health
+
+# Get detailed health status (JSON)
+curl http://localhost:5173/health/ready
+```
+
+**Health Check Response** (example):
+```json
+{
+  "status": "Healthy",
+  "entries": {
+    "microsoft_foundry": {
+      "status": "Healthy",
+      "description": "Microsoft Foundry is configured"
+    },
+    "azure_speech": {
+      "status": "Healthy",
+      "description": "Azure Speech Service is configured"
+    },
+    "configuration": {
+      "status": "Healthy",
+      "description": "All required configuration present"
+    }
+  }
+}
+```
+
+See [PHASE2_IMPLEMENTATION_SUMMARY.md](PHASE2_IMPLEMENTATION_SUMMARY.md) for detailed health check documentation.
+
 #### Custom Telemetry Events
 
 The application tracks:
