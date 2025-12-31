@@ -4,6 +4,7 @@
 @using System.Text.Json
 @using Microsoft.AspNetCore.Components.Forms
 @inject ConfigurationService ConfigService
+@inject AzureAIAgentService AgentService
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
 @rendermode InteractiveServer
@@ -639,7 +640,7 @@
 		var presets = new List<PredefinedQuestion>
 		{
 			new PredefinedQuestion { Title = "Hi", Question = "Hello" },
-			new PredefinedQuestion { Title = "Microsoft–Canada AI initiative for Canadian enterprises", Question = "How is Microsoft collaborating with the Canadian government and organizations on AI initiatives? Make a single response in a paragraph and mention the sources " },
+			new PredefinedQuestion { Title = "Microsoftï¿½Canada AI initiative for Canadian enterprises", Question = "How is Microsoft collaborating with the Canadian government and organizations on AI initiatives? Make a single response in a paragraph and mention the sources " },
 			new PredefinedQuestion { Title = ".NET Conf 2025", Question = "What can you tell me about .NET Conf 2025" },
 			new PredefinedQuestion { Title = ".NET Conf 2025 (FR)", Question = "Que pouvez-vous me dire au sujet de .NET Conf 2025 ?" }
 		};
@@ -652,9 +653,26 @@
 		StateHasChanged();
 	}
 
-	private void SelectMode(string mode)
+	private async Task SelectMode(string mode)
 	{
-		config.AzureOpenAI.Mode = mode;
-		StateHasChanged();
+		try
+		{
+			config.AzureOpenAI.Mode = mode;
+			await ConfigService.SaveConfigurationAsync(config);
+			await AgentService.ResetAgentAsync();
+			statusMessage = $"Mode changed to {mode} and agent reset successfully.";
+			isError = false;
+			StateHasChanged();
+
+			await Task.Delay(3000);
+			statusMessage = string.Empty;
+			StateHasChanged();
+		}
+		catch (Exception ex)
+		{
+			statusMessage = $"Error changing mode: {ex.Message}";
+			isError = true;
+			StateHasChanged();
+		}
 	}
 }
