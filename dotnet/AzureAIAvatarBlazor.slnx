@@ -8,5 +8,6 @@
   </Folder>
   <Folder Name="/3 Infrastructure/">
     <Project Path="AzureAIAvatarBlazor.MAFFoundry/AzureAIAvatarBlazor.MAFFoundry.csproj" />
+    <Project Path="AzureAIAvatarBlazor.MAFLocal/AzureAIAvatarBlazor.MAFLocal.csproj" />
   </Folder>
 </Solution>

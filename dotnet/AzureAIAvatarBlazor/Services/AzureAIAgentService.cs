@@ -18,6 +18,7 @@ public class AzureAIAgentService
     private readonly ConfigurationService _configService;
     private readonly TelemetryService _telemetryService;
     private readonly MAFFoundry.MAFFoundryAgentProvider? _mafFoundryProvider;
+    private readonly MAFLocal.MAFLocalAgentProvider? _mafLocalProvider;
     private AIAgent? _agentLLM;
     private AIAgent? _agentAIFoundry;
     private AIAgent? _agentMicrosoftFoundry;
@@ -28,12 +29,14 @@ public class AzureAIAgentService
         ILogger<AzureAIAgentService> logger,
         ConfigurationService configService,
         TelemetryService telemetryService,
-        MAFFoundry.MAFFoundryAgentProvider? mafFoundryProvider = null)
+        MAFFoundry.MAFFoundryAgentProvider? mafFoundryProvider = null,
+        MAFLocal.MAFLocalAgentProvider? mafLocalProvider = null)
     {
         _logger = logger;
         _configService = configService;
         _telemetryService = telemetryService;
         _mafFoundryProvider = mafFoundryProvider;
+        _mafLocalProvider = mafLocalProvider;
     }
 
     private async Task<AIAgent> GetOrCreateAgentAsync()
@@ -128,21 +131,19 @@ public class AzureAIAgentService
             ? "gpt-5.1-chat"
             : config.AzureOpenAI.AgentLLM.DeploymentName;
 
-        _logger.LogInformation("Creating LLM-based Agent using MAFFoundry ChatClient with Deployment: {ModelDeployment}",
+        _logger.LogInformation("Creating LLM-based Agent using MAFLocal provider with Deployment: {ModelDeployment}",
             deploymentName);
 
-        if (_mafFoundryProvider == null)
+        if (_mafLocalProvider == null)
         {
-            _logger.LogError("MAFFoundryAgentProvider is not available for Agent-LLM mode");
-            throw new InvalidOperationException("MAFFoundryAgentProvider is required for Agent-LLM mode. Ensure Microsoft Foundry is properly configured.");
+            _logger.LogError("MAFLocalAgentProvider is not available for Agent-LLM mode");
+            throw new InvalidOperationException("MAFLocalAgentProvider is required for Agent-LLM mode. Ensure MAFLocal library is properly configured.");
         }
-
-        var chatClient = _mafFoundryProvider.GetChatClient(deploymentName);
 
         var instructions = config.AzureOpenAI.AgentLLM.SystemPrompt
             ?? "You are Pablo Piovano. Respond in the user's language with a short answer and a friendly, approachable tone. If you don't know an answer, just say 'I don't know'.";
 
-        var agent = chatClient.CreateAIAgent(instructions: instructions);
+        var agent = _mafLocalProvider.CreateAIAgent(instructions: instructions, name: deploymentName);
 
         _logger.LogInformation("LLM-based Agent created successfully with deployment: {ModelDeployment}", deploymentName);
         return agent;
@@ -285,8 +286,8 @@ public class AzureAIAgentService
 
             if (mode == "Agent-LLM")
             {
-                if (_mafFoundryProvider == null)
-                    return (false, "❌ Error: Microsoft Foundry provider is not configured");
+                if (_mafLocalProvider == null)
+                    return (false, "❌ Error: MAFLocal provider is not configured");
 
                 // Try to create the agent and make a simple call
                 var agent = await GetOrCreateAgentAsync();
@@ -296,7 +297,7 @@ public class AzureAIAgentService
                 {
                     activity?.SetTag("success", true);
                     return (true, $"✅ Connection successful!\n" +
-                        $"Mode: Agent-LLM (via Microsoft Foundry)\n" +
+                        $"Mode: Agent-LLM (via MAFLocal)\n" +
                         $"Model: {config.AzureOpenAI.AgentLLM.DeploymentName}\n" +
                         $"Test response: {response.Text}");
                 }

@@ -2,6 +2,7 @@ using AzureAIAvatarBlazor.Components;
 using AzureAIAvatarBlazor.Services;
 using AzureAIAvatarBlazor.Services.Caching;
 using AzureAIAvatarBlazor.MAFFoundry;
+using AzureAIAvatarBlazor.MAFLocal;
 using AzureAIAvatarBlazor.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -101,6 +102,14 @@ try
     // Register MAF Foundry agents and chat client
     // This will configure IChatClient and IEmbeddingGenerator if Microsoft Foundry endpoint is available
     builder.AddMAFFoundryAgents();
+
+    // ==============================
+    // MAF Local Integration
+    // ==============================
+
+    // Register MAF Local agent provider for Agent-LLM mode
+    // This uses the IChatClient registered by MAFFoundry to create agents on-demand
+    builder.AddMAFLocalAgents();
 
     // Add services to the container.
     builder.Services.AddRazorComponents()

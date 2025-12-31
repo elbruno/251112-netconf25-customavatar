@@ -44,6 +44,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\AzureAIAvatarBlazor.ServiceDefaults\AzureAIAvatarBlazor.ServiceDefaults.csproj" />
 		<ProjectReference Include="..\AzureAIAvatarBlazor.MAFFoundry\AzureAIAvatarBlazor.MAFFoundry.csproj" />
+		<ProjectReference Include="..\AzureAIAvatarBlazor.MAFLocal\AzureAIAvatarBlazor.MAFLocal.csproj" />
 	</ItemGroup>
 
 </Project>
