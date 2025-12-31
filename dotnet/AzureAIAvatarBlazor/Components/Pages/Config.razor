@@ -4,6 +4,7 @@
 @using System.Text.Json
 @using Microsoft.AspNetCore.Components.Forms
 @inject ConfigurationService ConfigService
+@inject AzureAIAgentService AgentService
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
 @rendermode InteractiveServer
@@ -599,4 +600,66 @@
 
 		StateHasChanged();
 	}
-}
+<<<<<<< HEAD
+=======
+
+	private async Task SelectMode(string mode)
+	{
+		if (config == null)
+		{
+			statusMessage = "Configuration not loaded. Please refresh the page.";
+			isError = true;
+			StateHasChanged();
+			return;
+		}
+
+		try
+		{
+			config.AzureOpenAI.Mode = mode;
+			await ConfigService.SaveConfigurationAsync(config);
+			await AgentService.ResetAgentAsync();
+			statusMessage = $"Mode changed to {mode} and agent reset successfully.";
+			isError = false;
+			StateHasChanged();
+
+			await Task.Delay(3000);
+			statusMessage = string.Empty;
+			StateHasChanged();
+		}
+		catch (Exception ex)
+		{
+			statusMessage = $"Error changing mode: {ex.Message}";
+			isError = true;
+			StateHasChanged();
+		}
+
+		private async Task SelectMode(string mode)
+		{
+			if (config == null)
+			{
+				statusMessage = "Configuration not loaded. Please refresh the page.";
+				isError = true;
+				StateHasChanged();
+				return;
+			}
+
+			try
+			{
+				config.AzureOpenAI.Mode = mode;
+				await ConfigService.SaveConfigurationAsync(config);
+				await AgentService.ResetAgentAsync();
+				statusMessage = $"Mode changed to {mode} and agent reset successfully.";
+				isError = false;
+				StateHasChanged();
+
+				await Task.Delay(3000);
+				statusMessage = string.Empty;
+				StateHasChanged();
+			}
+			catch (Exception ex)
+			{
+				statusMessage = $"Error changing mode: {ex.Message}";
+				isError = true;
+				StateHasChanged();
+			}
+		}

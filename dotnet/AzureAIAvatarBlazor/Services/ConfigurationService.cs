@@ -400,6 +400,7 @@ public class ConfigurationService
         activity?.SetTag("config.changed_keys", string.Join(", ", changedKeys));
 
         _logger.LogInformation("Saving configuration to cache...");
+        _logger.LogInformation("  - Mode: {Mode}", config.AzureOpenAI.Mode ?? "(none)");
         _logger.LogInformation("  - Character: {Character}, Style: {Style}",
             config.Avatar.Character, config.Avatar.Style ?? "(none)");
         _logger.LogInformation("  - IsCustomAvatar: {IsCustom}, UseBuiltInVoice: {UseBuiltIn}",
