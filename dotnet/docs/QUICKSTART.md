@@ -348,6 +348,70 @@ The application uses Redis for configuration caching to improve performance and 
 **View Cached Data** (optional):
 ```bash
 # Find Redis port from Aspire Dashboard
+# Resources tab → click on "cache" resource → see "Endpoint"
+
+# Connect with redis-cli
+redis-cli -h localhost -p <PORT_FROM_ASPIRE>
+
+# Get cached configuration
+GET config:default
+
+# Check TTL (time to live)
+TTL config:default
+```
+
+See [PHASE3_IMPLEMENTATION_SUMMARY.md](PHASE3_IMPLEMENTATION_SUMMARY.md) for detailed caching documentation.
+
+#### Structured Logging (Phase 4)
+
+The application uses Serilog for structured logging with rich formatting and Application Insights integration:
+
+**Features**:
+- Structured log properties (queryable)
+- Rich console output with colors
+- Application Insights integration
+- HTTP request logging
+- Log context enrichers
+
+**View Logs Locally**:
+
+1. **Console Output**: Rich formatted logs with structured properties
+   ```
+   [10:30:15 INF] AzureAIAvatarBlazor.Services.AzureAIAgentService
+   Initializing AI Agent with Agent-MicrosoftFoundry mode, Model/Agent: agent-assistant
+   {"AgentMode": "Agent-MicrosoftFoundry", "ModelDeployment": "agent-assistant"}
+   
+   [10:30:16 INF] HTTP GET /health/ready responded 200 in 15.2341 ms
+   {"RequestHost": "localhost:5173", "UserAgent": "curl/7.68.0", "RemoteIP": "::1"}
+   ```
+
+2. **Aspire Dashboard**: Navigate to **Logs** tab to see structured logs from all services
+
+**Query Logs in Application Insights** (Production):
+```kql
+traces
+| where customDimensions.Application == "AzureAIAvatarBlazor"
+| where customDimensions.AgentMode == "Agent-MicrosoftFoundry"
+| project timestamp, message,
+          agentMode = tostring(customDimensions.AgentMode),
+          deployment = tostring(customDimensions.ModelDeployment)
+| order by timestamp desc
+```
+
+**HTTP Request Analysis**:
+```kql
+traces
+| where message startswith "HTTP"
+| extend statusCode = toint(customDimensions.StatusCode),
+         elapsed = todouble(customDimensions.Elapsed)
+| where statusCode >= 400
+| summarize count() by statusCode, bin(timestamp, 5m)
+| render timechart
+```
+
+See [PHASE4_IMPLEMENTATION_SUMMARY.md](PHASE4_IMPLEMENTATION_SUMMARY.md) for detailed logging documentation.
+
+## 🧪 Testing the Application
 docker ps | grep redis
 
 # Connect to Redis
