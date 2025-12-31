@@ -655,6 +655,14 @@
 
 	private async Task SelectMode(string mode)
 	{
+		if (config == null)
+		{
+			statusMessage = "Configuration not loaded. Please refresh the page.";
+			isError = true;
+			StateHasChanged();
+			return;
+		}
+
 		try
 		{
 			config.AzureOpenAI.Mode = mode;
