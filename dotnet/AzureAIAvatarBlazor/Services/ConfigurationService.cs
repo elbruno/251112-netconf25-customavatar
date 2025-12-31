@@ -1,4 +1,5 @@
 using AzureAIAvatarBlazor.Models;
+using AzureAIAvatarBlazor.Services.Caching;
 using System.Text.Json;
 
 namespace AzureAIAvatarBlazor.Services;
@@ -11,6 +12,8 @@ namespace AzureAIAvatarBlazor.Services;
 /// 
 /// The application now uses Microsoft Foundry (via AzureAIAvatarBlazor.MAFFoundry library) for AI operations.
 /// IChatClient is automatically registered when the Microsoft Foundry endpoint is configured.
+/// 
+/// Phase 3: Configuration is now cached in Redis to reduce file/environment variable reads.
 /// </summary>
 public class ConfigurationService
 {
@@ -18,18 +21,23 @@ public class ConfigurationService
     private readonly IWebHostEnvironment _environment;
     private readonly ILogger<ConfigurationService> _logger;
     private readonly TelemetryService _telemetryService;
+    private readonly ICachingService _cachingService;
     private AvatarConfiguration? _cachedConfig;
+    private const string ConfigCacheKey = "config:default";
+    private static readonly TimeSpan ConfigCacheExpiration = TimeSpan.FromMinutes(5);
 
     public ConfigurationService(
         IConfiguration configuration,
         IWebHostEnvironment environment,
         ILogger<ConfigurationService> logger,
-        TelemetryService telemetryService)
+        TelemetryService telemetryService,
+        ICachingService cachingService)
     {
         _configuration = configuration;
         _environment = environment;
         _logger = logger;
         _telemetryService = telemetryService;
+        _cachingService = cachingService;
     }
 
     public event EventHandler<AvatarConfiguration?>? ConfigurationChanged;
@@ -64,14 +72,30 @@ public class ConfigurationService
 
     public AvatarConfiguration GetConfiguration()
     {
-        // Return cached config if available (respects user changes from Config page)
+        // First, check in-memory cache (respects user changes from Config page)
         if (_cachedConfig != null)
         {
-            _logger.LogInformation("Returning cached configuration (Character: {Character}, IsCustom: {IsCustom}, UseBuiltInVoice: {UseBuiltInVoice})",
+            _logger.LogInformation("Returning in-memory cached configuration (Character: {Character}, IsCustom: {IsCustom}, UseBuiltInVoice: {UseBuiltInVoice})",
                 _cachedConfig.Avatar.Character,
                 _cachedConfig.Avatar.IsCustomAvatar,
                 _cachedConfig.Avatar.UseBuiltInVoice);
             return _cachedConfig;
+        }
+
+        // Second, check Redis cache
+        try
+        {
+            var cachedFromRedis = _cachingService.GetAsync<AvatarConfiguration>(ConfigCacheKey).GetAwaiter().GetResult();
+            if (cachedFromRedis != null)
+            {
+                _logger.LogInformation("Returning Redis cached configuration (Character: {Character})", cachedFromRedis.Avatar.Character);
+                _cachedConfig = cachedFromRedis; // Also cache in memory
+                return cachedFromRedis;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to get configuration from Redis cache, loading from environment");
         }
 
         _logger.LogInformation("Loading configuration from environment/appsettings...");
@@ -324,6 +348,18 @@ public class ConfigurationService
         }
 
         _cachedConfig = config;
+        
+        // Cache in Redis for multi-instance scenarios (sync call in async wrapper)
+        try
+        {
+            _cachingService.SetAsync(ConfigCacheKey, config, ConfigCacheExpiration).GetAwaiter().GetResult();
+            _logger.LogInformation("Configuration cached in Redis with {Expiration} expiration", ConfigCacheExpiration);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to cache configuration in Redis");
+        }
+        
         return config;
     }
 
@@ -340,6 +376,17 @@ public class ConfigurationService
         if (config.PredefinedQuestions != null && config.PredefinedQuestions.Count > 0)
         {
             _logger.LogInformation("  - PredefinedQuestions: {Count}", config.PredefinedQuestions.Count);
+        }
+        
+        // Cache in Redis
+        try
+        {
+            await _cachingService.SetAsync(ConfigCacheKey, config, ConfigCacheExpiration);
+            _logger.LogInformation("Configuration saved to Redis cache");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to save configuration to Redis cache");
         }
         
         // Track configuration changes

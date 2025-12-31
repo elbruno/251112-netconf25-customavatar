@@ -21,6 +21,16 @@ else
 }
 
 // ==============================
+// Redis Cache
+// ==============================
+
+// Redis for caching configuration, conversation history, and avatar state
+// DEVELOPMENT: Local Redis container
+// PRODUCTION: Azure Cache for Redis
+var redis = builder.AddRedis("cache")
+    .WithLifetime(ContainerLifetime.Persistent); // Keep data between runs in dev
+
+// ==============================
 // Microsoft Foundry Configuration
 // ==============================
 
@@ -37,6 +47,7 @@ tenantId = builder.AddConnectionString("tenantId");
 // ==============================
 
 var avatarApp = builder.AddProject<Projects.AzureAIAvatarBlazor>("azureaiavatarblazor")
+    .WithReference(redis)
     .WithReference(microsoftfoundryproject)
     .WithReference(tenantId)
     .WithReference(appInsights);

@@ -1,5 +1,6 @@
 using AzureAIAvatarBlazor.Components;
 using AzureAIAvatarBlazor.Services;
+using AzureAIAvatarBlazor.Services.Caching;
 using AzureAIAvatarBlazor.MAFFoundry;
 using AzureAIAvatarBlazor.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -24,6 +25,13 @@ if (builder.Environment.IsDevelopment())
 }
 
 // ==============================
+// Redis Caching
+// ==============================
+
+// Add Redis connection from Aspire
+builder.AddRedisClient("cache");
+
+// ==============================
 // MAF Foundry Integration
 // ==============================
 
@@ -40,11 +48,18 @@ builder.Services.AddScoped<AzureAIAgentService>();
 builder.Services.AddScoped<ConfigurationService>();
 builder.Services.AddSingleton<TelemetryService>();
 
+// Register caching service
+builder.Services.AddSingleton<ICachingService, RedisCachingService>();
+
 // ==============================
 // Health Checks
 // ==============================
 
 builder.Services.AddHealthChecks()
+    .AddCheck<RedisHealthCheck>(
+        "redis",
+        failureStatus: HealthStatus.Degraded,
+        tags: new[] { "ready", "cache" })
     .AddCheck<MicrosoftFoundryHealthCheck>(
         "microsoft_foundry",
         failureStatus: HealthStatus.Degraded,

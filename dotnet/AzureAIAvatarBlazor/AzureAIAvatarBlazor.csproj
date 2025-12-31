@@ -11,6 +11,9 @@
 		<!-- NEW: Aspire client integration packages -->
 		<PackageReference Include="Aspire.Azure.AI.OpenAI" Version="9.5.2-preview.1.25522.3" />
 
+		<!-- Redis caching -->
+		<PackageReference Include="Aspire.StackExchange.Redis" Version="9.5.2" />
+
 		<!-- Health Check packages -->
 		<PackageReference Include="AspNetCore.HealthChecks.UI.Client" Version="9.0.0" />
 

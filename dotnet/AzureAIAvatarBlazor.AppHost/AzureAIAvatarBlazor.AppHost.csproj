@@ -20,6 +20,9 @@
 		<!-- Application Insights for telemetry and monitoring -->
 		<PackageReference Include="Aspire.Hosting.Azure.ApplicationInsights" Version="9.5.2" />
 
+		<!-- Redis for caching -->
+		<PackageReference Include="Aspire.Hosting.Redis" Version="9.5.2" />
+
 		<!-- NEW: For Azure Search support -->
 	</ItemGroup>
 
