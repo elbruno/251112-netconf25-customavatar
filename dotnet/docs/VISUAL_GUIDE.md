@@ -58,15 +58,27 @@ When "LLM" mode is selected:
 
 ### 3. Config Page - Agent-LLM Mode Fields
 
-When "Agent-LLM" mode is selected (same fields as LLM):
+When "Agent-LLM" mode is selected (uses Microsoft Foundry ChatClient):
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
-│ Mode: Agent-LLM (Agent Framework with OpenAI)                  │
+│ Mode: Agent-LLM (via Microsoft Foundry ChatClient)             │
 ├────────────────────────────────────────────────────────────────┤
+│ ℹ️ Uses the ChatClient from Microsoft Foundry project.         │
+│    Only the model/deployment name needs to be configured.     │
 │                                                                │
-│ Endpoint, API Key, Deployment Name, Instructions               │
-│ (Same layout as LLM mode above)                               │
+│ Model / Deployment Name:                                       │
+│ ┌──────────────────────────────────────────────────────────┐  │
+│ │ gpt-5.1-chat                                             │  │
+│ └──────────────────────────────────────────────────────────┘  │
+│ The AI model deployment name (e.g., gpt-4o-mini, gpt-5.1-chat)│
+│ Defaults to gpt-5.1-chat if not specified.                    │
+│                                                                │
+│ System Prompt / Instructions:                                  │
+│ ┌──────────────────────────────────────────────────────────┐  │
+│ │ You are a helpful AI assistant...                        │  │
+│ └──────────────────────────────────────────────────────────┘  │
+│ Configure how the AI assistant should respond.                │
 │                                                                │
 └────────────────────────────────────────────────────────────────┘
 ```
@@ -196,7 +208,7 @@ OpenAIService  AgentService
 
 ## Code Flow Example
 
-### When User Sends a Message:
+### When User Sends a Message
 
 ```csharp
 // 1. User types message and clicks Send
@@ -238,32 +250,29 @@ await JSRuntime.InvokeVoidAsync("speakText", response.ToString());
 
 ## Configuration Examples
 
-### Example 1: LLM Mode (Environment Variables)
+### Example 1: Agent-LLM Mode (User Secrets) - RECOMMENDED
 
 ```bash
-export AGENT_MODE="LLM"
-export AZURE_OPENAI_ENDPOINT="https://myopenai.openai.azure.com"
-export AZURE_OPENAI_API_KEY="abc123..."
-export AZURE_OPENAI_DEPLOYMENT_NAME="gpt-4o-mini"
-export SYSTEM_PROMPT="You are a helpful assistant."
-```
-
-### Example 2: Agent-LLM Mode (User Secrets)
-
-```bash
+# Agent-LLM uses Microsoft Foundry ChatClient - only model name required
 dotnet user-secrets set "AzureOpenAI:Mode" "Agent-LLM"
-dotnet user-secrets set "AzureOpenAI:Endpoint" "https://myopenai.openai.azure.com"
-dotnet user-secrets set "AzureOpenAI:ApiKey" "abc123..."
-dotnet user-secrets set "AzureOpenAI:DeploymentName" "gpt-4o-mini"
-dotnet user-secrets set "AzureOpenAI:SystemPrompt" "You are a helpful agent."
+dotnet user-secrets set "AzureOpenAI:AgentLLM:DeploymentName" "gpt-5.1-chat"
+dotnet user-secrets set "AzureOpenAI:AgentLLM:SystemPrompt" "You are a helpful assistant."
 ```
 
-### Example 3: Agent-AIFoundry Mode (User Secrets)
+### Example 2: Agent-MicrosoftFoundry Mode (User Secrets)
+
+```bash
+dotnet user-secrets set "AzureOpenAI:Mode" "Agent-MicrosoftFoundry"
+dotnet user-secrets set "AzureOpenAI:AgentMicrosoftFoundry:MicrosoftFoundryAgentName" "AvatarAgent"
+dotnet user-secrets set "AzureOpenAI:TenantId" "your-tenant-id"  # Optional
+```
+
+### Example 3: Agent-AIFoundry Mode (User Secrets) - NOT YET IMPLEMENTED
 
 ```bash
 dotnet user-secrets set "AzureOpenAI:Mode" "Agent-AIFoundry"
-dotnet user-secrets set "AzureOpenAI:Endpoint" "https://myproject.api.azureml.ms"
-dotnet user-secrets set "AzureOpenAI:AgentId" "asst_123abc..."
+dotnet user-secrets set "AzureOpenAI:AgentAIFoundry:AIFoundryEndpoint" "https://myproject.api.azureml.ms"
+dotnet user-secrets set "AzureOpenAI:AgentAIFoundry:AgentId" "asst_123abc..."
 ```
 
 ## Validation Messages
@@ -271,22 +280,19 @@ dotnet user-secrets set "AzureOpenAI:AgentId" "asst_123abc..."
 The system provides helpful validation messages:
 
 ```
-LLM Mode:
-✗ "Azure OpenAI endpoint is required."
-✗ "Azure OpenAI API key is required."
-✗ "Azure OpenAI deployment name is required."
-
 Agent-LLM Mode:
-✗ "Azure OpenAI endpoint is required for Agent-LLM mode."
-✗ "Azure OpenAI API key is required for Agent-LLM mode."
-✗ "Azure OpenAI deployment name is required for Agent-LLM mode."
+✗ "Model/deployment name is required for Agent-LLM mode (e.g., gpt-5.1-chat)."
+
+Agent-MicrosoftFoundry Mode:
+✗ "Microsoft Foundry endpoint is required for Agent-MicrosoftFoundry mode."
+✗ "Microsoft Foundry agent name is required for Agent-MicrosoftFoundry mode."
 
 Agent-AIFoundry Mode:
 ✗ "Azure AI Foundry endpoint is required for Agent-AIFoundry mode."
 ✗ "Agent ID is required for Agent-AIFoundry mode."
 
 Invalid Mode:
-✗ "Invalid mode 'XYZ'. Supported modes are: LLM, Agent-LLM, Agent-AIFoundry."
+✗ "Invalid mode 'XYZ'. Supported modes: Agent-LLM, Agent-MicrosoftFoundry, Agent-AIFoundry."
 ```
 
 ## Testing Checklist

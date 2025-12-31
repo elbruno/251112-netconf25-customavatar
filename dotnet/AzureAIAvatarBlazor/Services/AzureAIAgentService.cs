@@ -17,6 +17,7 @@ public class AzureAIAgentService
     private readonly ILogger<AzureAIAgentService> _logger;
     private readonly ConfigurationService _configService;
     private readonly TelemetryService _telemetryService;
+    private readonly MAFFoundry.MAFFoundryAgentProvider? _mafFoundryProvider;
     private AIAgent? _agentLLM;
     private AIAgent? _agentAIFoundry;
     private AIAgent? _agentMicrosoftFoundry;
@@ -26,11 +27,13 @@ public class AzureAIAgentService
         IConfiguration configuration,
         ILogger<AzureAIAgentService> logger,
         ConfigurationService configService,
-        TelemetryService telemetryService)
+        TelemetryService telemetryService,
+        MAFFoundry.MAFFoundryAgentProvider? mafFoundryProvider = null)
     {
         _logger = logger;
         _configService = configService;
         _telemetryService = telemetryService;
+        _mafFoundryProvider = mafFoundryProvider;
     }
 
     private async Task<AIAgent> GetOrCreateAgentAsync()
@@ -49,7 +52,7 @@ public class AzureAIAgentService
 
             var endpoint = mode switch
             {
-                "Agent-LLM" => config.AzureOpenAI.AgentLLM.Endpoint,
+                "Agent-LLM" => "Microsoft Foundry ChatClient",
                 "Agent-AIFoundry" => config.AzureOpenAI.AgentAIFoundry.AIFoundryEndpoint,
                 "Agent-MicrosoftFoundry" => config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryEndpoint,
                 _ => null
@@ -62,7 +65,8 @@ public class AzureAIAgentService
 
             if (mode == "Agent-AIFoundry")
             {
-                if(_agentAIFoundry == null) {
+                if (_agentAIFoundry == null)
+                {
                     _agentAIFoundry = await CreateAzureAIFoundryAgentAsync(config);
                 }
                 return _agentAIFoundry;
@@ -120,30 +124,25 @@ public class AzureAIAgentService
 
     private AIAgent CreateLLMBasedAgent(Models.AvatarConfiguration config)
     {
-        var deploymentName = string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentLLM.DeploymentName) ? "gpt-5.1-chat" : config.AzureOpenAI.AgentLLM.DeploymentName;
+        var deploymentName = string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentLLM.DeploymentName)
+            ? "gpt-5.1-chat"
+            : config.AzureOpenAI.AgentLLM.DeploymentName;
 
-        _logger.LogInformation("Creating LLM-based Agent with Endpoint: {OpenAIEndpoint}, Deployment: {ModelDeployment}",
-            config.AzureOpenAI.AgentLLM.Endpoint,
+        _logger.LogInformation("Creating LLM-based Agent using MAFFoundry ChatClient with Deployment: {ModelDeployment}",
             deploymentName);
 
-        if (string.IsNullOrEmpty(config.AzureOpenAI.AgentLLM.Endpoint))
+        if (_mafFoundryProvider == null)
         {
-            _logger.LogError("Azure OpenAI Endpoint is missing for Agent-LLM mode");
-            throw new InvalidOperationException("Azure OpenAI Endpoint is required for Agent-LLM mode.");
+            _logger.LogError("MAFFoundryAgentProvider is not available for Agent-LLM mode");
+            throw new InvalidOperationException("MAFFoundryAgentProvider is required for Agent-LLM mode. Ensure Microsoft Foundry is properly configured.");
         }
 
-        if (string.IsNullOrEmpty(config.AzureOpenAI.AgentLLM.ApiKey))
-        {
-            _logger.LogError("Azure OpenAI API Key is missing for Agent-LLM mode");
-            throw new InvalidOperationException("Azure OpenAI API Key is required for Agent-LLM mode.");
-        }
+        var chatClient = _mafFoundryProvider.GetChatClient(deploymentName);
 
-        var apiKey = new ApiKeyCredential(config.AzureOpenAI.AgentLLM.ApiKey);
-        var openAIClient = new AzureOpenAIClient(new Uri(config.AzureOpenAI.AgentLLM.Endpoint), apiKey);
-        var chatClient = openAIClient.GetChatClient(deploymentName);
+        var instructions = config.AzureOpenAI.AgentLLM.SystemPrompt
+            ?? "You are Pablo Piovano. Respond in the user's language with a short answer and a friendly, approachable tone. If you don't know an answer, just say 'I don't know'.";
 
-        var instructions = config.AzureOpenAI.AgentLLM.SystemPrompt ?? "You are Pablo Piovano. Respond in the user's language with a short answer and a friendly, approachable tone. If you don't know an answer, just say 'I don't know'.";
-        var agent = chatClient.AsIChatClient().CreateAIAgent(instructions: instructions);
+        var agent = chatClient.CreateAIAgent(instructions: instructions);
 
         _logger.LogInformation("LLM-based Agent created successfully with deployment: {ModelDeployment}", deploymentName);
         return agent;
@@ -197,7 +196,7 @@ public class AzureAIAgentService
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var stopwatch = Stopwatch.StartNew();
-        
+
         _logger.LogInformation("Starting chat completion stream with Agent Framework");
         _logger.LogInformation("Message count: {Count}, Last message role: {Role}",
             messages.Count,
@@ -245,7 +244,7 @@ public class AzureAIAgentService
         }
 
         stopwatch.Stop();
-        
+
         // Track AI response time
         _telemetryService.TrackAIResponseTime(mode, stopwatch.ElapsedMilliseconds, totalCharacters);
         _telemetryService.TrackChatMessage("assistant", totalCharacters);
@@ -254,7 +253,7 @@ public class AzureAIAgentService
         activity?.SetTag("ai.response.chunks", totalChunks);
         activity?.SetTag("ai.response.completion_length", totalCharacters);
         activity?.SetTag("ai.response.duration_ms", stopwatch.ElapsedMilliseconds);
-        activity?.SetTag("ai.response.tokens_per_second", 
+        activity?.SetTag("ai.response.tokens_per_second",
             stopwatch.ElapsedMilliseconds > 0 ? (totalCharacters / (stopwatch.ElapsedMilliseconds / 1000.0)) : 0);
 
         _logger.LogInformation("Agent response completed: {Chunks} chunks, {Characters} total characters",
@@ -272,46 +271,43 @@ public class AzureAIAgentService
     public async Task<(bool Success, string Message)> TestConnectionAsync()
     {
         using var activity = _telemetryService.StartActivity("TestConnection", ActivityKind.Client);
-        
+
         try
         {
             _logger.LogInformation("Testing Azure OpenAI connection...");
-            
+
             var config = _configService.GetConfiguration();
             var mode = config.AzureOpenAI.Mode ?? "Agent-LLM";
-            
+
             activity?.SetTag("mode", mode);
-            
+
             _logger.LogInformation("Testing connection for mode: {Mode}", mode);
 
             if (mode == "Agent-LLM")
             {
-                if (string.IsNullOrEmpty(config.AzureOpenAI.AgentLLM.Endpoint))
-                    return (false, "❌ Error: Azure OpenAI Endpoint is not configured");
-                
-                if (string.IsNullOrEmpty(config.AzureOpenAI.AgentLLM.ApiKey))
-                    return (false, "❌ Error: Azure OpenAI API Key is not configured");
+                if (_mafFoundryProvider == null)
+                    return (false, "❌ Error: Microsoft Foundry provider is not configured");
 
                 // Try to create the agent and make a simple call
                 var agent = await GetOrCreateAgentAsync();
                 var response = await agent.RunAsync("Reply only: OK", cancellationToken: default);
-                
+
                 if (!string.IsNullOrEmpty(response.Text))
                 {
                     activity?.SetTag("success", true);
                     return (true, $"✅ Connection successful!\n" +
-                        $"Endpoint: {config.AzureOpenAI.AgentLLM.Endpoint}\n" +
-                        $"Deployment: {config.AzureOpenAI.AgentLLM.DeploymentName}\n" +
+                        $"Mode: Agent-LLM (via Microsoft Foundry)\n" +
+                        $"Model: {config.AzureOpenAI.AgentLLM.DeploymentName}\n" +
                         $"Test response: {response.Text}");
                 }
-                
+
                 return (false, "❌ Error: No response received from the model");
             }
             else if (mode == "Agent-MicrosoftFoundry")
             {
                 if (string.IsNullOrEmpty(config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryEndpoint))
                     return (false, "❌ Error: Microsoft Foundry Endpoint is not configured");
-                
+
                 var agent = await GetOrCreateAgentAsync();
                 var response = await agent.RunAsync("Reply only: OK", cancellationToken: default);
 

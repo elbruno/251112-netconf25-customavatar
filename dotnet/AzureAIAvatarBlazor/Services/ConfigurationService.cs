@@ -136,9 +136,11 @@ public class ConfigurationService
             },
             AzureOpenAI = new AzureOpenAIConfig
             {
-                // Mode is now fixed to Agent-MicrosoftFoundry (managed by MAFFoundry library)
-                // Microsoft Foundry endpoint is managed by Aspire AppHost via connection strings
-                Mode = "Agent-MicrosoftFoundry",
+                // Mode can be: Agent-LLM (uses ChatClient from MAFFoundry), Agent-MicrosoftFoundry, or Agent-AIFoundry
+                Mode = _configuration["AzureOpenAI__Mode"]
+                    ?? _configuration["AzureOpenAI:Mode"]
+                    ?? _configuration["AZURE_OPENAI_MODE"]
+                    ?? "Agent-LLM", // Default to Agent-LLM (simplest configuration)
                 TenantId = _configuration.GetConnectionString("tenantId")
                     ?? _configuration["AZURE_TENANT_ID"]
                     ?? _configuration["AzureOpenAI__TenantId"]
@@ -146,14 +148,12 @@ public class ConfigurationService
                     ?? string.Empty,
                 AgentLLM = new AgentLLMConfig
                 {
-                    // Legacy fields - endpoint and API key are now managed by AppHost
-                    Endpoint = string.Empty, // Managed by MAFFoundry
-                    ApiKey = string.Empty, // Managed by MAFFoundry
                     DeploymentName = _configuration["OpenAI__DeploymentName"]
                         ?? _configuration["AZURE_OPENAI_DEPLOYMENT_NAME"]
                         ?? _configuration["AzureOpenAI__DeploymentName"]
+                        ?? _configuration["AzureOpenAI:AgentLLM:DeploymentName"]
                         ?? _configuration["AzureOpenAI:AgentLLMConfig:DeploymentName"]
-                        ?? "gpt-4o-mini",
+                        ?? "gpt-5.1-chat",
                     SystemPrompt = _configuration["SystemPrompt"]
                         ?? _configuration["AzureOpenAI__AgentLLM__SystemPrompt"]
                         ?? _configuration["AzureOpenAI:AgentLLM:SystemPrompt"]
@@ -502,31 +502,12 @@ public class ConfigurationService
         // Validate based on mode
         if (mode == "Agent-LLM")
         {
-            // Standard LLM validation
-            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentLLM.Endpoint))
-            {
-                _logger.LogWarning("Validation failed: Azure OpenAI endpoint is missing");
-                return "Azure OpenAI endpoint is required.";
-            }
-
-            // Validate endpoint URL format
-            if (!Uri.TryCreate(config.AzureOpenAI.AgentLLM.Endpoint, UriKind.Absolute, out var uri) ||
-                (uri.Scheme != "https" && uri.Scheme != "http"))
-            {
-                _logger.LogWarning("Validation failed: Invalid Azure OpenAI endpoint URL: {Endpoint}", config.AzureOpenAI.AgentLLM.Endpoint);
-                return "Azure OpenAI endpoint must be a valid HTTPS URL.";
-            }
-
-            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentLLM.ApiKey))
-            {
-                _logger.LogWarning("Validation failed: Azure OpenAI API key is missing");
-                return "Azure OpenAI API key is required.";
-            }
-
+            // Agent-LLM mode only requires deployment name (model name)
+            // Endpoint and API Key are provided by MAFFoundry
             if (string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentLLM.DeploymentName))
             {
-                _logger.LogWarning("Validation failed: Azure OpenAI deployment name is missing");
-                return "Azure OpenAI deployment name is required.";
+                _logger.LogWarning("Validation failed: Model/deployment name is missing for Agent-LLM mode");
+                return "Model/deployment name is required for Agent-LLM mode (e.g., gpt-5.1-chat).";
             }
         }
         else if (mode == "Agent-AIFoundry")
