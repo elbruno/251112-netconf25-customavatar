@@ -17,6 +17,13 @@
 		<!-- Health Check packages -->
 		<PackageReference Include="AspNetCore.HealthChecks.UI.Client" Version="9.0.0" />
 
+		<!-- Serilog for structured logging -->
+		<PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+		<PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
+		<PackageReference Include="Serilog.Enrichers.Thread" Version="4.0.0" />
+		<PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
+		<PackageReference Include="Serilog.Sinks.ApplicationInsights" Version="5.0.0-dev-02322" />
+
 		<!-- Agent Framework packages - Updated to latest -->
 		<PackageReference Include="Azure.AI.Agents.Persistent" Version="1.2.0-beta.7" />
 

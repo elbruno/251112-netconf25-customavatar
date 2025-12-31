@@ -47,12 +47,10 @@ public class ConfigurationService
         var explicitSetting = config["Avatar__IsCustomAvatar"]
             ?? config["Avatar:IsCustomAvatar"];
 
-        _logger.LogInformation("Explicit IsCustomAvatar setting: '{Setting}'", explicitSetting ?? "null");
-
         if (!string.IsNullOrEmpty(explicitSetting))
         {
             var result = bool.Parse(explicitSetting);
-            _logger.LogInformation("Using explicit custom avatar setting: {Result}", result);
+            _logger.LogInformation("Using explicit custom avatar setting: {IsCustomAvatar}, Source: Configuration", result);
             return result;
         }
 
@@ -62,10 +60,8 @@ public class ConfigurationService
             ?? config["AVATAR_CHARACTER"]
             ?? "lisa";
 
-        _logger.LogInformation("Checking character '{Character}' against standard avatars", character);
-
         var isCustom = AvatarDisplayConfig.IsCustomAvatarCharacter(character);
-        _logger.LogInformation("Auto-detected IsCustomAvatar: {IsCustom}", isCustom);
+        _logger.LogInformation("Auto-detected custom avatar: {IsCustomAvatar}, Character: {AvatarCharacter}", isCustom, character);
 
         return isCustom;
     }
@@ -75,7 +71,7 @@ public class ConfigurationService
         // First, check in-memory cache (respects user changes from Config page)
         if (_cachedConfig != null)
         {
-            _logger.LogInformation("Returning in-memory cached configuration (Character: {Character}, IsCustom: {IsCustom}, UseBuiltInVoice: {UseBuiltInVoice})",
+            _logger.LogDebug("Returning in-memory cached configuration (Character: {AvatarCharacter}, IsCustom: {IsCustomAvatar}, UseBuiltInVoice: {UseBuiltInVoice})",
                 _cachedConfig.Avatar.Character,
                 _cachedConfig.Avatar.IsCustomAvatar,
                 _cachedConfig.Avatar.UseBuiltInVoice);

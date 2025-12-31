@@ -40,8 +40,15 @@ public class AzureAIAgentService
         {
             var config = _configService.GetConfiguration();
             var mode = config.AzureOpenAI.Mode ?? "Agent-LLM";
+            var deploymentName = mode switch
+            {
+                "Agent-LLM" => config.AzureOpenAI.AgentLLM.DeploymentName ?? "gpt-5.1-chat",
+                "Agent-MicrosoftFoundry" => config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryAgentName ?? "unknown",
+                _ => "unknown"
+            };
 
-            _logger.LogInformation("Initializing AI Agent with mode: {Mode}", mode);
+            _logger.LogInformation("Initializing AI Agent with {AgentMode} mode, Model/Agent: {ModelDeployment}",
+                mode, deploymentName);
 
             if (mode == "Agent-AIFoundry")
             {
@@ -68,6 +75,8 @@ public class AzureAIAgentService
             }
             else
             {
+                _logger.LogError("Unsupported agent mode: {AgentMode}. Supported modes: {SupportedModes}",
+                    mode, new[] { "Agent-LLM", "Agent-AIFoundry", "Agent-MicrosoftFoundry" });
                 throw new InvalidOperationException($"Agent mode '{mode}' is not supported. Use 'Agent-LLM', 'Agent-AIFoundry', or 'Agent-MicrosoftFoundry'.");
             }
         }
@@ -79,43 +88,45 @@ public class AzureAIAgentService
 
     private async Task<AIAgent> CreateAzureAIFoundryAgentAsync(Models.AvatarConfiguration config)
     {
-        _logger.LogInformation("Creating Azure AI Foundry Agent...");
+        _logger.LogInformation("Creating Azure AI Foundry Agent with AgentId: {AgentId}, Endpoint: {AIFoundryEndpoint}",
+            config.AzureOpenAI.AgentAIFoundry.AgentId,
+            config.AzureOpenAI.AgentAIFoundry.AIFoundryEndpoint);
 
         if (string.IsNullOrEmpty(config.AzureOpenAI.AgentAIFoundry.AgentId))
         {
+            _logger.LogError("AgentId is missing for Agent-AIFoundry mode");
             throw new InvalidOperationException("AgentId is required for Agent-AIFoundry mode.");
         }
 
         if (string.IsNullOrEmpty(config.AzureOpenAI.AgentAIFoundry.AIFoundryEndpoint))
         {
+            _logger.LogError("Azure AI Foundry endpoint is missing for Agent-AIFoundry mode");
             throw new InvalidOperationException("Azure AI Foundry endpoint is required for Agent-AIFoundry mode.");
         }
 
-        _logger.LogInformation("Using Azure AI Foundry Agent ID: {AgentId}", config.AzureOpenAI.AgentAIFoundry.AgentId);
-        _logger.LogInformation("Using AI Foundry Endpoint: {Endpoint}", config.AzureOpenAI.AgentAIFoundry.AIFoundryEndpoint);
-
-        _logger.LogWarning("Azure AI Foundry agent retrieval is not implemented in this build.");
+        _logger.LogWarning("Azure AI Foundry agent retrieval is not implemented in this build");
         throw new NotImplementedException("Agent-AIFoundry integration is not implemented in this build. Implement retrieval using the appropriate Foundry SDK client.");
     }
 
     private AIAgent CreateLLMBasedAgent(Models.AvatarConfiguration config)
     {
-        _logger.LogInformation("Creating LLM-based Agent...");
+        var deploymentName = string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentLLM.DeploymentName) ? "gpt-5.1-chat" : config.AzureOpenAI.AgentLLM.DeploymentName;
+
+        _logger.LogInformation("Creating LLM-based Agent with Endpoint: {OpenAIEndpoint}, Deployment: {ModelDeployment}",
+            config.AzureOpenAI.AgentLLM.Endpoint,
+            deploymentName);
 
         if (string.IsNullOrEmpty(config.AzureOpenAI.AgentLLM.Endpoint))
         {
+            _logger.LogError("Azure OpenAI Endpoint is missing for Agent-LLM mode");
             throw new InvalidOperationException("Azure OpenAI Endpoint is required for Agent-LLM mode.");
         }
 
         if (string.IsNullOrEmpty(config.AzureOpenAI.AgentLLM.ApiKey))
         {
+            _logger.LogError("Azure OpenAI API Key is missing for Agent-LLM mode");
             throw new InvalidOperationException("Azure OpenAI API Key is required for Agent-LLM mode.");
         }
-
-        var deploymentName = string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentLLM.DeploymentName) ? "gpt-5.1-chat" : config.AzureOpenAI.AgentLLM.DeploymentName;
-
-        _logger.LogInformation("Using Endpoint: {Endpoint}", config.AzureOpenAI.AgentLLM.Endpoint);
-        _logger.LogInformation("Using Deployment: {Deployment}", deploymentName);
 
         var apiKey = new ApiKeyCredential(config.AzureOpenAI.AgentLLM.ApiKey);
         var openAIClient = new AzureOpenAIClient(new Uri(config.AzureOpenAI.AgentLLM.Endpoint), apiKey);
@@ -124,26 +135,30 @@ public class AzureAIAgentService
         var instructions = config.AzureOpenAI.AgentLLM.SystemPrompt ?? "You are Pablo Piovano. Respond in the user's language with a short answer and a friendly, approachable tone. If you don't know an answer, just say 'I don't know'.";
         var agent = chatClient.AsIChatClient().CreateAIAgent(instructions: instructions);
 
-        _logger.LogInformation("LLM-based Agent created successfully");
+        _logger.LogInformation("LLM-based Agent created successfully with deployment: {ModelDeployment}", deploymentName);
         return agent;
     }
 
     private AIAgent CreateMicrosoftFoundryBasedAgent(Models.AvatarConfiguration config)
     {
-        _logger.LogInformation("Creating Microsoft Foundry-based Agent...");
+        var agentName = config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryAgentName;
+        var microsoftFoundryProjectEndpoint = config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryEndpoint;
 
-        if (string.IsNullOrEmpty(config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryEndpoint))
+        _logger.LogInformation("Creating Microsoft Foundry-based Agent with Endpoint: {FoundryEndpoint}, AgentName: {AgentName}",
+            microsoftFoundryProjectEndpoint,
+            agentName);
+
+        if (string.IsNullOrEmpty(microsoftFoundryProjectEndpoint))
         {
+            _logger.LogError("Microsoft Foundry Endpoint is missing for Agent-MicrosoftFoundry mode");
             throw new InvalidOperationException("Azure Microsoft Foundry Endpoint is required for Agent-MicrosoftFoundry mode.");
         }
 
-        if (string.IsNullOrEmpty(config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryAgentName))
+        if (string.IsNullOrEmpty(agentName))
         {
+            _logger.LogError("Microsoft Foundry Agent Name is missing for Agent-MicrosoftFoundry mode");
             throw new InvalidOperationException("Azure Microsoft Foundry Agent Name is required for Agent-MicrosoftFoundry mode.");
         }
-
-        var agentName = config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryAgentName;
-        var microsoftFoundryProjectEndpoint = config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryEndpoint;
         string tenantId = config.AzureOpenAI.TenantId;
 
         var credentialOptions = new DefaultAzureCredentialOptions();
