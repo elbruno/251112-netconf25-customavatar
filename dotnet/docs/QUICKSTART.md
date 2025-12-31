@@ -411,6 +411,103 @@ traces
 
 See [PHASE4_IMPLEMENTATION_SUMMARY.md](PHASE4_IMPLEMENTATION_SUMMARY.md) for detailed logging documentation.
 
+#### Distributed Tracing (Phase 5)
+
+The application includes comprehensive distributed tracing with rich span attributes for all major operations:
+
+**Features**:
+- Custom spans for avatar, AI agent, and configuration operations
+- Semantic attributes following OpenTelemetry conventions
+- Adaptive sampling (100% dev, cost-effective production)
+- End-to-end request tracking
+
+**View Traces Locally**:
+
+1. **Aspire Dashboard**: Navigate to **Traces** tab (http://localhost:15216)
+   - See hierarchical trace view with parent-child relationships
+   - Filter by operation name (e.g., "AIAgent.ChatCompletion")
+   - View span attributes for detailed context
+
+**Example Trace Hierarchy**:
+```
+┌─ HTTP GET /api/chat/stream (200 OK) - 2.5s
+├─── AIAgent.ChatCompletion - 2.4s
+│    ├─ ai.agent.mode: Agent-MicrosoftFoundry
+│    ├─ ai.model.name: agent-assistant
+│    ├─ ai.prompt.length: 150
+│    ├─ ai.response.completion_length: 300
+│    ├─ ai.response.duration_ms: 2400
+│    └─ ai.response.tokens_per_second: 125.0
+└─── Config.Load - 2ms
+     ├─ config.source: cache-check
+     └─ config.cache_hit: memory
+```
+
+**Query Traces in Application Insights** (Production):
+
+**AI Agent Chat Completions**:
+```kql
+dependencies
+| where name == "AIAgent.ChatCompletion"
+| extend 
+    agentMode = tostring(customDimensions.["ai.agent.mode"]),
+    modelName = tostring(customDimensions.["ai.model.name"]),
+    responseLength = toint(customDimensions.["ai.response.completion_length"]),
+    durationMs = toint(customDimensions.["ai.response.duration_ms"]),
+    tokensPerSecond = todouble(customDimensions.["ai.response.tokens_per_second"])
+| summarize 
+    avgDuration = avg(durationMs),
+    p95Duration = percentile(durationMs, 95),
+    avgTokensPerSec = avg(tokensPerSecond)
+    by agentMode, modelName, bin(timestamp, 5m)
+| render timechart
+```
+
+**Configuration Cache Performance**:
+```kql
+traces
+| where operation_Name == "Config.Load"
+| extend cacheHit = tostring(customDimensions.["config.cache_hit"])
+| summarize 
+    Total = count(),
+    MemoryHits = countif(cacheHit == "memory"),
+    RedisHits = countif(cacheHit == "redis"),
+    Misses = countif(cacheHit == "miss")
+| extend 
+    CacheHitRate = (MemoryHits + RedisHits) * 100.0 / Total,
+    MemoryHitRate = MemoryHits * 100.0 / Total
+| project 
+    Total, 
+    MemoryHits, 
+    RedisHits, 
+    Misses, 
+    CacheHitRate = round(CacheHitRate, 2),
+    MemoryHitRate = round(MemoryHitRate, 2)
+```
+
+**Avatar Session Analytics**:
+```kql
+traces
+| where operation_Name == "AvatarSession.Start"
+| extend 
+    character = tostring(customDimensions.["avatar.character"]),
+    style = tostring(customDimensions.["avatar.style"]),
+    isCustom = tobool(customDimensions.["avatar.is_custom"])
+| summarize Count = count() by character, style, isCustom
+| order by Count desc
+```
+
+**Span Attributes by Operation**:
+
+- **AIAgent.ChatCompletion**: ai.agent.mode, ai.model.name, ai.prompt.length, ai.response.completion_length, ai.response.duration_ms, ai.response.tokens_per_second
+- **AIAgent.Initialize**: ai.agent.mode, ai.endpoint
+- **Config.Load**: config.source, config.cache_hit
+- **Config.Save**: config.changed_keys, config.redis_save
+- **Speech.Synthesize**: speech.voice, speech.text_length
+- **AvatarSession.Start**: avatar.character, avatar.style, avatar.is_custom
+
+See [PHASE5_IMPLEMENTATION_SUMMARY.md](PHASE5_IMPLEMENTATION_SUMMARY.md) for detailed tracing documentation.
+
 ## 🧪 Testing the Application
 docker ps | grep redis
 
