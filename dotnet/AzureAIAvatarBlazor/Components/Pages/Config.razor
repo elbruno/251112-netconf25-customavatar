@@ -289,12 +289,12 @@
 								<div class="mb-2">
 									<label class="form-label">TTS Voice (override)</label>
 									<input type="text" class="form-control @(hasWarning && string.IsNullOrWhiteSpace(a.TtsVoice) ? "border-warning" : "")" 
-										   @bind="a.TtsVoice" placeholder="e.g. en-US-BrunoNeural" />
+									   @bind="a.TtsVoice" placeholder="e.g. en-US-BrunoNeural" />
 								</div>
 								<div class="mb-2">
 									<label class="form-label">Custom Voice Endpoint ID (override)</label>
 									<input type="text" class="form-control @(hasWarning && string.IsNullOrWhiteSpace(a.CustomVoiceEndpointId) ? "border-warning" : "")" 
-										   @bind="a.CustomVoiceEndpointId" placeholder="your-custom-endpoint-id" />
+									   @bind="a.CustomVoiceEndpointId" placeholder="your-custom-endpoint-id" />
 								</div>
 							</div>
 						}
@@ -357,9 +357,9 @@
 	// Default system prompt (shortened to avoid Razor parsing issues)
 	private const string DefaultSystemPrompt = "You are an AI assistant. Respond briefly and helpfully. If information is missing, say: I don't have that information.";
 
-	protected override void OnInitialized()
+	protected override async Task OnInitializedAsync()
 	{
-		config = ConfigService.GetConfiguration();
+		config = await ConfigService.GetConfigurationAsync();
 
 		ConfigService.ConfigurationChanged += OnConfigurationChanged;
 
@@ -407,7 +407,7 @@
 
 	private void OnConfigurationChanged(object? sender, AvatarConfiguration? newConfig)
 	{
-		InvokeAsync(() =>
+		InvokeAsync(async () =>
 		{
 			if (newConfig != null)
 			{
@@ -415,7 +415,7 @@
 			}
 			else
 			{
-				config = ConfigService.GetConfiguration();
+				config = await ConfigService.GetConfigurationAsync();
 			}
 			StateHasChanged();
 		});
@@ -492,8 +492,8 @@
 			await JSRuntime.InvokeVoidAsync("downloadFile", filename, jsonContent);
 
 			statusMessage = "Configuration exported successfully!";
-		 isError = false;
-			StateHasChanged();
+	 	isError = false;
+	 	StateHasChanged();
 
 			await Task.Delay(3000);
 			statusMessage = string.Empty;
@@ -502,8 +502,8 @@
 		catch (Exception ex)
 		{
 			statusMessage = $"Error exporting configuration: {ex.Message}";
-		 isError = true;
-		 StateHasChanged();
+	 	isError = true;
+	 	StateHasChanged();
 		}
 	}
 

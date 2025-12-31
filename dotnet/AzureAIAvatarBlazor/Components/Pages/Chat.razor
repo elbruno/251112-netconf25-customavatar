@@ -214,7 +214,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        config = ConfigService.GetConfiguration();
+        config = await ConfigService.GetConfigurationAsync();
         ConfigService.ConfigurationChanged += OnConfigurationChanged;
 
         if (config?.Avatars != null && config.Avatars.Count > 0)
@@ -361,7 +361,7 @@
     private async Task ModeChanged(ChangeEventArgs e)
     {
         var newMode = e.Value?.ToString() ?? "Agent-LLM";
-        if (config == null) config = ConfigService.GetConfiguration();
+        if (config == null) config = await ConfigService.GetConfigurationAsync();
         config.AzureOpenAI.Mode = newMode;
         await ConfigService.SaveConfigurationAsync(config);
         try { await AgentService.ResetAgentAsync(); } catch { }
@@ -469,7 +469,26 @@
 
     private void HandleAgentNotImplemented(NotImplementedException nie) { chatMessages.Add(new ChatMessage { Role = "system", Content = $"Selected agent mode is not available: {nie.Message}" }); StateHasChanged(); }
 
-    private void OnConfigurationChanged(object? sender, AvatarConfiguration? newConfig) { InvokeAsync(() => { config = newConfig ?? ConfigService.GetConfiguration(); StateHasChanged(); }); }
+    private void OnConfigurationChanged(object? sender, AvatarConfiguration? newConfig)
+    {
+        InvokeAsync(async () =>
+        {
+            if (newConfig != null)
+            {
+                config = newConfig;
+            }
+            else
+            {
+                config = await ConfigService.GetConfigurationAsync();
+            }
+            // update avatars list when config changes
+            if (config?.Avatars != null && config.Avatars.Count > 0)
+            {
+                avatars = config.Avatars;
+            }
+            StateHasChanged();
+        });
+    }
 
     public async ValueTask DisposeAsync()
     {

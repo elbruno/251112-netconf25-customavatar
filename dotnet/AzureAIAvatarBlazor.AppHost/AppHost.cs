@@ -47,6 +47,7 @@ tenantId = builder.AddConnectionString("tenantId");
 // ==============================
 
 var avatarApp = builder.AddProject<Projects.AzureAIAvatarBlazor>("azureaiavatarblazor")
+    .WaitFor(redis)
     .WithReference(redis)
     .WithReference(microsoftfoundryproject)
     .WithReference(tenantId)

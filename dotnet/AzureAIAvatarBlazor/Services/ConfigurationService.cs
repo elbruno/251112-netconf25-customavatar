@@ -41,6 +41,7 @@ public class ConfigurationService
     }
 
     public event EventHandler<AvatarConfiguration?>? ConfigurationChanged;
+
     private bool DetermineIfCustomAvatar(IConfiguration config)
     {
         // Check if explicitly set
@@ -66,10 +67,17 @@ public class ConfigurationService
         return isCustom;
     }
 
+    // Backward-compatible synchronous API
     public AvatarConfiguration GetConfiguration()
     {
+        return GetConfigurationAsync().GetAwaiter().GetResult();
+    }
+
+    // Async implementation to avoid blocking/possible deadlocks in server-side rendering
+    public async Task<AvatarConfiguration> GetConfigurationAsync()
+    {
         using var activity = _telemetryService.StartConfigLoadSpan("cache-check");
-        
+
         // First, check in-memory cache (respects user changes from Config page)
         if (_cachedConfig != null)
         {
@@ -84,7 +92,7 @@ public class ConfigurationService
         // Second, check Redis cache
         try
         {
-            var cachedFromRedis = _cachingService.GetAsync<AvatarConfiguration>(ConfigCacheKey).GetAwaiter().GetResult();
+            var cachedFromRedis = await _cachingService.GetAsync<AvatarConfiguration>(ConfigCacheKey).ConfigureAwait(false);
             if (cachedFromRedis != null)
             {
                 activity?.SetTag("config.cache_hit", "redis");
@@ -350,18 +358,29 @@ public class ConfigurationService
         }
 
         _cachedConfig = config;
-        
-        // Cache in Redis for multi-instance scenarios (sync call in async wrapper)
+
+        // Cache in Redis for multi-instance scenarios
         try
         {
-            _cachingService.SetAsync(ConfigCacheKey, config, ConfigCacheExpiration).GetAwaiter().GetResult();
-            _logger.LogInformation("Configuration cached in Redis with {Expiration} expiration", ConfigCacheExpiration);
+            // Fire-and-forget caching to avoid delaying initial request
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _cachingService.SetAsync(ConfigCacheKey, config, ConfigCacheExpiration).ConfigureAwait(false);
+                    _logger.LogInformation("Configuration cached in Redis with {Expiration} expiration", ConfigCacheExpiration);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to cache configuration in Redis (background)");
+                }
+            });
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to cache configuration in Redis");
+            _logger.LogWarning(ex, "Failed to start background Redis cache task");
         }
-        
+
         return config;
     }
 
@@ -379,7 +398,7 @@ public class ConfigurationService
 
         using var activity = _telemetryService.StartConfigSaveSpan(changedKeys.Count);
         activity?.SetTag("config.changed_keys", string.Join(", ", changedKeys));
-        
+
         _logger.LogInformation("Saving configuration to cache...");
         _logger.LogInformation("  - Character: {Character}, Style: {Style}",
             config.Avatar.Character, config.Avatar.Style ?? "(none)");
@@ -392,11 +411,11 @@ public class ConfigurationService
         {
             _logger.LogInformation("  - PredefinedQuestions: {Count}", config.PredefinedQuestions.Count);
         }
-        
+
         // Cache in Redis
         try
         {
-            await _cachingService.SetAsync(ConfigCacheKey, config, ConfigCacheExpiration);
+            await _cachingService.SetAsync(ConfigCacheKey, config, ConfigCacheExpiration).ConfigureAwait(false);
             activity?.SetTag("config.redis_save", "success");
             _logger.LogInformation("Configuration saved to Redis cache");
         }
@@ -406,7 +425,7 @@ public class ConfigurationService
             activity?.SetTag("config.error", ex.Message);
             _logger.LogWarning(ex, "Failed to save configuration to Redis cache");
         }
-        
+
         // Track configuration changes
         var oldCharacter = _cachedConfig?.Avatar.Character;
         var newCharacter = config.Avatar.Character;
@@ -414,18 +433,17 @@ public class ConfigurationService
         {
             _telemetryService.TrackConfigurationChange("Avatar.Character", oldCharacter, newCharacter);
         }
-        
+
         var oldMode = _cachedConfig?.AzureOpenAI.Mode;
         var newMode = config.AzureOpenAI.Mode;
         if (oldMode != newMode)
         {
             _telemetryService.TrackConfigurationChange("AzureOpenAI.Mode", oldMode, newMode);
         }
-        
+
         // In a real application, this would save to a database or configuration store
         // For now, we cache it in memory - it will persist for the app session
         _cachedConfig = config;
-        await Task.CompletedTask;
 
         _logger.LogInformation("Configuration saved successfully to memory cache - changes will be used until app restart");
 
