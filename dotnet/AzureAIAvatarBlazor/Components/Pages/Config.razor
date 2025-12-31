@@ -97,256 +97,394 @@
 					<i class="bi bi-cpu me-2"></i>Azure OpenAI / Agent Configuration
 				</div>
 				<div class="card-body">
-					<div class="alert alert-info">
-						<i class="bi bi-info-circle me-2"></i>
-						<strong>Note:</strong> This application uses <strong>Microsoft Foundry</strong> for AI agent management.
-						The Microsoft Foundry endpoint and Application Insights are managed by Aspire AppHost and configured through connection strings (not editable here).
+					<!-- Mode Selector -->
+					<div class="mb-4">
+						<label class="form-label fw-bold"><i class="bi bi-gear me-2"></i>Working Mode</label>
+						<div class="d-flex flex-column gap-2">
+							<div class="form-check">
+								<input class="form-check-input" type="radio" name="modeSelector" id="modeAgentLLM"
+									value="Agent-LLM" checked="@(config.AzureOpenAI.Mode == "Agent-LLM")"
+									@onchange="@(() => SelectMode("Agent-LLM"))">
+								<label class="form-check-label" for="modeAgentLLM">
+									<span class="badge bg-success me-2">Agent-LLM</span>
+									Direct Azure OpenAI deployment
+								</label>
+							</div>
+							<div class="form-check">
+								<input class="form-check-input" type="radio" name="modeSelector" id="modeAgentAIFoundry"
+									value="Agent-AIFoundry" checked="@(config.AzureOpenAI.Mode == "Agent-AIFoundry")"
+									@onchange="@(() => SelectMode("Agent-AIFoundry"))">
+								<label class="form-check-label" for="modeAgentAIFoundry">
+									<span class="badge bg-info me-2">Agent-AIFoundry</span>
+									Azure AI Foundry agents
+									<span class="badge bg-warning text-dark ms-2">Not Implemented</span>
+								</label>
+							</div>
+							<div class="form-check">
+								<input class="form-check-input" type="radio" name="modeSelector"
+									id="modeAgentMicrosoftFoundry" value="Agent-MicrosoftFoundry"
+									checked="@(config.AzureOpenAI.Mode == "Agent-MicrosoftFoundry")"
+									@onchange="@(() => SelectMode("Agent-MicrosoftFoundry"))">
+								<label class="form-check-label" for="modeAgentMicrosoftFoundry">
+									<span class="badge bg-warning me-2">Agent-MicrosoftFoundry</span>
+									Microsoft Foundry agent framework
+								</label>
+							</div>
+						</div>
 					</div>
 
+					<!-- Mode-Specific Info Alerts -->
+					@if (config.AzureOpenAI.Mode == "Agent-LLM")
+					{
+						<div class="alert alert-info">
+							<i class="bi bi-info-circle me-2"></i>
+							<strong>Agent-LLM Mode:</strong> Uses the ChatClient from Microsoft Foundry project. Only the
+							model/deployment name needs to be configured.
+						</div>
+					}
+					<strong>Microsoft Foundry Mode:</strong> The endpoint and Application Insights are managed by
+					Aspire AppHost via connection strings (not editable here).
+				</div>
+				}
+				@if (config.AzureOpenAI.Mode == "Agent-AIFoundry")
+				{
+					<div class="alert alert-warning">
+						<i class="bi bi-exclamation-triangle me-2"></i>
+						<strong>Not Implemented:</strong> Azure AI Foundry mode is planned but not yet implemented.
+						Selecting this mode will result in errors.
+					</div>
+				}
+
+				<!-- Common Configuration: System Prompt (applies to Agent-LLM mode) -->
+				@if (config.AzureOpenAI.Mode == "Agent-LLM")
+				{
 					<div class="mb-3">
 						<label class="form-label">System Prompt / Instructions</label>
 						<div class="input-group">
-							<textarea class="form-control" rows="3" @bind="config.AzureOpenAI.AgentLLM.SystemPrompt"></textarea>
+							<textarea class="form-control" rows="3"
+								@bind="config.AzureOpenAI.AgentLLM.SystemPrompt"></textarea>
 						</div>
 						<button class="btn btn-outline-secondary btn-sm mt-2" @onclick="ResetSystemPromptToDefault">
 							<i class="bi bi-arrow-counterclockwise me-1"></i>Reset to Default
 						</button>
-						<div class="form-text mt-2">Configure how the AI assistant should respond. This applies to all agent modes.</div>
+						<div class="form-text mt-2">Configure how the AI assistant should respond.</div>
 					</div>
+				}
 
-					<div class="mb-3">
-						<label class="form-label">Deployment Name</label>
-						<input type="text" class="form-control" @bind="config.AzureOpenAI.AgentLLM.DeploymentName"
-							placeholder="gpt-4o-mini">
-						<div class="form-text">The AI model deployment name (e.g., gpt-4o-mini, gpt-5.1-chat)</div>
-					</div>
+				<!-- Agent-LLM Configuration -->
+				@if (config.AzureOpenAI.Mode == "Agent-LLM")
+				{
+					<div class="border-start border-success border-3 ps-3 mb-3">
+						<h6 class="text-success mb-3"><i class="bi bi-gear-fill me-2"></i>Agent-LLM Configuration</h6>
 
-					<div class="mb-3">
-						<label class="form-label">Agent Name (Microsoft Foundry)</label>
-						<input type="text" class="form-control" @bind="config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryAgentName"
-							placeholder="AvatarAgent">
-						<div class="form-text">The name of your agent in Microsoft Foundry (optional)</div>
-					</div>
-				</div>
-			</div>
-		</div>
-
-		<!-- STT/TTS Configuration -->
-		<div class="col-12 col-lg-6">
-			<div class="card shadow-sm h-100">
-				<div class="card-header">
-					<i class="bi bi-mic me-2"></i>STT/TTS Configuration
-				</div>
-				<div class="card-body">
-					<div class="mb-3">
-						<label class="form-label">STT Locales</label>
-						<input type="text" class="form-control" @bind="config.SttTts.SttLocales"
-							placeholder="en-US,es-ES,fr-FR">
-						<div class="form-text">Comma-separated list of locale codes</div>
-					</div>
-					<div class="mb-3">
-						<label class="form-label">TTS Voice</label>
-						<select class="form-select" @bind="config.SttTts.TtsVoice">
-							<option value="">(Use Custom Avatar's Built-In Voice)</option>
-							<option value="en-US-AvaMultilingualNeural">en-US-AvaMultilingualNeural</option>
-							<option value="en-US-AndrewMultilingualNeural">en-US-AndrewMultilingualNeural</option>
-							<option value="en-US-EmmaMultilingualNeural">en-US-EmmaMultilingualNeural</option>
-							<option value="en-US-BrianMultilingualNeural">en-US-BrianMultilingualNeural</option>
-							<option value="es-ES-ElviraNeural">es-ES-ElviraNeural</option>
-							<option value="fr-FR-DeniseNeural">fr-FR-DeniseNeural</option>
-						</select>
-						<div class="form-text">
-							Select "(Use Custom Avatar's Built-In Voice)" for custom avatars with
-							their own voice
+						<div class="mb-3">
+							<label class="form-label">Model / Deployment Name</label>
+							<input type="text" class="form-control" @bind="config.AzureOpenAI.AgentLLM.DeploymentName"
+								placeholder="gpt-5.1-chat">
+							<div class="form-text">The AI model deployment name (e.g., gpt-4o-mini, gpt-5.1-chat). Defaults
+								to gpt-5.1-chat if not specified.</div>
 						</div>
 					</div>
-					<div class="mb-3">
-						<label class="form-label">Custom Voice Endpoint ID (Optional)</label>
-						<input type="text" class="form-control" @bind="config.SttTts.CustomVoiceEndpointId"
-							placeholder="Leave empty for standard voices">
+				}
+
+				<!-- Agent-AIFoundry Configuration -->
+				@if (config.AzureOpenAI.Mode == "Agent-AIFoundry")
+				{
+					<div class="border-start border-info border-3 ps-3 mb-3">
+						<h6 class="text-info mb-3"><i class="bi bi-gear-fill me-2"></i>Agent-AIFoundry Configuration
+						</h6>
+
+						<div class="mb-3">
+							<label class="form-label">AI Foundry Endpoint <span class="text-danger">*</span></label>
+							<input type="text"
+								class="form-control @(string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentAIFoundry.AIFoundryEndpoint) ? "border-warning" : "")"
+								@bind="config.AzureOpenAI.AgentAIFoundry.AIFoundryEndpoint"
+								placeholder="https://your-aifoundry.azure.com/">
+							@if (string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentAIFoundry.AIFoundryEndpoint))
+							{
+								<div class="form-text text-warning"><i class="bi bi-exclamation-triangle me-1"></i>Required
+									field</div>
+							}
+						</div>
+
+						<div class="mb-3">
+							<label class="form-label">Agent ID <span class="text-danger">*</span></label>
+							<input type="text"
+								class="form-control @(string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentAIFoundry.AgentId) ? "border-warning" : "")"
+								@bind="config.AzureOpenAI.AgentAIFoundry.AgentId"
+								placeholder="Enter your AI Foundry agent ID">
+							@if (string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentAIFoundry.AgentId))
+							{
+								<div class="form-text text-warning"><i class="bi bi-exclamation-triangle me-1"></i>Required
+									field</div>
+							}
+						</div>
 					</div>
-					<div class="form-check">
-						<input type="checkbox" class="form-check-input" id="continuousConversation"
-							@bind="config.SttTts.ContinuousConversation">
-						<label class="form-check-label" for="continuousConversation">
-							Continuous Conversation
-						</label>
+				}
+
+				<!-- Agent-MicrosoftFoundry Configuration -->
+				@if (config.AzureOpenAI.Mode == "Agent-MicrosoftFoundry")
+				{
+					<div class="border-start border-warning border-3 ps-3 mb-3">
+						<h6 class="text-warning mb-3"><i class="bi bi-gear-fill me-2"></i>Agent-MicrosoftFoundry
+							Configuration</h6>
+
+						<div class="mb-3">
+							<label class="form-label">Agent Name <span class="text-danger">*</span></label>
+							<input type="text"
+								class="form-control @(string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryAgentName) ? "border-warning" : "")"
+								@bind="config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryAgentName"
+								placeholder="AvatarAgent">
+							@if
+													(string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryAgentName))
+							{
+								<div class="form-text text-warning"><i class="bi bi-exclamation-triangle me-1"></i>Required
+									field</div>
+							}
+							else
+							{
+								<div class="form-text">The name of your agent in Microsoft Foundry</div>
+							}
+						</div>
+
+						<div class="mb-3">
+							<label class="form-label">Tenant ID</label>
+							<input type="text" class="form-control" @bind="config.AzureOpenAI.TenantId"
+								placeholder="Optional: Azure AD Tenant ID">
+							<div class="form-text">Optional Azure Active Directory tenant ID for authentication</div>
+						</div>
 					</div>
+				}
+			</div>
+		</div>
+	</div>
+
+	<!-- STT/TTS Configuration -->
+	<div class="col-12 col-lg-6">
+		<div class="card shadow-sm h-100">
+			<div class="card-header">
+				<i class="bi bi-mic me-2"></i>STT/TTS Configuration
+			</div>
+			<div class="card-body">
+				<div class="mb-3">
+					<label class="form-label">STT Locales</label>
+					<input type="text" class="form-control" @bind="config.SttTts.SttLocales"
+						placeholder="en-US,es-ES,fr-FR">
+					<div class="form-text">Comma-separated list of locale codes</div>
+				</div>
+				<div class="mb-3">
+					<label class="form-label">TTS Voice</label>
+					<select class="form-select" @bind="config.SttTts.TtsVoice">
+						<option value="">(Use Custom Avatar's Built-In Voice)</option>
+						<option value="en-US-AvaMultilingualNeural">en-US-AvaMultilingualNeural</option>
+						<option value="en-US-AndrewMultilingualNeural">en-US-AndrewMultilingualNeural</option>
+						<option value="en-US-EmmaMultilingualNeural">en-US-EmmaMultilingualNeural</option>
+						<option value="en-US-BrianMultilingualNeural">en-US-BrianMultilingualNeural</option>
+						<option value="es-ES-ElviraNeural">es-ES-ElviraNeural</option>
+						<option value="fr-FR-DeniseNeural">fr-FR-DeniseNeural</option>
+					</select>
+					<div class="form-text">
+						Select "(Use Custom Avatar's Built-In Voice)" for custom avatars with
+						their own voice
+					</div>
+				</div>
+				<div class="mb-3">
+					<label class="form-label">Custom Voice Endpoint ID (Optional)</label>
+					<input type="text" class="form-control" @bind="config.SttTts.CustomVoiceEndpointId"
+						placeholder="Leave empty for standard voices">
+				</div>
+				<div class="form-check">
+					<input type="checkbox" class="form-check-input" id="continuousConversation"
+						@bind="config.SttTts.ContinuousConversation">
+					<label class="form-check-label" for="continuousConversation">
+						Continuous Conversation
+					</label>
 				</div>
 			</div>
 		</div>
+	</div>
 
-		<!-- Avatar Configuration -->
-		<div class="col-12 col-lg-6">
-			<div class="card shadow-sm h-100">
-				<div class="card-header">
-					<i class="bi bi-robot me-2"></i>Avatar Configuration
+	<!-- Avatar Configuration -->
+	<div class="col-12 col-lg-6">
+		<div class="card shadow-sm h-100">
+			<div class="card-header">
+				<i class="bi bi-robot me-2"></i>Avatar Configuration
+			</div>
+			<div class="card-body">
+				<div class="mb-3">
+					<label class="form-label">Character</label>
+					<select class="form-select" @bind="config.Avatar.Character">
+						<option value="PablitoPiova-Sep-2025">Pablito Piova - Sep2025</option>
+						<option value="Bruno-Avatar-02">Bruno Avatar 02</option>
+						<option value="lisa">Lisa</option>
+						<option value="harry">Harry</option>
+						<option value="jeff">Jeff</option>
+						<option value="lori">Lori</option>
+						<option value="max">Max</option>
+						<option value="meg">Meg</option>
+					</select>
 				</div>
-				<div class="card-body">
-					<div class="mb-3">
-						<label class="form-label">Character</label>
-						<select class="form-select" @bind="config.Avatar.Character">
-							<option value="PablitoPiova-Sep-2025">Pablito Piova - Sep2025</option>
-							<option value="Bruno-Avatar-02">Bruno Avatar 02</option>
-							<option value="lisa">Lisa</option>
-							<option value="harry">Harry</option>
-							<option value="jeff">Jeff</option>
-							<option value="lori">Lori</option>
-							<option value="max">Max</option>
-							<option value="meg">Meg</option>
-						</select>
-					</div>
-					<div class="mb-3">
-						<label class="form-label">Style</label>
-						<select class="form-select" @bind="config.Avatar.Style">
-							<option value="">No Style (for custom avatars)</option>
-							<option value="casual-sitting">Casual Sitting</option>
-							<option value="business">Business</option>
-							<option value="casual">Casual</option>
-							<option value="formal">Formal</option>
-						</select>
-						<div class="form-text">Select "No Style" for custom avatars that don't require a style</div>
-					</div>
-					<div class="form-check mb-2">
-						<input type="checkbox" class="form-check-input" id="customAvatar"
-							@bind="config.Avatar.IsCustomAvatar">
-						<label class="form-check-label" for="customAvatar">
-							Custom Avatar
-						</label>
-					</div>
-					<div class="form-check mb-2">
-						<input type="checkbox" class="form-check-input" id="useBuiltInVoice"
-							@bind="config.Avatar.UseBuiltInVoice">
-						<label class="form-check-label" for="useBuiltInVoice">
-							Use Built-In Voice
-						</label>
-					</div>
-					<div class="form-check mb-2">
-						<input type="checkbox" class="form-check-input" id="enableSubtitles"
-							@bind="config.Avatar.EnableSubtitles">
-						<label class="form-check-label" for="enableSubtitles">
-							Enable Subtitles
-						</label>
-					</div>
-					<div class="form-check mb-3">
-						<input type="checkbox" class="form-check-input" id="enableAutoReconnect"
-							@bind="config.Avatar.EnableAutoReconnect">
-						<label class="form-check-label" for="enableAutoReconnect">
-							Enable Auto Reconnect
-						</label>
-					</div>
-					<div class="mb-3">
-						<label class="form-label">Audio Gain: @config.Avatar.AudioGain.ToString("F1")</label>
-						<input type="range" class="form-range" min="0.1" max="5.0" step="0.1"
-							@bind="config.Avatar.AudioGain">
-						<div class="form-text">Adjust volume amplification (0.1x - 5.0x)</div>
-					</div>
+				<div class="mb-3">
+					<label class="form-label">Style</label>
+					<select class="form-select" @bind="config.Avatar.Style">
+						<option value="">No Style (for custom avatars)</option>
+						<option value="casual-sitting">Casual Sitting</option>
+						<option value="business">Business</option>
+						<option value="casual">Casual</option>
+						<option value="formal">Formal</option>
+					</select>
+					<div class="form-text">Select "No Style" for custom avatars that don't require a style</div>
+				</div>
+				<div class="form-check mb-2">
+					<input type="checkbox" class="form-check-input" id="customAvatar"
+						@bind="config.Avatar.IsCustomAvatar">
+					<label class="form-check-label" for="customAvatar">
+						Custom Avatar
+					</label>
+				</div>
+				<div class="form-check mb-2">
+					<input type="checkbox" class="form-check-input" id="useBuiltInVoice"
+						@bind="config.Avatar.UseBuiltInVoice">
+					<label class="form-check-label" for="useBuiltInVoice">
+						Use Built-In Voice
+					</label>
+				</div>
+				<div class="form-check mb-2">
+					<input type="checkbox" class="form-check-input" id="enableSubtitles"
+						@bind="config.Avatar.EnableSubtitles">
+					<label class="form-check-label" for="enableSubtitles">
+						Enable Subtitles
+					</label>
+				</div>
+				<div class="form-check mb-3">
+					<input type="checkbox" class="form-check-input" id="enableAutoReconnect"
+						@bind="config.Avatar.EnableAutoReconnect">
+					<label class="form-check-label" for="enableAutoReconnect">
+						Enable Auto Reconnect
+					</label>
+				</div>
+				<div class="mb-3">
+					<label class="form-label">Audio Gain: @config.Avatar.AudioGain.ToString("F1")</label>
+					<input type="range" class="form-range" min="0.1" max="5.0" step="0.1"
+						@bind="config.Avatar.AudioGain">
+					<div class="form-text">Adjust volume amplification (0.1x - 5.0x)</div>
 				</div>
 			</div>
 		</div>
+	</div>
 
-		<!-- Avatars collection: per-avatar voice settings -->
-		<div class="col-12">
-			<div class="card shadow-sm">
-				<div class="card-header">
-					<i class="bi bi-people me-2"></i>Avatars
-				</div>
-				<div class="card-body">
-					@if (config.Avatars == null || config.Avatars.Count == 0)
+	<!-- Avatars collection: per-avatar voice settings -->
+	<div class="col-12">
+		<div class="card shadow-sm">
+			<div class="card-header">
+				<i class="bi bi-people me-2"></i>Avatars
+			</div>
+			<div class="card-body">
+				@if (config.Avatars == null || config.Avatars.Count == 0)
+				{
+					<div class="text-muted">No avatars configured.</div>
+				}
+				else
+				{
+					@for (int i = 0; i < config.Avatars.Count; i++)
 					{
-						<div class="text-muted">No avatars configured.</div>
-					}
-					else
-					{
-						@for (int i = 0; i < config.Avatars.Count; i++)
-						{
-							var a = config.Avatars[i];
-							var hasWarning = a.HasMissingCustomVoiceConfig;
-							<div class="border rounded p-3 mb-3 @(hasWarning ? "border-warning" : "")">
-								<div class="d-flex justify-content-between align-items-center mb-2">
-									<div>
-										<strong>@a.Name (@a.Id)</strong>
-										@if (a.IsCustomAvatar)
-										{
-											<span class="badge bg-info ms-2">Custom</span>
-										}
-										@if (hasWarning)
-										{
-											<span class="badge bg-warning text-dark ms-2" title="Custom voice selected but endpoint or voice not configured">
-												<i class="bi bi-exclamation-triangle"></i> Config Required
-											</span>
-										}
-									</div>
-									<span class="text-muted">Character: @a.Character</span>
+						var a = config.Avatars[i];
+						var hasWarning = a.HasMissingCustomVoiceConfig;
+						<div class="border rounded p-3 mb-3 @(hasWarning ? "border-warning" : "")">
+							<div class="d-flex justify-content-between align-items-center mb-2">
+								<div>
+									<strong>@a.Name (@a.Id)</strong>
+									@if (a.IsCustomAvatar)
+									{
+										<span class="badge bg-info ms-2">Custom</span>
+									}
+									@if (hasWarning)
+									{
+										<span class="badge bg-warning text-dark ms-2"
+											title="Custom voice selected but endpoint or voice not configured">
+											<i class="bi bi-exclamation-triangle"></i> Config Required
+										</span>
+									}
 								</div>
-								@if (!string.IsNullOrWhiteSpace(a.Description))
-								{
-									<p class="text-muted small mb-2">@a.Description</p>
-								}
-								<div class="form-check mb-2">
-									<input type="checkbox" class="form-check-input" @bind="a.UseBuiltInVoice" id="useBuiltIn_@i" />
-									<label class="form-check-label" for="useBuiltIn_@i">Use Built-In Voice</label>
-								</div>
-								<div class="mb-2">
-									<label class="form-label">TTS Voice (override)</label>
-									<input type="text" class="form-control @(hasWarning && string.IsNullOrWhiteSpace(a.TtsVoice) ? "border-warning" : "")" 
-									   @bind="a.TtsVoice" placeholder="e.g. en-US-BrunoNeural" />
-								</div>
-								<div class="mb-2">
-									<label class="form-label">Custom Voice Endpoint ID (override)</label>
-									<input type="text" class="form-control @(hasWarning && string.IsNullOrWhiteSpace(a.CustomVoiceEndpointId) ? "border-warning" : "")" 
-									   @bind="a.CustomVoiceEndpointId" placeholder="your-custom-endpoint-id" />
-								</div>
+								<span class="text-muted">Character: @a.Character</span>
 							</div>
-						}
+							@if (!string.IsNullOrWhiteSpace(a.Description))
+							{
+								<p class="text-muted small mb-2">@a.Description</p>
+							}
+							<div class="form-check mb-2">
+								<input type="checkbox" class="form-check-input" @bind="a.UseBuiltInVoice" id="useBuiltIn_@i" />
+								<label class="form-check-label" for="useBuiltIn_@i">Use Built-In Voice</label>
+							</div>
+							<div class="mb-2">
+								<label class="form-label">TTS Voice (override)</label>
+								<input type="text"
+									class="form-control @(hasWarning && string.IsNullOrWhiteSpace(a.TtsVoice) ? "border-warning" : "")"
+									@bind="a.TtsVoice" placeholder="e.g. en-US-BrunoNeural" />
+							</div>
+							<div class="mb-2">
+								<label class="form-label">Custom Voice Endpoint ID (override)</label>
+								<input type="text"
+									class="form-control @(hasWarning && string.IsNullOrWhiteSpace(a.CustomVoiceEndpointId) ? "border-warning" : "")"
+									@bind="a.CustomVoiceEndpointId" placeholder="your-custom-endpoint-id" />
+							</div>
+						</div>
 					}
-				</div>
+				}
 			</div>
 		</div>
+	</div>
 
-		<!-- Predefined Questions -->
-		<div class="col-12">
-			<div class="card shadow-sm">
-				<div class="card-header">
-					<i class="bi bi-list-ul me-2"></i>Predefined Quick Questions (1-5)
-				</div>
-				<div class="card-body">
-					<p class="form-text mb-3">Define up to five quick questions. Only questions with content will appear as buttons in the Chat page.</p>
+	<!-- Predefined Questions -->
+	<div class="col-12">
+		<div class="card shadow-sm">
+			<div class="card-header">
+				<i class="bi bi-list-ul me-2"></i>Predefined Quick Questions (1-5)
+			</div>
+			<div class="card-body">
+				<p class="form-text mb-3">Define up to five quick questions. Only questions with content will appear
+					as buttons in the Chat page.</p>
 
-					@if (config.PredefinedQuestions == null || config.PredefinedQuestions.Count == 0)
-					{
-						<div class="mb-3 text-muted">No predefined questions configured. Click "Add Question" to create one.</div>
-					}
-
-					@for (int i = 0; i < config.PredefinedQuestions.Count; i++)
-                    {
-                        var pq = config.PredefinedQuestions[i];
-                        var index = i; // capture loop index for lambda
-                        <div class="mb-3 border rounded p-3">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <strong>Question @(index + 1)</strong>
-                                <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveQuestion(index)">Remove</button>
-                            </div>
-                            <div class="mb-2">
-                                <label class="form-label">Title (short)</label>
-                                <input type="text" class="form-control" @bind="pq.Title" placeholder="Short label for button">
-                            </div>
-                            <div>
-                                <label class="form-label">Question (full text)</label>
-                                <textarea class="form-control" rows="2" @bind="pq.Question" placeholder="Full question to send to chat"></textarea>
-                            </div>
-                        </div>
-                    }
-
-					<div class="d-flex gap-2">
-						<button class="btn btn-outline-primary" @onclick="AddQuestion" disabled="@(config.PredefinedQuestions != null && config.PredefinedQuestions.Count >= 5)">Add Question</button>
-						<button class="btn btn-outline-secondary" @onclick="AddDefaultQuestions" disabled="@(config.PredefinedQuestions != null && config.PredefinedQuestions.Count >= 5)">Add Default Questions</button>
-						<div class="form-text text-muted">You can add up to 5 questions. Empty question text will be ignored in the Chat UI.</div>
+				@if (config.PredefinedQuestions == null || config.PredefinedQuestions.Count == 0)
+				{
+					<div class="mb-3 text-muted">No predefined questions configured. Click "Add Question" to create one.
 					</div>
+				}
+
+				@for (int i = 0; i < config.PredefinedQuestions?.Count; i++)
+				{
+					var pq = config.PredefinedQuestions![i];
+					var index = i; // capture loop index for lambda
+				   				<div class="mb-3 border rounded p-3">
+				   					<div class="d-flex justify-content-between align-items-center mb-2">
+				   						<strong>Question @(index + 1)</strong>
+				   						<button class="btn btn-sm btn-outline-danger"
+				   							@onclick="() => RemoveQuestion(index)">Remove</button>
+				   					</div>
+				   					<div class="mb-2">
+				   						<label class="form-label">Title (short)</label>
+				   						<input type="text" class="form-control" @bind="pq.Title" placeholder="Short label for button">
+				   					</div>
+				   					<div>
+				   						<label class="form-label">Question (full text)</label>
+				   						<textarea class="form-control" rows="2" @bind="pq.Question"
+				   							placeholder="Full question to send to chat"></textarea>
+				   					</div>
+				   				</div>
+				}
+
+				<div class="d-flex gap-2">
+					<button class="btn btn-outline-primary" @onclick="AddQuestion"
+						disabled="@(config.PredefinedQuestions != null && config.PredefinedQuestions.Count >= 5)">Add
+						Question</button>
+					<button class="btn btn-outline-secondary" @onclick="AddDefaultQuestions"
+						disabled="@(config.PredefinedQuestions != null && config.PredefinedQuestions.Count >= 5)">Add
+						Default Questions</button>
+					<div class="form-text text-muted">You can add up to 5 questions. Empty question text will be
+						ignored in the Chat UI.</div>
 				</div>
 			</div>
 		</div>
-
 	</div>
 </div>
 
@@ -436,10 +574,10 @@
 		try
 		{
 			config.PredefinedQuestions = (config.PredefinedQuestions ?? new List<PredefinedQuestion>())
-				.Where(p => !string.IsNullOrWhiteSpace(p.Question))
-				.Take(5)
-				.Select(p => new PredefinedQuestion { Title = p.Title?.Trim() ?? string.Empty, Question = p.Question!.Trim() })
-				.ToList();
+			.Where(p => !string.IsNullOrWhiteSpace(p.Question))
+			.Take(5)
+			.Select(p => new PredefinedQuestion { Title = p.Title?.Trim() ?? string.Empty, Question = p.Question!.Trim() })
+			.ToList();
 
 			if (config.PredefinedQuestions.Count == 0)
 			{
@@ -493,8 +631,8 @@
 			await JSRuntime.InvokeVoidAsync("downloadFile", filename, jsonContent);
 
 			statusMessage = "Configuration exported successfully!";
-	 	isError = false;
-	 	StateHasChanged();
+			isError = false;
+			StateHasChanged();
 
 			await Task.Delay(3000);
 			statusMessage = string.Empty;
@@ -503,8 +641,8 @@
 		catch (Exception ex)
 		{
 			statusMessage = $"Error exporting configuration: {ex.Message}";
-	 	isError = true;
-	 	StateHasChanged();
+			isError = true;
+			StateHasChanged();
 		}
 	}
 
@@ -586,12 +724,12 @@
 		config.PredefinedQuestions = new List<PredefinedQuestion>();
 
 		var presets = new List<PredefinedQuestion>
-		{
-			new PredefinedQuestion { Title = "Hi", Question = "Hello" },
-			new PredefinedQuestion { Title = "Microsoft�Canada AI initiative for Canadian enterprises", Question = "How is Microsoft collaborating with the Canadian government and organizations on AI initiatives? Make a single response in a paragraph and mention the sources " },
-			new PredefinedQuestion { Title = ".NET Conf 2025", Question = "What can you tell me about .NET Conf 2025" },
-			new PredefinedQuestion { Title = ".NET Conf 2025 (FR)", Question = "Que pouvez-vous me dire au sujet de .NET Conf 2025 ?" }
-		};
+{
+new PredefinedQuestion { Title = "Hi", Question = "Hello" },
+new PredefinedQuestion { Title = "Microsoft�Canada AI initiative for Canadian enterprises", Question = "How is Microsoft collaborating with the Canadian government and organizations on AI initiatives? Make a single response in a paragraph and mention the sources " },
+new PredefinedQuestion { Title = ".NET Conf 2025", Question = "What can you tell me about .NET Conf 2025" },
+new PredefinedQuestion { Title = ".NET Conf 2025 (FR)", Question = "Que pouvez-vous me dire au sujet de .NET Conf 2025 ?" }
+};
 
 		foreach (var p in presets.Take(5))
 		{
