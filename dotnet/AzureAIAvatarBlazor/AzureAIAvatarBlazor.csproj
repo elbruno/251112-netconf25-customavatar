@@ -11,6 +11,9 @@
 		<!-- NEW: Aspire client integration packages -->
 		<PackageReference Include="Aspire.Azure.AI.OpenAI" Version="9.5.2-preview.1.25522.3" />
 
+		<!-- Health Check packages -->
+		<PackageReference Include="AspNetCore.HealthChecks.UI.Client" Version="9.0.0" />
+
 		<!-- Agent Framework packages - Updated to latest -->
 		<PackageReference Include="Azure.AI.Agents.Persistent" Version="1.2.0-beta.7" />
 
