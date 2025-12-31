@@ -143,7 +143,7 @@ public class ConfigurationService
         // Parse Aspire connection strings if available
         var openaiConnectionString = _configuration.GetConnectionString("openai");
         var (openaiEndpoint, openaiKey) = ParseConnectionString(openaiConnectionString ?? "");
-        
+
         var speechConnectionString = _configuration.GetConnectionString("speech");
         var (speechEndpoint, speechKey) = ParseConnectionString(speechConnectionString ?? "");
 
