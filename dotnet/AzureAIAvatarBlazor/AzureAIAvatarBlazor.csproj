@@ -11,14 +11,27 @@
 		<!-- NEW: Aspire client integration packages -->
 		<PackageReference Include="Aspire.Azure.AI.OpenAI" Version="9.5.2-preview.1.25522.3" />
 
-		<!-- Agent Framework packages -->
+		<!-- Redis caching -->
+		<PackageReference Include="Aspire.StackExchange.Redis" Version="9.5.2" />
+
+		<!-- Health Check packages -->
+		<PackageReference Include="AspNetCore.HealthChecks.UI.Client" Version="9.0.0" />
+
+		<!-- Serilog for structured logging -->
+		<PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+		<PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
+		<PackageReference Include="Serilog.Enrichers.Thread" Version="4.0.0" />
+		<PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
+		<PackageReference Include="Serilog.Sinks.ApplicationInsights" Version="5.0.0-dev-02322" />
+
+		<!-- Agent Framework packages - Updated to latest -->
 		<PackageReference Include="Azure.AI.Agents.Persistent" Version="1.2.0-beta.7" />
 
-		<PackageReference Include="Microsoft.Agents.AI" Version="1.0.0-preview.251204.1" />
-		<PackageReference Include="Microsoft.Agents.AI.AzureAI" Version="1.0.0-preview.251204.1" />
-		<PackageReference Include="Microsoft.Agents.AI.Abstractions" Version="1.0.0-preview.251204.1" />
-		<PackageReference Include="Microsoft.Agents.AI.Hosting" Version="1.0.0-preview.251204.1" />
-		<PackageReference Include="Microsoft.Agents.AI.Hosting.OpenAI" Version="1.0.0-alpha.251204.1" />
+		<PackageReference Include="Microsoft.Agents.AI" Version="1.0.0-preview.251219.1" />
+		<PackageReference Include="Microsoft.Agents.AI.AzureAI" Version="1.0.0-preview.251219.1" />
+		<PackageReference Include="Microsoft.Agents.AI.Abstractions" Version="1.0.0-preview.251219.1" />
+		<PackageReference Include="Microsoft.Agents.AI.Hosting" Version="1.0.0-preview.251219.1" />
+		<PackageReference Include="Microsoft.Agents.AI.Hosting.OpenAI" Version="1.0.0-alpha.251219.1" />
 		<PackageReference Include="Azure.Identity" Version="1.18.0-beta.2" />
 
 		<!-- KEEP: Speech SDK (no Aspire component yet, use manual registration) -->
@@ -30,6 +43,8 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\AzureAIAvatarBlazor.ServiceDefaults\AzureAIAvatarBlazor.ServiceDefaults.csproj" />
+		<ProjectReference Include="..\AzureAIAvatarBlazor.MAFFoundry\AzureAIAvatarBlazor.MAFFoundry.csproj" />
+		<ProjectReference Include="..\AzureAIAvatarBlazor.MAFLocal\AzureAIAvatarBlazor.MAFLocal.csproj" />
 	</ItemGroup>
 
 </Project>

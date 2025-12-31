@@ -42,18 +42,18 @@ The .NET application supports **three different modes** for AI conversations, ea
 
 - Uses standard Azure OpenAI chat completion API
 - Simple request/response pattern with streaming support
-- Best for: Quick demos, simple conversations, direct LLM access
-- Configuration: Requires Azure OpenAI endpoint, API key, and deployment name
+- Best for: Quick demos, simple conversations, direct LLM access with agent capabilities
+- Configuration: Model/deployment name only (uses Microsoft Foundry ChatClient)
 
-### Mode 2: Chat with Agent-LLM
+### Mode 2: Agent-LLM
 
-**Microsoft Agent Framework with Azure OpenAI**
+**Microsoft Agent Framework with ChatClient from Microsoft Foundry**
 
-- Uses [Microsoft Agent Framework](https://learn.microsoft.com/en-us/agent-framework/) with standard LLM
+- Uses [Microsoft Agent Framework](https://learn.microsoft.com/en-us/agent-framework/) with ChatClient from Microsoft Foundry
 - Enables agent-based workflows and orchestration patterns
 - Supports tool calling, memory, and advanced agent behaviors
-- Best for: Complex workflows, multi-step reasoning, tool integration
-- Configuration: Same as Mode 1 + Agent Framework settings
+- Best for: Complex workflows, multi-step reasoning, tool integration without managing separate agents
+- Configuration: Only requires model/deployment name (e.g., gpt-5.1-chat) - endpoint and credentials are provided by Microsoft Foundry project
 
 ### Mode 3: Chat with Azure AI Foundry Agent
 
@@ -396,18 +396,19 @@ dotnet user-secrets set "ConnectionStrings:speech" \
   "Endpoint=https://westus2.api.cognitive.microsoft.com/;Key=YOUR_KEY;"
 dotnet user-secrets set "Avatar:Character" "lisa"
 
-# For Mode 1 (LLM) or Mode 2 (Agent-LLM)
-dotnet user-secrets set "ConnectionStrings:openai" \
-  "Endpoint=https://YOUR_RESOURCE.openai.azure.com/;Key=YOUR_KEY;"
-dotnet user-secrets set "OpenAI:DeploymentName" "gpt-4o-mini"
-dotnet user-secrets set "Agent:Mode" "LLM"  # or "Agent-LLM"
-dotnet user-secrets set "SystemPrompt" "You are a helpful AI assistant."
+# For Agent-LLM mode (uses Microsoft Foundry ChatClient)
+dotnet user-secrets set "AzureOpenAI:Mode" "Agent-LLM"
+dotnet user-secrets set "AzureOpenAI:AgentLLM:DeploymentName" "gpt-5.1-chat"
+dotnet user-secrets set "AzureOpenAI:AgentLLM:SystemPrompt" "You are a helpful AI assistant."
 
-# For Mode 3 (Azure AI Foundry Agent) - instead of above
-# dotnet user-secrets set "ConnectionStrings:aifoundry" \
-#   "Endpoint=https://YOUR_PROJECT.api.azureml.ms/;Key=YOUR_KEY;"
-# dotnet user-secrets set "Agent:Mode" "Agent-AIFoundry"
-# dotnet user-secrets set "Agent:AgentId" "YOUR_AGENT_ID"
+# For Agent-MicrosoftFoundry mode (requires Microsoft Foundry project endpoint via Aspire)
+# dotnet user-secrets set "AzureOpenAI:Mode" "Agent-MicrosoftFoundry"
+# dotnet user-secrets set "AzureOpenAI:AgentMicrosoftFoundry:MicrosoftFoundryAgentName" "YOUR_AGENT_NAME"
+
+# For Agent-AIFoundry mode (not yet implemented)
+# dotnet user-secrets set "AzureOpenAI:Mode" "Agent-AIFoundry"
+# dotnet user-secrets set "AzureOpenAI:AgentAIFoundry:AIFoundryEndpoint" "https://YOUR_PROJECT.api.azureml.ms/"
+# dotnet user-secrets set "AzureOpenAI:AgentAIFoundry:AgentId" "YOUR_AGENT_ID"
 ```
 
 **Why User Secrets?**
@@ -479,19 +480,21 @@ dotnet user-secrets set "ConnectionStrings:speech" \
 dotnet user-secrets set "Avatar:Character" "lisa"
 
 # For Mode 1 (LLM) - Default mode
-dotnet user-secrets set "ConnectionStrings:openai" \
-  "Endpoint=https://YOUR_RESOURCE.openai.azure.com/;Key=YOUR_KEY;"
-dotnet user-secrets set "OpenAI:DeploymentName" "gpt-4o-mini"
-dotnet user-secrets set "Agent:Mode" "LLM"
+dotnet user-secrets set "ConnectionStrings:speech" \
+  "Endpoint=https://westus2.api.cognitive.microsoft.com/;Key=YOUR_KEY;"
 
-# For Mode 2 (Agent-LLM) - uncomment and use instead
-# dotnet user-secrets set "Agent:Mode" "Agent-LLM"
+# For Agent-LLM mode (uses Microsoft Foundry ChatClient)
+dotnet user-secrets set "AzureOpenAI:Mode" "Agent-LLM"
+dotnet user-secrets set "AzureOpenAI:AgentLLM:DeploymentName" "gpt-5.1-chat"
 
-# For Mode 3 (Agent-AIFoundry) - uncomment and use instead
-# dotnet user-secrets set "ConnectionStrings:aifoundry" \
-#   "Endpoint=https://YOUR_PROJECT.api.azureml.ms/;Key=YOUR_KEY;"
-# dotnet user-secrets set "Agent:Mode" "Agent-AIFoundry"
-# dotnet user-secrets set "Agent:AgentId" "YOUR_AGENT_ID"
+# For Agent-MicrosoftFoundry mode (requires Microsoft Foundry project via Aspire)
+# dotnet user-secrets set "AzureOpenAI:Mode" "Agent-MicrosoftFoundry"
+# dotnet user-secrets set "AzureOpenAI:AgentMicrosoftFoundry:MicrosoftFoundryAgentName" "YOUR_AGENT"
+
+# For Agent-AIFoundry mode (not yet implemented)
+# dotnet user-secrets set "AzureOpenAI:Mode" "Agent-AIFoundry"
+# dotnet user-secrets set "AzureOpenAI:AgentAIFoundry:AIFoundryEndpoint" "https://..."
+# dotnet user-secrets set "AzureOpenAI:AgentAIFoundry:AgentId" "YOUR_AGENT_ID"
 
 # 4. Run the application
 dotnet run

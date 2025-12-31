@@ -1,38 +1,57 @@
 using AzureAIAvatarBlazor.Models;
+using AzureAIAvatarBlazor.Services.Caching;
 using System.Text.Json;
 
 namespace AzureAIAvatarBlazor.Services;
 
+/// <summary>
+/// Configuration service that manages user-configurable settings.
+/// 
+/// IMPORTANT: AppHost-managed secrets (Application Insights, Microsoft Foundry endpoint, TenantId)
+/// are NOT directly editable in the UI. These are managed through Aspire AppHost connection strings.
+/// 
+/// The application now uses Microsoft Foundry (via AzureAIAvatarBlazor.MAFFoundry library) for AI operations.
+/// IChatClient is automatically registered when the Microsoft Foundry endpoint is configured.
+/// 
+/// Phase 3: Configuration is now cached in Redis to reduce file/environment variable reads.
+/// </summary>
 public class ConfigurationService
 {
     private readonly IConfiguration _configuration;
     private readonly IWebHostEnvironment _environment;
     private readonly ILogger<ConfigurationService> _logger;
+    private readonly TelemetryService _telemetryService;
+    private readonly ICachingService _cachingService;
     private AvatarConfiguration? _cachedConfig;
+    private const string ConfigCacheKey = "config:default";
+    private static readonly TimeSpan ConfigCacheExpiration = TimeSpan.FromMinutes(5);
 
     public ConfigurationService(
         IConfiguration configuration,
         IWebHostEnvironment environment,
-        ILogger<ConfigurationService> logger)
+        ILogger<ConfigurationService> logger,
+        TelemetryService telemetryService,
+        ICachingService cachingService)
     {
         _configuration = configuration;
         _environment = environment;
         _logger = logger;
+        _telemetryService = telemetryService;
+        _cachingService = cachingService;
     }
 
     public event EventHandler<AvatarConfiguration?>? ConfigurationChanged;
+
     private bool DetermineIfCustomAvatar(IConfiguration config)
     {
         // Check if explicitly set
         var explicitSetting = config["Avatar__IsCustomAvatar"]
             ?? config["Avatar:IsCustomAvatar"];
 
-        _logger.LogInformation("Explicit IsCustomAvatar setting: '{Setting}'", explicitSetting ?? "null");
-
         if (!string.IsNullOrEmpty(explicitSetting))
         {
             var result = bool.Parse(explicitSetting);
-            _logger.LogInformation("Using explicit custom avatar setting: {Result}", result);
+            _logger.LogInformation("Using explicit custom avatar setting: {IsCustomAvatar}, Source: Configuration", result);
             return result;
         }
 
@@ -42,26 +61,53 @@ public class ConfigurationService
             ?? config["AVATAR_CHARACTER"]
             ?? "lisa";
 
-        _logger.LogInformation("Checking character '{Character}' against standard avatars", character);
-
         var isCustom = AvatarDisplayConfig.IsCustomAvatarCharacter(character);
-        _logger.LogInformation("Auto-detected IsCustomAvatar: {IsCustom}", isCustom);
+        _logger.LogInformation("Auto-detected custom avatar: {IsCustomAvatar}, Character: {AvatarCharacter}", isCustom, character);
 
         return isCustom;
     }
 
+    // Backward-compatible synchronous API
     public AvatarConfiguration GetConfiguration()
     {
-        // Return cached config if available (respects user changes from Config page)
+        return GetConfigurationAsync().GetAwaiter().GetResult();
+    }
+
+    // Async implementation to avoid blocking/possible deadlocks in server-side rendering
+    public async Task<AvatarConfiguration> GetConfigurationAsync()
+    {
+        using var activity = _telemetryService.StartConfigLoadSpan("cache-check");
+
+        // First, check in-memory cache (respects user changes from Config page)
         if (_cachedConfig != null)
         {
-            _logger.LogInformation("Returning cached configuration (Character: {Character}, IsCustom: {IsCustom}, UseBuiltInVoice: {UseBuiltInVoice})",
+            activity?.SetTag("config.cache_hit", "memory");
+            _logger.LogDebug("Returning in-memory cached configuration (Character: {AvatarCharacter}, IsCustom: {IsCustomAvatar}, UseBuiltInVoice: {UseBuiltInVoice})",
                 _cachedConfig.Avatar.Character,
                 _cachedConfig.Avatar.IsCustomAvatar,
                 _cachedConfig.Avatar.UseBuiltInVoice);
             return _cachedConfig;
         }
 
+        // Second, check Redis cache
+        try
+        {
+            var cachedFromRedis = await _cachingService.GetAsync<AvatarConfiguration>(ConfigCacheKey).ConfigureAwait(false);
+            if (cachedFromRedis != null)
+            {
+                activity?.SetTag("config.cache_hit", "redis");
+                _logger.LogInformation("Returning Redis cached configuration (Character: {Character})", cachedFromRedis.Avatar.Character);
+                _cachedConfig = cachedFromRedis; // Also cache in memory
+                return cachedFromRedis;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to get configuration from Redis cache, loading from environment");
+        }
+
+        activity?.SetTag("config.cache_hit", "miss");
+        activity?.SetTag("config.source", "environment");
         _logger.LogInformation("Loading configuration from environment/appsettings...");
 
         var avatarCharacter = _configuration["Avatar__Character"] ?? _configuration["Avatar:Character"] ?? _configuration["AVATAR_CHARACTER"] ?? "lisa";
@@ -90,33 +136,24 @@ public class ConfigurationService
             },
             AzureOpenAI = new AzureOpenAIConfig
             {
-                Mode = _configuration["AGENT_MODE"]
-                    ?? _configuration["AzureOpenAI__Mode"]
+                // Mode can be: Agent-LLM (uses ChatClient from MAFFoundry), Agent-MicrosoftFoundry, or Agent-AIFoundry
+                Mode = _configuration["AzureOpenAI__Mode"]
                     ?? _configuration["AzureOpenAI:Mode"]
-                    ?? "Agent-LLM",
-                TenantId = _configuration["AZURE_TENANT_ID"]
+                    ?? _configuration["AZURE_OPENAI_MODE"]
+                    ?? "Agent-LLM", // Default to Agent-LLM (simplest configuration)
+                TenantId = _configuration.GetConnectionString("tenantId")
+                    ?? _configuration["AZURE_TENANT_ID"]
                     ?? _configuration["AzureOpenAI__TenantId"]
                     ?? _configuration["AzureOpenAI:TenantId"]
                     ?? string.Empty,
                 AgentLLM = new AgentLLMConfig
                 {
-                    Endpoint = _configuration["AZURE_OPENAI_ENDPOINT"]
-                        ?? _configuration["AzureOpenAI__AgentLLM__Endpoint"]
-                        ?? _configuration["AzureOpenAI:AgentLLM:Endpoint"]
-                        ?? _configuration["AzureOpenAI__Endpoint"]
-                        ?? _configuration["AzureOpenAI:AgentLLMConfig:Endpoint"]
-                        ?? string.Empty,
-                    ApiKey = _configuration["AZURE_OPENAI_API_KEY"]
-                        ?? _configuration["AzureOpenAI__AgentLLM__ApiKey"]
-                        ?? _configuration["AzureOpenAI:AgentLLM:ApiKey"]
-                        ?? _configuration["AzureOpenAI__ApiKey"]
-                        ?? _configuration["AzureOpenAI:AgentLLMConfig:ApiKey"]
-                        ?? string.Empty,
                     DeploymentName = _configuration["OpenAI__DeploymentName"]
                         ?? _configuration["AZURE_OPENAI_DEPLOYMENT_NAME"]
                         ?? _configuration["AzureOpenAI__DeploymentName"]
+                        ?? _configuration["AzureOpenAI:AgentLLM:DeploymentName"]
                         ?? _configuration["AzureOpenAI:AgentLLMConfig:DeploymentName"]
-                        ?? string.Empty,
+                        ?? "gpt-5.1-chat",
                     SystemPrompt = _configuration["SystemPrompt"]
                         ?? _configuration["AzureOpenAI__AgentLLM__SystemPrompt"]
                         ?? _configuration["AzureOpenAI:AgentLLM:SystemPrompt"]
@@ -127,25 +164,19 @@ public class ConfigurationService
                 },
                 AgentAIFoundry = new AgentAIFoundryConfig
                 {
-                    AgentId = _configuration["AGENT_ID"]
-                        ?? _configuration["AzureOpenAI__AgentId"]
-                        ?? _configuration["AzureOpenAI:AgentAIFoundryConfig:AgentId"]
-                        ?? string.Empty,
-                    AIFoundryEndpoint = _configuration["AZURE_AI_FOUNDRY_ENDPOINT"]
-                        ?? _configuration["AzureOpenAI__AIFoundryEndpoint"]
-                        ?? _configuration["AzureOpenAI:AgentAIFoundryConfig:AIFoundryEndpoint"]
-                        ?? string.Empty
+                    // Not used - kept for backward compatibility
+                    AgentId = string.Empty,
+                    AIFoundryEndpoint = string.Empty
                 },
                 AgentMicrosoftFoundry = new AgentMicrosoftFoundryConfig
                 {
-                    MicrosoftFoundryEndpoint = _configuration["AZURE_MICROSOFTFOUNDRY_ENDPOINT"]
-                        ?? _configuration["AzureOpenAI__MicrosoftFoundryEndpoint"]
-                        ?? _configuration["AzureOpenAI:AgentMicrosoftFoundryConfig:MicrosoftFoundryEndpoint"]
-                        ?? string.Empty,
-                    MicrosoftFoundryAgentName = _configuration["MICROSOFTFOUNDRY_AGENT_NAME"]
-                        ?? _configuration["AzureOpenAI__MicrosoftFoundryAgentName"]
-                        ?? _configuration["AzureOpenAI:AgentMicrosoftFoundryConfig:MicrosoftFoundryAgentName"]
-                        ?? string.Empty                }
+                    // Microsoft Foundry endpoint is managed by Aspire AppHost
+                    MicrosoftFoundryEndpoint = _configuration.GetConnectionString("microsoftfoundryproject") ?? string.Empty,
+                    MicrosoftFoundryAgentName = _configuration["AI_AgentName"]
+                        ?? _configuration["AgentName"]
+                        ?? _configuration["AzureOpenAI:AgentMicrosoftFoundry:AgentName"]
+                        ?? "AvatarAgent"
+                }
             },
             SttTts = new SttTtsConfig
             {
@@ -327,11 +358,47 @@ public class ConfigurationService
         }
 
         _cachedConfig = config;
+
+        // Cache in Redis for multi-instance scenarios
+        try
+        {
+            // Fire-and-forget caching to avoid delaying initial request
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _cachingService.SetAsync(ConfigCacheKey, config, ConfigCacheExpiration).ConfigureAwait(false);
+                    _logger.LogInformation("Configuration cached in Redis with {Expiration} expiration", ConfigCacheExpiration);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to cache configuration in Redis (background)");
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to start background Redis cache task");
+        }
+
         return config;
     }
 
     public async Task SaveConfigurationAsync(AvatarConfiguration config)
     {
+        // Count changed keys for tracing
+        var changedKeys = new List<string>();
+        if (_cachedConfig != null)
+        {
+            if (_cachedConfig.Avatar.Character != config.Avatar.Character) changedKeys.Add("Avatar.Character");
+            if (_cachedConfig.AzureOpenAI.Mode != config.AzureOpenAI.Mode) changedKeys.Add("AzureOpenAI.Mode");
+            if (_cachedConfig.Avatar.IsCustomAvatar != config.Avatar.IsCustomAvatar) changedKeys.Add("Avatar.IsCustomAvatar");
+            if (_cachedConfig.Avatar.UseBuiltInVoice != config.Avatar.UseBuiltInVoice) changedKeys.Add("Avatar.UseBuiltInVoice");
+        }
+
+        using var activity = _telemetryService.StartConfigSaveSpan(changedKeys.Count);
+        activity?.SetTag("config.changed_keys", string.Join(", ", changedKeys));
+
         _logger.LogInformation("Saving configuration to cache...");
         _logger.LogInformation("  - Mode: {Mode}", config.AzureOpenAI.Mode ?? "(none)");
         _logger.LogInformation("  - Character: {Character}, Style: {Style}",
@@ -345,10 +412,39 @@ public class ConfigurationService
         {
             _logger.LogInformation("  - PredefinedQuestions: {Count}", config.PredefinedQuestions.Count);
         }
+
+        // Cache in Redis
+        try
+        {
+            await _cachingService.SetAsync(ConfigCacheKey, config, ConfigCacheExpiration).ConfigureAwait(false);
+            activity?.SetTag("config.redis_save", "success");
+            _logger.LogInformation("Configuration saved to Redis cache");
+        }
+        catch (Exception ex)
+        {
+            activity?.SetTag("config.redis_save", "failed");
+            activity?.SetTag("config.error", ex.Message);
+            _logger.LogWarning(ex, "Failed to save configuration to Redis cache");
+        }
+
+        // Track configuration changes
+        var oldCharacter = _cachedConfig?.Avatar.Character;
+        var newCharacter = config.Avatar.Character;
+        if (oldCharacter != newCharacter)
+        {
+            _telemetryService.TrackConfigurationChange("Avatar.Character", oldCharacter, newCharacter);
+        }
+
+        var oldMode = _cachedConfig?.AzureOpenAI.Mode;
+        var newMode = config.AzureOpenAI.Mode;
+        if (oldMode != newMode)
+        {
+            _telemetryService.TrackConfigurationChange("AzureOpenAI.Mode", oldMode, newMode);
+        }
+
         // In a real application, this would save to a database or configuration store
         // For now, we cache it in memory - it will persist for the app session
         _cachedConfig = config;
-        await Task.CompletedTask;
 
         _logger.LogInformation("Configuration saved successfully to memory cache - changes will be used until app restart");
 
@@ -406,31 +502,12 @@ public class ConfigurationService
         // Validate based on mode
         if (mode == "Agent-LLM")
         {
-            // Standard LLM validation
-            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentLLM.Endpoint))
-            {
-                _logger.LogWarning("Validation failed: Azure OpenAI endpoint is missing");
-                return "Azure OpenAI endpoint is required.";
-            }
-
-            // Validate endpoint URL format
-            if (!Uri.TryCreate(config.AzureOpenAI.AgentLLM.Endpoint, UriKind.Absolute, out var uri) ||
-                (uri.Scheme != "https" && uri.Scheme != "http"))
-            {
-                _logger.LogWarning("Validation failed: Invalid Azure OpenAI endpoint URL: {Endpoint}", config.AzureOpenAI.AgentLLM.Endpoint);
-                return "Azure OpenAI endpoint must be a valid HTTPS URL.";
-            }
-
-            if (string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentLLM.ApiKey))
-            {
-                _logger.LogWarning("Validation failed: Azure OpenAI API key is missing");
-                return "Azure OpenAI API key is required.";
-            }
-
+            // Agent-LLM mode only requires deployment name (model name)
+            // Endpoint and API Key are provided by MAFFoundry
             if (string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentLLM.DeploymentName))
             {
-                _logger.LogWarning("Validation failed: Azure OpenAI deployment name is missing");
-                return "Azure OpenAI deployment name is required.";
+                _logger.LogWarning("Validation failed: Model/deployment name is missing for Agent-LLM mode");
+                return "Model/deployment name is required for Agent-LLM mode (e.g., gpt-5.1-chat).";
             }
         }
         else if (mode == "Agent-AIFoundry")

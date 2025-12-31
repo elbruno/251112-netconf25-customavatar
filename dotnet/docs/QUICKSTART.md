@@ -42,26 +42,33 @@ With Aspire, all credentials are managed by the AppHost. Choose your configurati
 # Navigate to AppHost project (if not already there)
 cd dotnet/AzureAIAvatarBlazor.AppHost
 
-# Configure Azure OpenAI connection string
-dotnet user-secrets set "ConnectionStrings:openai" "Endpoint=https://YOUR_RESOURCE.openai.azure.com/;Key=YOUR_OPENAI_API_KEY;"
+# (Optional) Configure Application Insights connection string for telemetry
+dotnet user-secrets set "ConnectionStrings:appinsights" "InstrumentationKey=YOUR_INSTRUMENTATION_KEY;IngestionEndpoint=https://YOUR_REGION.in.applicationinsights.azure.com/;LiveEndpoint=https://YOUR_REGION.livediagnostics.monitor.azure.com/"
 
-# Configure Azure Speech Service connection string
-dotnet user-secrets set "ConnectionStrings:speech" "Endpoint=https://westus2.api.cognitive.microsoft.com/;Key=YOUR_SPEECH_API_KEY;"
+# (Optional) Configure Microsoft Foundry project endpoint
+dotnet user-secrets set "ConnectionStrings:microsoftfoundryproject" "https://YOUR_FOUNDRY_PROJECT.services.ai.azure.com/api/projects/YOUR_PROJECT_ID"
+
+# (Optional) Configure Azure Tenant ID for Microsoft Foundry
+dotnet user-secrets set "ConnectionStrings:tenantId" "YOUR_TENANT_ID"
 
 # Set application defaults
 dotnet user-secrets set "Avatar:Character" "lisa"
 dotnet user-secrets set "Avatar:Style" "casual-sitting"
-dotnet user-secrets set "OpenAI:DeploymentName" "gpt-4o-mini"
 dotnet user-secrets set "SystemPrompt" "You are a helpful AI assistant."
 ```
 
 Replace:
-- `YOUR_RESOURCE`: Your Azure OpenAI resource name
-- `YOUR_OPENAI_API_KEY`: Your Azure OpenAI key
-- `YOUR_SPEECH_API_KEY`: Your Azure Speech Service key
-- `gpt-4o-mini`: Your deployed model name
+- `YOUR_INSTRUMENTATION_KEY`: Your Application Insights instrumentation key (optional)
+- `YOUR_REGION`: Your Application Insights region (e.g., westus2)
+- `YOUR_FOUNDRY_PROJECT`: Your Microsoft Foundry project name (optional)
+- `YOUR_PROJECT_ID`: Your Microsoft Foundry project ID (optional)
+- `YOUR_TENANT_ID`: Your Azure tenant ID (optional)
 
-**Important**: Notice the connection string format with `Endpoint=...;Key=...;` - this is the Aspire connection string format.
+**Important**: 
+- **Application Insights** (optional): If not provided in development, telemetry will only be visible in the Aspire Dashboard. In production, Aspire automatically provisions Application Insights.
+- **Microsoft Foundry** (optional): If provided, the application will use Microsoft Foundry agents and IChatClient. If not provided, the application will fall back to direct Azure OpenAI configuration.
+- All connection strings use the Aspire connection string format.
+
 
 #### Method B: Environment Variables (CI/CD & Production)
 
@@ -105,6 +112,7 @@ Aspire will automatically:
 - ✅ Deploy GPT-4o-mini model
 - ✅ Configure all connection strings
 - ✅ Set up managed identities
+- ✅ Provision Application Insights for monitoring
 
 ### Step 4: Run the Application
 
@@ -145,10 +153,13 @@ info: Aspire.Hosting[0]
 Two important URLs will be available:
 
 1. **Aspire Dashboard**: https://localhost:15216
-   - Monitor all services
+   - Monitor all services (including Redis cache)
    - View logs and metrics
    - Check resource status
    - Distributed tracing
+   - **Custom telemetry**: View avatar sessions, AI response times, and chat metrics
+   - **Application Insights**: If configured, telemetry is also sent to Azure
+   - **Redis Cache**: Aspire automatically provisions Redis container for configuration caching
 
 2. **Blazor Application**: https://localhost:5001
    - The main avatar chat interface
@@ -165,13 +176,15 @@ When you first open the application, you'll see:
 
 Click **"Configure"** to verify and customize settings:
 
-1. **Azure Speech Service**
+1. **Azure OpenAI Configuration**
+   - **Note**: Microsoft Foundry endpoint and Application Insights are managed by Aspire AppHost (not editable in UI)
+   - System Prompt: Configure how the AI assistant responds
+   - Deployment Name: AI model deployment (e.g., gpt-4o-mini)
+   - Agent Name: Optional agent name for Microsoft Foundry
+   
+2. **Azure Speech Service**
    - Region should match your resource
    - API key is already set from secrets
-   
-2. **Azure OpenAI**
-   - Endpoint, key, and deployment are configured
-   - Customize the system prompt if desired
    
 3. **Avatar Settings**
    - Choose avatar character (Lisa, Harry, Jeff, etc.)
@@ -179,6 +192,8 @@ Click **"Configure"** to verify and customize settings:
    - Adjust audio gain if needed
    
 4. Click **"Save Configuration"**
+
+> **💡 Configuration Note**: The application now uses Microsoft Foundry for AI operations. The Microsoft Foundry endpoint, Application Insights connection string, and Azure Tenant ID are managed by Aspire AppHost through connection strings and are NOT editable in the Configuration UI. This ensures secure management of credentials and endpoints.
 
 ### 3. Start Chatting
 
@@ -246,6 +261,298 @@ en-US,es-ES,fr-FR,de-DE,it-IT,ja-JP,ko-KR,zh-CN
 ```
 
 The avatar will automatically detect the input language!
+
+### View Telemetry and Monitoring
+
+The application includes comprehensive telemetry tracking via Application Insights integration:
+
+#### Aspire Dashboard (Local Development)
+
+1. Open the **Aspire Dashboard**: https://localhost:15216
+2. Navigate to different tabs:
+   - **Logs**: View structured logs from all services
+   - **Metrics**: See custom metrics like:
+     - `avatar.sessions.started`: Number of avatar sessions
+     - `chat.messages.sent`: Chat message counts
+     - `ai.response.duration`: AI response times
+     - `avatar.session.duration`: Session durations
+   - **Traces**: View distributed traces for operations like:
+     - `GetChatCompletion`: Full AI request/response lifecycle
+     - `TestConnection`: Connection validation traces
+   - **Resources**: Check health and status of all services
+
+#### Health Checks (Phase 2)
+
+The application provides comprehensive health check endpoints for monitoring service health:
+
+**Endpoints**:
+- **`/health`**: Liveness check - Is the app running?
+- **`/health/ready`**: Readiness check - Is the app ready for traffic?
+- **`/health/startup`**: Startup check - Has initialization completed?
+
+**Test Health Checks Locally**:
+```bash
+# Check if app is alive
+curl http://localhost:5173/health
+
+# Get detailed health status (JSON)
+curl http://localhost:5173/health/ready
+```
+
+**Health Check Response** (example):
+```json
+{
+  "status": "Healthy",
+  "entries": {
+    "redis": {
+      "status": "Healthy",
+      "description": "Redis is healthy (ping: 1.23ms)",
+      "data": {
+        "connected": true,
+        "ping_ms": 1.23
+      }
+    },
+    "microsoft_foundry": {
+      "status": "Healthy",
+      "description": "Microsoft Foundry is configured"
+    },
+    "azure_speech": {
+      "status": "Healthy",
+      "description": "Azure Speech Service is configured"
+    },
+    "configuration": {
+      "status": "Healthy",
+      "description": "All required configuration present"
+    }
+  }
+}
+```
+
+See [PHASE2_IMPLEMENTATION_SUMMARY.md](PHASE2_IMPLEMENTATION_SUMMARY.md) for detailed health check documentation.
+
+#### Redis Caching (Phase 3)
+
+The application uses Redis for configuration caching to improve performance and support multi-instance scenarios:
+
+**Features**:
+- Configuration cached for 5 minutes
+- Reduces environment variable reads
+- Shared cache across multiple instances
+- Automatic fallback if Redis unavailable
+
+**Local Development**:
+- Aspire automatically provisions Redis container
+- Data persists between application restarts
+- View cache in Aspire Dashboard
+
+**View Cached Data** (optional):
+```bash
+# Find Redis port from Aspire Dashboard
+# Resources tab → click on "cache" resource → see "Endpoint"
+
+# Connect with redis-cli
+redis-cli -h localhost -p <PORT_FROM_ASPIRE>
+
+# Get cached configuration
+GET config:default
+
+# Check TTL (time to live)
+TTL config:default
+```
+
+See [PHASE3_IMPLEMENTATION_SUMMARY.md](PHASE3_IMPLEMENTATION_SUMMARY.md) for detailed caching documentation.
+
+#### Structured Logging (Phase 4)
+
+The application uses Serilog for structured logging with rich formatting and Application Insights integration:
+
+**Features**:
+- Structured log properties (queryable)
+- Rich console output with colors
+- Application Insights integration
+- HTTP request logging
+- Log context enrichers
+
+**View Logs Locally**:
+
+1. **Console Output**: Rich formatted logs with structured properties
+   ```
+   [10:30:15 INF] AzureAIAvatarBlazor.Services.AzureAIAgentService
+   Initializing AI Agent with Agent-MicrosoftFoundry mode, Model/Agent: agent-assistant
+   {"AgentMode": "Agent-MicrosoftFoundry", "ModelDeployment": "agent-assistant"}
+   
+   [10:30:16 INF] HTTP GET /health/ready responded 200 in 15.2341 ms
+   {"RequestHost": "localhost:5173", "UserAgent": "curl/7.68.0", "RemoteIP": "::1"}
+   ```
+
+2. **Aspire Dashboard**: Navigate to **Logs** tab to see structured logs from all services
+
+**Query Logs in Application Insights** (Production):
+```kql
+traces
+| where customDimensions.Application == "AzureAIAvatarBlazor"
+| where customDimensions.AgentMode == "Agent-MicrosoftFoundry"
+| project timestamp, message,
+          agentMode = tostring(customDimensions.AgentMode),
+          deployment = tostring(customDimensions.ModelDeployment)
+| order by timestamp desc
+```
+
+**HTTP Request Analysis**:
+```kql
+traces
+| where message startswith "HTTP"
+| extend statusCode = toint(customDimensions.StatusCode),
+         elapsed = todouble(customDimensions.Elapsed)
+| where statusCode >= 400
+| summarize count() by statusCode, bin(timestamp, 5m)
+| render timechart
+```
+
+See [PHASE4_IMPLEMENTATION_SUMMARY.md](PHASE4_IMPLEMENTATION_SUMMARY.md) for detailed logging documentation.
+
+#### Distributed Tracing (Phase 5)
+
+The application includes comprehensive distributed tracing with rich span attributes for all major operations:
+
+**Features**:
+- Custom spans for avatar, AI agent, and configuration operations
+- Semantic attributes following OpenTelemetry conventions
+- Adaptive sampling (100% dev, cost-effective production)
+- End-to-end request tracking
+
+**View Traces Locally**:
+
+1. **Aspire Dashboard**: Navigate to **Traces** tab (http://localhost:15216)
+   - See hierarchical trace view with parent-child relationships
+   - Filter by operation name (e.g., "AIAgent.ChatCompletion")
+   - View span attributes for detailed context
+
+**Example Trace Hierarchy**:
+```
+┌─ HTTP GET /api/chat/stream (200 OK) - 2.5s
+├─── AIAgent.ChatCompletion - 2.4s
+│    ├─ ai.agent.mode: Agent-MicrosoftFoundry
+│    ├─ ai.model.name: agent-assistant
+│    ├─ ai.prompt.length: 150
+│    ├─ ai.response.completion_length: 300
+│    ├─ ai.response.duration_ms: 2400
+│    └─ ai.response.tokens_per_second: 125.0
+└─── Config.Load - 2ms
+     ├─ config.source: cache-check
+     └─ config.cache_hit: memory
+```
+
+**Query Traces in Application Insights** (Production):
+
+**AI Agent Chat Completions**:
+```kql
+dependencies
+| where name == "AIAgent.ChatCompletion"
+| extend 
+    agentMode = tostring(customDimensions.["ai.agent.mode"]),
+    modelName = tostring(customDimensions.["ai.model.name"]),
+    responseLength = toint(customDimensions.["ai.response.completion_length"]),
+    durationMs = toint(customDimensions.["ai.response.duration_ms"]),
+    tokensPerSecond = todouble(customDimensions.["ai.response.tokens_per_second"])
+| summarize 
+    avgDuration = avg(durationMs),
+    p95Duration = percentile(durationMs, 95),
+    avgTokensPerSec = avg(tokensPerSecond)
+    by agentMode, modelName, bin(timestamp, 5m)
+| render timechart
+```
+
+**Configuration Cache Performance**:
+```kql
+traces
+| where operation_Name == "Config.Load"
+| extend cacheHit = tostring(customDimensions.["config.cache_hit"])
+| summarize 
+    Total = count(),
+    MemoryHits = countif(cacheHit == "memory"),
+    RedisHits = countif(cacheHit == "redis"),
+    Misses = countif(cacheHit == "miss")
+| extend 
+    CacheHitRate = (MemoryHits + RedisHits) * 100.0 / Total,
+    MemoryHitRate = MemoryHits * 100.0 / Total
+| project 
+    Total, 
+    MemoryHits, 
+    RedisHits, 
+    Misses, 
+    CacheHitRate = round(CacheHitRate, 2),
+    MemoryHitRate = round(MemoryHitRate, 2)
+```
+
+**Avatar Session Analytics**:
+```kql
+traces
+| where operation_Name == "AvatarSession.Start"
+| extend 
+    character = tostring(customDimensions.["avatar.character"]),
+    style = tostring(customDimensions.["avatar.style"]),
+    isCustom = tobool(customDimensions.["avatar.is_custom"])
+| summarize Count = count() by character, style, isCustom
+| order by Count desc
+```
+
+**Span Attributes by Operation**:
+
+- **AIAgent.ChatCompletion**: ai.agent.mode, ai.model.name, ai.prompt.length, ai.response.completion_length, ai.response.duration_ms, ai.response.tokens_per_second
+- **AIAgent.Initialize**: ai.agent.mode, ai.endpoint
+- **Config.Load**: config.source, config.cache_hit
+- **Config.Save**: config.changed_keys, config.redis_save
+- **Speech.Synthesize**: speech.voice, speech.text_length
+- **AvatarSession.Start**: avatar.character, avatar.style, avatar.is_custom
+
+See [PHASE5_IMPLEMENTATION_SUMMARY.md](PHASE5_IMPLEMENTATION_SUMMARY.md) for detailed tracing documentation.
+
+## 🧪 Testing the Application
+docker ps | grep redis
+
+# Connect to Redis
+redis-cli -h localhost -p <port>
+
+# View cached configuration
+GET config:default
+
+# Check TTL
+TTL config:default
+```
+
+See [PHASE3_IMPLEMENTATION_SUMMARY.md](PHASE3_IMPLEMENTATION_SUMMARY.md) for detailed Redis caching documentation.
+
+#### Custom Telemetry Events
+
+The application tracks:
+- 🎭 **Avatar Operations**: Session start/end, character selection
+- 💬 **Chat Interactions**: Message counts, role tracking
+- 🤖 **AI Performance**: Response times, token counts (when available)
+- ⚙️ **Configuration Changes**: Character, mode, settings changes
+- 🔊 **Speech Synthesis**: Voice selection, synthesis duration
+- 🌐 **WebRTC Status**: Connection health
+
+#### Application Insights (Production)
+
+If you configured an Application Insights connection string:
+
+1. Open **Azure Portal**: https://portal.azure.com
+2. Navigate to your **Application Insights** resource
+3. View:
+   - **Application Map**: Service dependencies
+   - **Performance**: Request/response times
+   - **Failures**: Exceptions and errors
+   - **Metrics**: Custom metrics (same as Aspire Dashboard)
+   - **Logs**: Query structured logs with KQL
+
+**Example KQL Query** (in Application Insights Logs):
+```kql
+traces
+| where message contains "Avatar session"
+| project timestamp, message, customDimensions
+| order by timestamp desc
+```
 
 ## 🔧 Troubleshooting
 
