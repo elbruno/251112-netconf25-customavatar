@@ -136,9 +136,11 @@ public class ConfigurationService
             },
             AzureOpenAI = new AzureOpenAIConfig
             {
-                // Mode is now fixed to Agent-MicrosoftFoundry (managed by MAFFoundry library)
-                // Microsoft Foundry endpoint is managed by Aspire AppHost via connection strings
-                Mode = "Agent-MicrosoftFoundry",
+                // Mode can be: Agent-LLM (uses ChatClient from MAFFoundry), Agent-MicrosoftFoundry, or Agent-AIFoundry
+                Mode = _configuration["AzureOpenAI__Mode"]
+                    ?? _configuration["AzureOpenAI:Mode"]
+                    ?? _configuration["AZURE_OPENAI_MODE"]
+                    ?? "Agent-LLM", // Default to Agent-LLM (simplest configuration)
                 TenantId = _configuration.GetConnectionString("tenantId")
                     ?? _configuration["AZURE_TENANT_ID"]
                     ?? _configuration["AzureOpenAI__TenantId"]
