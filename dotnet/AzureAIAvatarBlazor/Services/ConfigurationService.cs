@@ -333,6 +333,7 @@ public class ConfigurationService
     public async Task SaveConfigurationAsync(AvatarConfiguration config)
     {
         _logger.LogInformation("Saving configuration to cache...");
+        _logger.LogInformation("  - Mode: {Mode}", config.AzureOpenAI.Mode ?? "(none)");
         _logger.LogInformation("  - Character: {Character}, Style: {Style}",
             config.Avatar.Character, config.Avatar.Style ?? "(none)");
         _logger.LogInformation("  - IsCustomAvatar: {IsCustom}, UseBuiltInVoice: {UseBuiltIn}",
