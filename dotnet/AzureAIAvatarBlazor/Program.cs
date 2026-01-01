@@ -82,13 +82,6 @@ try
     builder.AddServiceDefaults();
 
     // ==============================
-    // Aspire-Managed Clients
-    // ==============================
-
-    // Note: Speech Service doesn't have Aspire component yet
-    // Configuration is injected via environment variables from AppHost
-
-    // ==============================
     // Redis Caching
     // ==============================
 

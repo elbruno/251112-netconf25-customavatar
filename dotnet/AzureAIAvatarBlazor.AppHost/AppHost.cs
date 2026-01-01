@@ -30,21 +30,21 @@ else
 var redis = builder.AddRedis("cache")
     .WithLifetime(ContainerLifetime.Persistent); // Keep data between runs in dev
 
-// ==============================
-// Azure OpenAI
-// ==============================
+//// ==============================
+//// Azure OpenAI
+//// ==============================
 
-// Azure OpenAI Connection String
-// Format: "Endpoint=https://YOUR_RESOURCE.openai.azure.com/;Key=YOUR_API_KEY;"
-var openai = builder.AddConnectionString("openai");
+//// Azure OpenAI Connection String
+//// Format: "Endpoint=https://YOUR_RESOURCE.openai.azure.com/;Key=YOUR_API_KEY;"
+//var openai = builder.AddConnectionString("openai");
 
-// ==============================
-// Azure Speech Service
-// ==============================
+//// ==============================
+//// Azure Speech Service
+//// ==============================
 
-// Azure Speech Connection String  
-// Format: "Endpoint=https://REGION.api.cognitive.microsoft.com/;Key=YOUR_API_KEY;"
-var speech = builder.AddConnectionString("speech");
+//// Azure Speech Connection String  
+//// Format: "Endpoint=https://REGION.api.cognitive.microsoft.com/;Key=YOUR_API_KEY;"
+//var speech = builder.AddConnectionString("speech");
 
 // ==============================
 // Microsoft Foundry Configuration
@@ -65,8 +65,8 @@ tenantId = builder.AddConnectionString("tenantId");
 var avatarApp = builder.AddProject<Projects.AzureAIAvatarBlazor>("azureaiavatarblazor")
     .WaitFor(redis)
     .WithReference(redis)
-    .WithReference(openai)
-    .WithReference(speech)
+    //.WithReference(openai)
+    //.WithReference(speech)
     .WithReference(microsoftfoundryproject)
     .WithReference(tenantId)
     .WithReference(appInsights);
