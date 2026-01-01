@@ -557,7 +557,7 @@ public class ConfigurationService
             if (string.IsNullOrWhiteSpace(config.AzureOpenAI.AgentLLM.DeploymentName))
             {
                 _logger.LogWarning("Validation failed: Model/deployment name is missing for Agent-LLM mode");
-                return "Model/deployment name is required for Agent-LLM mode (e.g., gpt-5.1-chat).";
+                return "Model/deployment name is required for Agent-LLM mode (e.g., gpt-5-mini).";
             }
         }
         else if (mode == "Agent-AIFoundry")

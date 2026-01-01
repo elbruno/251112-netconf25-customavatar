@@ -48,7 +48,7 @@ public class AzureAIAgentService
             var mode = config.AzureOpenAI.Mode ?? "Agent-LLM";
             var deploymentName = mode switch
             {
-                "Agent-LLM" => config.AzureOpenAI.AgentLLM.DeploymentName ?? "gpt-5.1-chat",
+                "Agent-LLM" => config.AzureOpenAI.AgentLLM.DeploymentName ?? "gpt-5-mini",
                 "Agent-MicrosoftFoundry" => config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryAgentName ?? "unknown",
                 _ => "unknown"
             };
@@ -208,7 +208,7 @@ public class AzureAIAgentService
         var mode = config.AzureOpenAI.Mode ?? "Agent-LLM";
         var modelOrAgent = mode switch
         {
-            "Agent-LLM" => config.AzureOpenAI.AgentLLM.DeploymentName ?? "gpt-5.1-chat",
+            "Agent-LLM" => config.AzureOpenAI.AgentLLM.DeploymentName ?? "gpt-5-mini",
             "Agent-MicrosoftFoundry" => config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryAgentName ?? "unknown",
             _ => "unknown"
         };

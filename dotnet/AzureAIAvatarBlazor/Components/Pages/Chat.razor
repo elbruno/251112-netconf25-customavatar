@@ -45,7 +45,7 @@
         <div class="ms-2">
             <label class="form-label mb-0">Mode</label>
             <select class="form-select form-select-sm" @onchange="ModeChanged" value="@(config?.AzureOpenAI?.Mode)">
-                <option value="Agent-LLM">@($"Agent-LLM - {(string.IsNullOrWhiteSpace(config?.AzureOpenAI?.AgentLLM?.DeploymentName) ? "gpt-5.1-chat" : config.AzureOpenAI.AgentLLM.DeploymentName)}")</option>
+                <option value="Agent-LLM">@($"Agent-LLM - {(string.IsNullOrWhiteSpace(config?.AzureOpenAI?.AgentLLM?.DeploymentName) ? "gpt-5-mini" : config.AzureOpenAI.AgentLLM.DeploymentName)}")</option>
                 <option value="Agent-AIFoundry">@($"Agent-AIFoundry - {(string.IsNullOrWhiteSpace(config?.AzureOpenAI?.AgentAIFoundry?.AgentId) ? "(no agent id)" : config.AzureOpenAI.AgentAIFoundry.AgentId)}")</option>
                 <option value="Agent-MicrosoftFoundry">@($"Agent-MicrosoftFoundry - {(string.IsNullOrWhiteSpace(config?.AzureOpenAI?.AgentMicrosoftFoundry?.MicrosoftFoundryAgentName) ? "(no agent name)" : config.AzureOpenAI.AgentMicrosoftFoundry.MicrosoftFoundryAgentName)}")</option>
             </select>
